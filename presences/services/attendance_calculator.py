@@ -1,0 +1,2 @@
+from presences.services.presence_service import calculate_attendance_rate
+

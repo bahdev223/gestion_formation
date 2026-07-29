@@ -1,0 +1,16 @@
+[project]
+name = "balys-formation-manager"
+version = "1.0.0"
+description = "Application de gestion de formations"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1,<5.2",
+    "weasyprint>=62",
+    "reportlab>=4.0",
+    "openpyxl>=3.1",
+    "django-paie @ git+https://github.com/bahdev223/django-paie.git@15778c405fe60654d326bde7e34a73404b201655",
+]
+
+[project.optional-dependencies]
+dev = []
+prod = ["psycopg[binary]>=3.2", "gunicorn>=23"]

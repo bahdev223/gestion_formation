@@ -1,0 +1,22 @@
+{% extends "layouts/dashboard.html" %}
+{% block page_title %}Séances{% endblock %}
+{% block page_subtitle %}Organisation des cours associés aux sessions de formation.{% endblock %}
+{% block dashboard_content %}
+{% if messages %}{% for message in messages %}<div class="mb-4 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ message }}</div>{% endfor %}{% endif %}
+<div class="baly-surface overflow-hidden rounded-xl">
+  <div class="flex flex-col gap-3 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <div><h2 class="text-lg font-bold text-slate-950">Planning des séances</h2><p class="mt-1 text-sm text-slate-500">Séances prévues dans les différentes sessions.</p></div>
+    <a href="{% url 'formations:seance-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'formations:seance-create' %}" hx-target="#global-modal-content" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Nouvelle séance</a>
+  </div>
+  {% if seances %}
+  <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Séance</th><th class="px-6 py-4">Session</th><th class="px-6 py-4">Date</th><th class="px-6 py-4">Horaire</th><th class="px-6 py-4">Lieu</th><th class="px-6 py-4">Statut</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">{% for seance in seances %}<tr class="hover:bg-blue-50/40">
+      <td class="px-6 py-4 font-semibold text-slate-900">{{ seance.titre }}</td><td class="px-6 py-4"><p class="text-slate-700">{{ seance.session.titre }}</p><p class="mt-1 text-xs text-slate-500">{{ seance.session.formation.nom }}</p></td>
+      <td class="whitespace-nowrap px-6 py-4 text-slate-600">{{ seance.date|date:"d/m/Y" }}</td><td class="whitespace-nowrap px-6 py-4 text-slate-600">{{ seance.heure_debut|time:"H:i" }} – {{ seance.heure_fin|time:"H:i" }}</td>
+      <td class="px-6 py-4 text-slate-600">{{ seance.lieu|default:"—" }}</td><td class="px-6 py-4"><span class="baly-badge">{{ seance.get_statut_display }}</span></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="px-6 py-16 text-center"><h3 class="font-bold text-slate-900">Aucune séance planifiée</h3><p class="mt-2 text-sm text-slate-500">Ajoutez les séances après avoir créé une session.</p></div>{% endif %}
+</div>
+{% endblock %}

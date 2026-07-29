@@ -1,0 +1,17 @@
+{% extends "comptes/base_comptes.html" %}
+{% block compte_title %}Comptes financiers{% endblock %}
+{% block page_actions %}<a href="{% url 'comptes:ajouter_compte' %}" class="baly-btn-accent px-4 py-2 text-xs font-bold">Nouveau compte</a>{% endblock %}
+{% block compte_content %}
+<section class="baly-surface mt-3 overflow-hidden">
+  <header class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+    <div><h2 class="text-sm font-bold text-slate-950">Registre des comptes</h2><p class="mt-0.5 text-xs text-slate-500">{{ comptes|length }} compte{{ comptes|length|pluralize }} actif{{ comptes|length|pluralize }}.</p></div>
+    <p class="text-xs font-bold text-slate-900">{{ synthese.solde_total|floatformat:0 }} FCFA</p>
+  </header>
+  <div class="overflow-x-auto"><table class="w-full text-left text-xs">
+    <thead class="bg-slate-50 uppercase tracking-wider text-slate-500"><tr><th class="px-4 py-2">Code</th><th class="px-4 py-2">Compte</th><th class="px-4 py-2">Type / rôle</th><th class="px-4 py-2 text-right">Solde</th><th class="px-4 py-2">Statut</th><th class="px-4 py-2 text-right">Action</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">{% for c in comptes %}
+      <tr class="hover:bg-blue-50/30"><td class="px-4 py-3 font-mono text-[11px] text-slate-500">{{ c.code }}</td><td class="px-4 py-3 font-bold text-slate-900">{{ c.nom }}</td><td class="px-4 py-3 text-slate-600">{{ c.get_type_display }}{% if c.role %}<span class="block text-[10px] text-slate-400">{{ c.get_role_display }}</span>{% endif %}</td><td class="px-4 py-3 text-right font-bold {% if c.solde_actuel < 0 %}text-red-700{% else %}text-slate-950{% endif %}">{{ c.solde_actuel|floatformat:0 }} {{ c.devise }}</td><td class="px-4 py-3"><span class="baly-badge {% if c.actif %}baly-badge-blue{% else %}baly-badge-red{% endif %}">{% if c.actif %}Actif{% else %}Inactif{% endif %}</span></td><td class="px-4 py-3 text-right"><a href="{% url 'comptes:detail_compte' c.id %}" class="font-bold text-blue-700">Ouvrir →</a></td></tr>
+    {% empty %}<tr><td colspan="6" class="px-4 py-12 text-center text-slate-500">Aucun compte financier enregistré.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

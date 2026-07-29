@@ -1,0 +1,17 @@
+<div x-show="globalModalOpen"
+     x-cloak
+     @keydown.escape.window="globalModalOpen = false"
+     class="fixed inset-0 z-[70] overflow-y-auto"
+     role="dialog"
+     aria-modal="true">
+  <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+    <button type="button" @click="globalModalOpen = false" class="fixed inset-0 cursor-default bg-slate-950/60 backdrop-blur-[2px]" aria-label="Fermer"></button>
+    <section x-show="globalModalOpen"
+             x-transition
+             class="relative w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-2xl">
+      <div id="global-modal-content" class="max-h-[90vh] overflow-y-auto">
+        <div class="grid min-h-56 place-items-center text-sm text-slate-500">Chargement du formulaire…</div>
+      </div>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,42 @@
+{% extends "layouts/dashboard.html" %}
+{% block page_title %}Apprenants{% endblock %}
+{% block page_subtitle %}Chaque nouvel apprenant est créé avec son inscription à une session de formation.{% endblock %}
+{% block breadcrumb %}Inscriptions / Apprenants{% endblock %}
+{% block page_actions %}
+<a href="{% url 'inscriptions:create-learner' %}"
+   @click.prevent="globalModalOpen = true"
+   hx-get="{% url 'inscriptions:create-learner' %}"
+   hx-target="#global-modal-content"
+   class="baly-btn-primary rounded-md px-5 py-3 text-sm font-semibold text-white">
+  Inscrire un nouvel apprenant
+</a>
+{% endblock %}
+{% block dashboard_content %}
+<div class="baly-surface overflow-hidden rounded-lg">
+  <div class="border-b border-slate-200 px-6 py-5">
+    <h2 class="font-bold text-slate-950">Registre des apprenants</h2>
+    <p class="mt-1 text-sm text-slate-500">{{ participants|length }} apprenant{{ participants|length|pluralize }} enregistré{{ participants|length|pluralize }}.</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+        <tr><th class="px-6 py-4">Matricule</th><th class="px-6 py-4">Apprenant</th><th class="px-6 py-4">Téléphone</th><th class="px-6 py-4">Profession</th><th class="px-6 py-4">Entreprise</th><th class="px-6 py-4">Statut</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for participant in participants %}
+        <tr class="hover:bg-blue-50/40">
+          <td class="px-6 py-4 font-mono text-xs text-slate-500">{{ participant.matricule }}</td>
+          <td class="px-6 py-4"><p class="font-semibold text-slate-900">{{ participant.nom_complet }}</p><p class="mt-1 text-xs text-slate-500">{{ participant.email|default:"—" }}</p></td>
+          <td class="px-6 py-4">{{ participant.telephone }}</td>
+          <td class="px-6 py-4">{{ participant.profession|default:"—" }}</td>
+          <td class="px-6 py-4">{{ participant.entreprise|default:"—" }}</td>
+          <td class="px-6 py-4"><span class="baly-badge">{{ participant.get_statut_display }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-6 py-14 text-center"><h3 class="font-semibold text-slate-900">Aucun apprenant inscrit</h3><p class="mt-2 text-sm text-slate-500">Utilisez « Inscrire un nouvel apprenant » pour créer sa fiche et choisir immédiatement sa session.</p></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

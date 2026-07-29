@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BALY'S FORMATION MANAGER{% endblock %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+    <style>
+      :root {
+        --baly-blue: #15519a;
+        --baly-blue-dark: #102f5d;
+        --baly-blue-deep: #0b2448;
+        --baly-orange: #f28b16;
+        --baly-orange-soft: #fff2df;
+        --baly-red: #e84f3c;
+        --baly-surface: #ffffff;
+        --baly-surface-strong: #ffffff;
+        --baly-bg: #f4f6f9;
+        --baly-border: #e3e8ef;
+        --baly-text: #182230;
+        --baly-muted: #667085;
+      }
+      * { box-sizing: border-box; }
+      [x-cloak] { display: none !important; }
+      html { font-family: "Inter", sans-serif; }
+      body {
+        background: var(--baly-bg);
+        color: var(--baly-text);
+        min-height: 100vh;
+      }
+      .baly-surface {
+        background: var(--baly-surface);
+        border: 1px solid var(--baly-border);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+      }
+      .baly-btn-primary {
+        background: var(--baly-blue);
+        color: white;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
+      }
+      .baly-btn-primary:hover {
+        background: var(--baly-blue-dark);
+      }
+      .baly-btn-accent {
+        background: var(--baly-orange);
+        color: #ffffff;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
+      }
+      .baly-btn-accent:hover { background: #d97706; }
+      .baly-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 0.35rem;
+        padding: 0.35rem 0.8rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      .baly-badge-blue { background: rgba(24, 76, 151, 0.12); color: var(--baly-blue); }
+      .baly-badge-orange { background: var(--baly-orange-soft); color: #9a4f00; }
+      .baly-badge-red { background: rgba(232, 79, 60, 0.12); color: var(--baly-red); }
+      .baly-pill {
+        border-radius: 0.4rem;
+        border: 1px solid var(--baly-border);
+        background: #ffffff;
+      }
+      .ui-icon {
+        width: 1.05rem;
+        height: 1.05rem;
+        flex: 0 0 auto;
+        color: currentColor;
+      }
+      .feature-icon {
+        display: grid;
+        place-items: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.25rem;
+        background: #eef4fb;
+        color: var(--baly-blue);
+        border: 1px solid #dbe7f5;
+      }
+    </style>
+</head>
+<body class="bg-[var(--baly-bg)] antialiased" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    {% if not user.is_authenticated %}
+    <nav class="border-b border-slate-200 bg-white">
+        <div class="container mx-auto flex items-center justify-between px-4 py-3">
+            <a href="/" class="flex items-center gap-3 font-bold text-lg text-[var(--baly-blue-dark)]">
+                <img src="/static/images/balygroupe.jpg" alt="BALY'S Group" class="h-10 w-auto object-contain">
+                <span class="tracking-tight">BALY'S FORMATION MANAGER</span>
+            </a>
+            <div class="flex items-center gap-3 text-sm">
+                {% if user.is_authenticated %}
+                    <span class="baly-badge baly-badge-blue">{{ user.username }}</span>
+                    <a href="/accounts/logout/" class="baly-pill px-4 py-2 text-[var(--baly-blue-dark)] transition hover:bg-white/90">Deconnexion</a>
+                {% else %}
+                    <a href="/accounts/login/" class="baly-btn-primary rounded-md px-4 py-2 transition">Connexion</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    <main class="{% if user.is_authenticated %}min-h-screen{% else %}container mx-auto px-4 py-8{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

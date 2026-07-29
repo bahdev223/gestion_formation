@@ -1,0 +1,78 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block page_title %}Paie salariale{% endblock %}
+{% block page_subtitle %}Suivi des échéances, paiements, avances et arriérés du personnel.{% endblock %}
+{% block breadcrumb %}Paie salariale{% endblock %}
+{% block page_actions %}
+<div class="flex flex-wrap gap-3">
+  <a href="{% url 'django_paie:echeance-list' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Échéances</a>
+  <a href="{% url 'django_paie:paiement-create' %}" class="baly-btn-accent rounded-md px-5 py-3 text-sm font-semibold">Nouveau paiement</a>
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+{% if alertes %}
+  <div class="space-y-2">
+    {% for alerte in alertes %}
+      <div class="border-l-3 {% if alerte.type == 'danger' %}border-red-500 bg-red-50 text-red-800{% elif alerte.type == 'warning' %}border-amber-500 bg-amber-50 text-amber-800{% else %}border-blue-500 bg-blue-50 text-blue-800{% endif %} px-4 py-3 text-sm">{{ alerte.message }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="stat-card"><p class="stat-label">Échéances</p><p class="stat-value">{{ resume.total_echeances|default:0 }}</p><p class="stat-hint">Année {{ annee_selectionnee }}</p></div>
+  <div class="stat-card"><p class="stat-label">Montant dû</p><p class="stat-value">{{ resume.total_montant_du|default:0|floatformat:0 }}</p><p class="stat-hint">FCFA</p></div>
+  <div class="stat-card"><p class="stat-label">Déjà payé</p><p class="stat-value">{{ resume.total_montant_paye|default:0|floatformat:0 }}</p><p class="stat-hint">FCFA</p></div>
+  <div class="stat-card"><p class="stat-label">Reste à payer</p><p class="stat-value">{{ resume.reste_global|default:0|floatformat:0 }}</p><p class="stat-hint">FCFA</p></div>
+</div>
+
+<div class="grid gap-5 xl:grid-cols-[1fr_360px]">
+  <section class="baly-surface overflow-hidden rounded-lg">
+    <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+      <div><h2 class="font-bold text-slate-950">Situation de la paie</h2><p class="mt-1 text-sm text-slate-500">Répartition des échéances salariales.</p></div>
+      <a href="{% url 'django_paie:echeance-list' %}" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Voir les échéances</a>
+    </div>
+    <div class="grid gap-px bg-slate-200 sm:grid-cols-4">
+      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Payées</p><p class="mt-2 text-2xl font-bold text-emerald-600">{{ resume.paye|default:0 }}</p></div>
+      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Partielles</p><p class="mt-2 text-2xl font-bold text-amber-600">{{ resume.partiel|default:0 }}</p></div>
+      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">En retard</p><p class="mt-2 text-2xl font-bold text-red-600">{{ resume.en_retard|default:0 }}</p></div>
+      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">À payer</p><p class="mt-2 text-2xl font-bold text-blue-700">{{ resume.a_payer|default:0 }}</p></div>
+    </div>
+    <div class="border-t border-slate-200 px-6 py-5">
+      <h3 class="font-semibold text-slate-900">Derniers paiements</h3>
+      {% if derniers_paiements %}
+        <div class="mt-3 divide-y divide-slate-100">
+          {% for paiement in derniers_paiements %}
+          <div class="flex items-center justify-between gap-4 py-3 text-sm"><div><p class="font-medium text-slate-900">{{ paiement.echeance.employe }}</p><p class="text-slate-500">{{ paiement.date_paiement|date:"d/m/Y" }}</p></div><p class="font-bold text-slate-900">{{ paiement.montant|floatformat:0 }} FCFA</p></div>
+          {% endfor %}
+        </div>
+      {% else %}<p class="mt-3 text-sm text-slate-500">Aucun paiement salarial enregistré.</p>{% endif %}
+    </div>
+  </section>
+
+  <aside class="space-y-4">
+    <div class="baly-surface rounded-lg p-5">
+      <h2 class="font-bold text-slate-950">Actions de paie</h2>
+      <div class="mt-4 space-y-2">
+        <a href="{% url 'dashboard:payroll-employees' %}" class="block rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Employés et salaires</a>
+        <a href="{% url 'django_paie:echeance-list' %}" class="block rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Gérer les échéances</a>
+        <a href="{% url 'django_paie:paiement-list' %}" class="block rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Voir les paiements</a>
+        <a href="{% url 'django_paie:paiement-create' %}" class="baly-btn-accent block rounded-md px-4 py-3 text-center text-sm font-semibold">Enregistrer un paiement</a>
+      </div>
+    </div>
+    <div class="border border-blue-200 bg-blue-50 p-5">
+      <p class="text-xs font-semibold uppercase tracking-wider text-blue-700">Mode actif</p>
+      <p class="mt-2 text-xl font-bold text-blue-950">{{ mode }}</p>
+      <p class="mt-2 text-sm leading-6 text-blue-800">Les salaires mensuels se configurent sur les fiches utilisateurs.</p>
+      <form method="post" action="{% url 'dashboard:payroll-generate' %}" class="mt-4">
+        {% csrf_token %}
+        <label for="periode-paie" class="mb-1.5 block text-xs font-semibold text-blue-900">Période à générer</label>
+        <div class="flex gap-2">
+          <input id="periode-paie" name="periode" placeholder="MM/AAAA" required class="min-w-0 flex-1 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500">
+          <button class="baly-btn-primary rounded-md px-3 py-2 text-sm font-semibold text-white">Générer</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+</div>
+{% endblock %}

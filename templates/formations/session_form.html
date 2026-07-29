@@ -1,0 +1,6 @@
+{% extends "layouts/dashboard.html" %}
+{% block page_title %}Nouvelle session{% endblock %}
+{% block page_subtitle %}Planifiez les dates, le formateur et les conditions de la session.{% endblock %}
+{% block dashboard_content %}
+{% include "formations/includes/model_form.html" with form_title="Informations de la session" cancel_url_name="formations:session-list" submit_label="Enregistrer la session" %}
+{% endblock %}

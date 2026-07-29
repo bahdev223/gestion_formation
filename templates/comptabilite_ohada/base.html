@@ -1,0 +1,38 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block page_title %}{% block compta_title %}Comptabilité OHADA{% endblock %}{% endblock %}
+{% block page_subtitle %}Pilotage comptable conforme au référentiel SYSCOHADA.{% endblock %}
+{% block breadcrumb %}Comptabilité / SYSCOHADA{% endblock %}
+
+{% block page_actions %}
+<div class="flex flex-wrap gap-2">
+  <a href="{% url 'comptabilite:ecriture_create' %}" class="baly-btn-accent px-4 py-2.5 text-sm font-semibold">Nouvelle écriture</a>
+  <a href="{% url 'comptabilite:exercice_list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Exercices</a>
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+<nav class="flex flex-wrap gap-2 border-b border-slate-200 pb-4 text-sm">
+  <a class="baly-badge" href="{% url 'comptabilite:dashboard' %}">Vue générale</a>
+  <a class="baly-badge" href="{% url 'comptabilite:ecriture_list' %}">Écritures</a>
+  <a class="baly-badge" href="{% url 'comptabilite:compte_list' %}">Plan comptable</a>
+  <a class="baly-badge" href="{% url 'comptabilite:journal_list' %}">Journaux</a>
+  <a class="baly-badge" href="{% url 'comptabilite:balance' %}">Balance</a>
+  <a class="baly-badge" href="{% url 'comptabilite:grand_livre' %}">Grand livre</a>
+  <a class="baly-badge" href="{% url 'comptabilite:bilan' %}">Bilan</a>
+  <a class="baly-badge" href="{% url 'comptabilite:compte_resultat' %}">Résultat</a>
+  <a class="baly-badge" href="{% url 'comptabilite:immobilisation_list' %}">Immobilisations</a>
+  <a class="baly-badge" href="{% url 'comptabilite:rapprochement_list' %}">Rapprochement</a>
+</nav>
+<div class="compta-native mt-5">{% block compta_content %}{% endblock %}</div>
+<style>
+  .compta-native .row{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1rem}
+  .compta-native .col-md-3{grid-column:span 3}.compta-native .col-md-4{grid-column:span 4}.compta-native .col-md-8{grid-column:span 8}
+  .compta-native .card,.compta-native .stat-card{border:1px solid #e2e8f0;background:#fff;padding:1.25rem;border-radius:.5rem}
+  .compta-native .table{width:100%;font-size:.875rem}.compta-native th,.compta-native td{border-bottom:1px solid #e2e8f0;padding:.75rem;text-align:left}
+  .compta-native h1{font-size:1.5rem;font-weight:700}.compta-native h3{font-size:1.6rem;font-weight:700}.compta-native h5{font-weight:700;margin-bottom:1rem}
+  .compta-native a{color:#1756a9}.compta-native .btn{display:inline-flex;padding:.6rem 1rem;border-radius:.35rem;background:#1756a9;color:white}
+  .compta-native input,.compta-native select,.compta-native textarea{width:100%;border:1px solid #cbd5e1;border-radius:.35rem;padding:.65rem}
+  @media(max-width:900px){.compta-native .col-md-3,.compta-native .col-md-4,.compta-native .col-md-8{grid-column:span 12}}
+</style>
+{% endblock %}

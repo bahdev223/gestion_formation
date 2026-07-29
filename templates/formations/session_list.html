@@ -1,0 +1,25 @@
+{% extends "layouts/dashboard.html" %}
+{% block page_title %}Sessions{% endblock %}
+{% block page_subtitle %}Planification et suivi des sessions de formation.{% endblock %}
+{% block dashboard_content %}
+{% if messages %}{% for message in messages %}<div class="mb-4 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ message }}</div>{% endfor %}{% endif %}
+<div class="baly-surface overflow-hidden rounded-xl">
+  <div class="flex flex-col gap-3 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <div><h2 class="text-lg font-bold text-slate-950">Sessions programmées</h2><p class="mt-1 text-sm text-slate-500">Calendrier opérationnel des formations.</p></div>
+    <a href="{% url 'formations:session-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'formations:session-create' %}" hx-target="#global-modal-content" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Nouvelle session</a>
+  </div>
+  {% if sessions %}
+  <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Session</th><th class="px-6 py-4">Formation</th><th class="px-6 py-4">Dates</th><th class="px-6 py-4">Formateur</th><th class="px-6 py-4">Lieu</th><th class="px-6 py-4">Statut</th><th class="px-6 py-4 text-right">Actions</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">{% for session in sessions %}<tr class="hover:bg-blue-50/40">
+      <td class="px-6 py-4"><p class="font-semibold text-slate-900">{{ session.titre }}</p><p class="mt-1 font-mono text-xs text-slate-500">{{ session.code }}</p></td>
+      <td class="px-6 py-4 text-slate-700">{{ session.formation.nom }}</td>
+      <td class="whitespace-nowrap px-6 py-4 text-slate-600">{{ session.date_debut|date:"d/m/Y" }} – {{ session.date_fin|date:"d/m/Y" }}</td>
+      <td class="px-6 py-4 text-slate-600">{{ session.formateur.get_full_name|default:session.formateur.username }}</td>
+      <td class="px-6 py-4 text-slate-600">{{ session.lieu }}</td><td class="px-6 py-4"><span class="baly-badge">{{ session.get_statut_display }}</span></td>
+      <td class="whitespace-nowrap px-6 py-4 text-right"><a href="{% url 'formations:session-detail' session.pk %}" class="mr-3 text-sm font-semibold text-slate-600 hover:text-blue-700">Apprenants</a><a href="{% url 'inscriptions:create' %}?session={{ session.pk }}" @click.prevent="globalModalOpen = true" hx-get="{% url 'inscriptions:create' %}?session={{ session.pk }}" hx-target="#global-modal-content" class="text-sm font-semibold text-blue-700 hover:underline">+ Ajouter</a></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="px-6 py-16 text-center"><h3 class="font-bold text-slate-900">Aucune session programmée</h3><p class="mt-2 text-sm text-slate-500">Créez une session à partir d’une formation du catalogue.</p></div>{% endif %}
+</div>
+{% endblock %}

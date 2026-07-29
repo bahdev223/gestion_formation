@@ -1,0 +1,76 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block page_title %}Vue d’ensemble{% endblock %}
+{% block page_subtitle %}Suivez l’activité des formations, les inscriptions et les encaissements en temps réel.{% endblock %}
+{% block breadcrumb %}Tableau de bord{% endblock %}
+{% block page_actions %}
+<div class="flex flex-wrap gap-2">
+  <a href="{% url 'inscriptions:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'inscriptions:create' %}" hx-target="#global-modal-content" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Nouvelle inscription</a>
+  <a href="{% url 'paiements:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'paiements:create' %}" hx-target="#global-modal-content" class="baly-btn-accent rounded-md px-4 py-2.5 text-sm font-semibold">Encaisser un paiement</a>
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <a href="{% url 'formations:index' %}" class="stat-card group">
+    <div class="flex items-start justify-between"><div><p class="stat-label">Formations actives</p><p class="stat-value">{{ formations_actives }}</p></div><span class="feature-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H6.5A2.5 2.5 0 0 1 4 17.5z"></path><path d="M8 4v16"></path></svg></span></div>
+    <p class="stat-hint">Catalogue disponible</p>
+  </a>
+  <a href="{% url 'formations:session-list' %}" class="stat-card group">
+    <div class="flex items-start justify-between"><div><p class="stat-label">Sessions à venir</p><p class="stat-value">{{ sessions_planifiees }}</p></div><span class="feature-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v4"></path><path d="M17 3v4"></path><path d="M4 9h16"></path><rect x="4" y="5" width="16" height="16" rx="2"></rect></svg></span></div>
+    <p class="stat-hint">Planifiées ou en cours</p>
+  </a>
+  <a href="{% url 'inscriptions:index' %}" class="stat-card group">
+    <div class="flex items-start justify-between"><div><p class="stat-label">Inscriptions</p><p class="stat-value">{{ inscriptions_count }}</p></div><span class="feature-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg></span></div>
+    <p class="stat-hint">{{ participants_count }} participant{{ participants_count|pluralize }}</p>
+  </a>
+  <a href="{% url 'paiements:index' %}" class="stat-card group">
+    <div class="flex items-start justify-between"><div><p class="stat-label">Encaissements du mois</p><p class="mt-2 text-2xl font-bold text-slate-950">{{ encaissements_mois|floatformat:0 }}</p></div><span class="feature-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h18v10H3z"></path><path d="M7 12h.01"></path><path d="M17 12h.01"></path></svg></span></div>
+    <p class="stat-hint">FCFA · {{ encaissements_jour|floatformat:0 }} aujourd’hui</p>
+  </a>
+</div>
+
+<div class="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,.75fr)]">
+  <section class="baly-surface overflow-hidden rounded-lg">
+    <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+      <div><h2 class="font-bold text-slate-950">Sessions à venir</h2><p class="mt-1 text-sm text-slate-500">Planning opérationnel des prochaines formations.</p></div>
+      <a href="{% url 'formations:session-list' %}" class="text-sm font-semibold text-[var(--baly-blue)] hover:underline">Voir tout</a>
+    </div>
+    {% if upcoming_sessions %}
+    <div class="divide-y divide-slate-100">
+      {% for session in upcoming_sessions %}
+      <div class="grid items-center gap-4 px-6 py-4 sm:grid-cols-[64px_1fr_auto]">
+        <div class="border border-slate-200 bg-slate-50 py-2 text-center"><p class="text-lg font-bold text-slate-900">{{ session.date_debut|date:"d" }}</p><p class="text-[.65rem] font-semibold uppercase tracking-wider text-slate-500">{{ session.date_debut|date:"M" }}</p></div>
+        <div class="min-w-0"><p class="truncate font-semibold text-slate-900">{{ session.titre }}</p><p class="mt-1 truncate text-sm text-slate-500">{{ session.formation.nom }} · {{ session.lieu }}</p></div>
+        <div class="text-right"><p class="font-semibold text-slate-900">{{ session.inscrits_count }}/{{ session.capacite_max }}</p><p class="mt-1 text-xs text-slate-500">inscrits</p></div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-6 py-14 text-center"><p class="font-semibold text-slate-900">Aucune session programmée</p><p class="mt-2 text-sm text-slate-500">Planifiez une session pour alimenter le calendrier.</p><a href="{% url 'formations:session-create' %}" class="mt-4 inline-block text-sm font-semibold text-blue-700 hover:underline">Créer une session</a></div>
+    {% endif %}
+  </section>
+
+  <aside class="overflow-hidden rounded-lg bg-[var(--baly-blue-dark)] text-white">
+    <div class="border-b border-white/10 px-6 py-5"><p class="text-xs font-semibold uppercase tracking-[.16em] text-blue-200">Situation financière</p><h2 class="mt-2 text-lg font-bold">Encaissements formations</h2></div>
+    <div class="space-y-5 p-6">
+      <div><p class="text-sm text-blue-200">Total facturé</p><p class="mt-1 text-2xl font-bold">{{ total_facture|floatformat:0 }} <span class="text-sm font-medium text-blue-200">FCFA</span></p></div>
+      <div class="h-px bg-white/10"></div>
+      <div class="grid grid-cols-2 gap-4"><div><p class="text-xs text-blue-200">Encaissé</p><p class="mt-1 text-lg font-bold text-emerald-300">{{ total_encaisse|floatformat:0 }}</p></div><div><p class="text-xs text-blue-200">Reste à recevoir</p><p class="mt-1 text-lg font-bold text-orange-300">{{ reste_global|floatformat:0 }}</p></div></div>
+      <a href="{% url 'paiements:index' %}" class="block rounded-md bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--baly-blue-dark)] hover:bg-blue-50">Consulter les paiements</a>
+    </div>
+  </aside>
+</div>
+
+<div class="grid gap-5 xl:grid-cols-2">
+  <section class="baly-surface overflow-hidden rounded-lg">
+    <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5"><div><h2 class="font-bold text-slate-950">Inscriptions récentes</h2><p class="mt-1 text-sm text-slate-500">Derniers participants inscrits.</p></div><a href="{% url 'inscriptions:index' %}" class="text-sm font-semibold text-blue-700 hover:underline">Voir tout</a></div>
+    <div class="divide-y divide-slate-100">{% for inscription in recent_inscriptions %}<div class="flex items-center gap-4 px-6 py-4"><div class="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-blue-50 text-xs font-bold text-blue-700">{{ inscription.participant.prenom|slice:":1" }}{{ inscription.participant.nom|slice:":1" }}</div><div class="min-w-0 flex-1"><p class="truncate font-semibold text-slate-900">{{ inscription.participant.nom_complet }}</p><p class="mt-1 truncate text-xs text-slate-500">{{ inscription.session.formation.nom }}</p></div><div class="text-right"><span class="baly-badge">{{ inscription.get_statut_display }}</span><p class="mt-1 text-xs text-slate-400">{{ inscription.date_inscription|date:"d/m/Y" }}</p></div></div>{% empty %}<p class="px-6 py-12 text-center text-sm text-slate-500">Aucune inscription enregistrée.</p>{% endfor %}</div>
+  </section>
+
+  <section class="baly-surface overflow-hidden rounded-lg">
+    <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5"><div><h2 class="font-bold text-slate-950">Derniers encaissements</h2><p class="mt-1 text-sm text-slate-500">Paiements de formations validés.</p></div><a href="{% url 'paiements:index' %}" class="text-sm font-semibold text-blue-700 hover:underline">Voir tout</a></div>
+    <div class="divide-y divide-slate-100">{% for paiement in recent_payments %}<div class="flex items-center gap-4 px-6 py-4"><div class="feature-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h18v10H3z"></path><path d="M7 12h.01"></path></svg></div><div class="min-w-0 flex-1"><p class="truncate font-semibold text-slate-900">{{ paiement.inscription.participant.nom_complet }}</p><p class="mt-1 font-mono text-xs text-slate-500">{{ paiement.numero_recu }}</p></div><div class="text-right"><p class="font-bold text-emerald-700">{{ paiement.montant|floatformat:0 }} FCFA</p><p class="mt-1 text-xs text-slate-400">{{ paiement.date_paiement|date:"d/m/Y" }}</p></div></div>{% empty %}<p class="px-6 py-12 text-center text-sm text-slate-500">Aucun encaissement enregistré.</p>{% endfor %}</div>
+  </section>
+</div>
+{% endblock %}

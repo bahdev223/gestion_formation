@@ -1,0 +1,19 @@
+<form method="post" class="baly-surface rounded-xl">
+  {% csrf_token %}
+  <div class="border-b border-slate-200 px-6 py-5"><h2 class="text-lg font-bold text-slate-950">{{ form_title }}</h2><p class="mt-1 text-sm text-slate-500">Les champs marqués d’un astérisque sont obligatoires.</p></div>
+  {% if form.non_field_errors %}<div class="mx-6 mt-6 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="grid gap-5 p-6 md:grid-cols-2">
+    {% for field in form %}
+    <div class="{% if field.name == 'notes' or field.name == 'contenu' or field.name == 'observations' or field.name == 'paiement_requis_attestation' %}md:col-span-2{% endif %}">
+      <label for="{{ field.id_for_label }}" class="mb-2 block text-sm font-semibold text-slate-800">{{ field.label }}{% if field.field.required %} <span class="text-red-600">*</span>{% endif %}</label>
+      {{ field }}
+      {% if field.help_text %}<p class="mt-1.5 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+      {% for error in field.errors %}<p class="mt-1.5 text-sm font-medium text-red-600">{{ error }}</p>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  <div class="flex flex-wrap justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-5">
+    <a href="{% url cancel_url_name %}" class="rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">Annuler</a>
+    <button type="submit" class="baly-btn-primary rounded-lg px-6 py-3 text-sm font-semibold text-white">{{ submit_label }}</button>
+  </div>
+</form>

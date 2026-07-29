@@ -1,0 +1,14 @@
+{% extends "comptes/base_comptes.html" %}
+{% block compte_title %}Nouveau transfert{% endblock %}
+{% block compte_content %}
+<form method="post" class="baly-surface mt-3 overflow-hidden">{% csrf_token %}
+  <header class="border-b border-slate-200 px-5 py-3"><h2 class="text-sm font-bold text-slate-950">Transfert entre comptes</h2><p class="mt-0.5 text-xs text-slate-500">Le débit et le crédit sont enregistrés automatiquement.</p></header>
+  <div class="grid gap-4 p-5 md:grid-cols-2">
+    <div><label class="mb-1 block text-xs font-bold text-slate-700">Compte source *</label><select name="source_id" required class="w-full border border-slate-300 bg-white px-3 py-2 text-sm">{% for c in comptes %}<option value="{{ c.id }}">{{ c.code }} — {{ c.nom }} ({{ c.solde_actuel|floatformat:0 }} {{ c.devise }})</option>{% endfor %}</select></div>
+    <div><label class="mb-1 block text-xs font-bold text-slate-700">Compte destination *</label><select name="dest_id" required class="w-full border border-slate-300 bg-white px-3 py-2 text-sm">{% for c in comptes %}<option value="{{ c.id }}">{{ c.code }} — {{ c.nom }}</option>{% endfor %}</select></div>
+    <div><label class="mb-1 block text-xs font-bold text-slate-700">Montant *</label><input type="number" min="1" step="1" name="montant" required class="w-full border border-slate-300 px-3 py-2 text-sm"></div>
+    <div><label class="mb-1 block text-xs font-bold text-slate-700">Notes</label><input name="notes" placeholder="Motif du transfert" class="w-full border border-slate-300 px-3 py-2 text-sm"></div>
+  </div>
+  <footer class="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3"><a href="{% url 'comptes:dashboard' %}" class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700">Annuler</a><button class="baly-btn-primary px-4 py-2 text-xs font-bold">Effectuer le transfert</button></footer>
+</form>
+{% endblock %}

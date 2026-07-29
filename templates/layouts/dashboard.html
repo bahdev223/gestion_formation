@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div x-data="{
+       globalModalOpen: false,
+       sidebarOpen: false,
+       sidebarCollapsed: localStorage.getItem('baly-sidebar-collapsed') === '1',
+       toggleSidebar() {
+         this.sidebarCollapsed = !this.sidebarCollapsed;
+         localStorage.setItem('baly-sidebar-collapsed', this.sidebarCollapsed ? '1' : '0');
+       }
+     }"
+     :class="{ 'sidebar-collapsed': sidebarCollapsed }"
+     class="app-shell min-h-screen lg:grid">
+  <div x-cloak x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-slate-950/40 lg:hidden"></div>
+  <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+         class="app-sidebar fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-slate-800 p-2 text-slate-100 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 lg:overflow-y-auto"
+         style="background: var(--baly-blue-deep);">
+    <div class="brand-block mb-2 flex h-14 items-center gap-2 border-b border-white/10 px-2">
+      <div class="brand-logo flex h-9 w-11 shrink-0 items-center justify-center bg-white p-1">
+        <img src="/static/images/balygroupe.jpg" alt="BALY'S Group" class="max-h-full max-w-full object-contain">
+      </div>
+      <div class="sidebar-label min-w-0">
+        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-slate-400">{{ organisation.nom|default:"BALY'S GROUP" }}</p>
+        <p class="truncate text-sm font-semibold text-white">Formation Manager</p>
+      </div>
+      <button type="button" @click="sidebarOpen = false" class="ml-auto p-1 text-slate-400 hover:text-white lg:hidden" aria-label="Fermer le menu">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12"></path><path d="m18 6-12 12"></path></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-nav flex-1 space-y-0.5 text-[13px]">
+      <a class="menu-item border-l-2 border-[var(--baly-orange)] bg-white/10 font-medium text-white" href="/" title="Tableau de bord">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5 10.5V20h14v-9.5"></path><path d="M9 20v-6h6v6"></path></svg>
+        <span>Tableau de bord</span>
+      </a>
+      <div class="pt-2">
+        <p class="px-3 pb-2 text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-slate-500">Activités métier</p>
+        <div class="space-y-0.5">
+          <a class="menu-item" href="/formations/">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H6.5A2.5 2.5 0 0 1 4 17.5z"></path><path d="M8 4v16"></path></svg>
+            <span>Formations</span>
+          </a>
+          <a class="menu-item" href="{% url 'formations:session-list' %}">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v4"></path><path d="M17 3v4"></path><path d="M4 9h16"></path><rect x="4" y="5" width="16" height="16" rx="2"></rect></svg>
+            <span>Sessions</span>
+          </a>
+          <a class="menu-item" href="{% url 'formations:seance-list' %}">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 7v5l3 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+            <span>Seances</span>
+          </a>
+          <a class="menu-item" href="/participants/">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Apprenants</span>
+          </a>
+          <a class="menu-item" href="/inscriptions/">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
+            <span>Inscriptions</span>
+          </a>
+          <a class="menu-item" href="/paiements/">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h18v10H3z"></path><path d="M7 11h0"></path><path d="M12 11h0"></path></svg>
+            <span>Paiements</span>
+          </a>
+          <a class="menu-item" href="/presences/">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11"></path></svg>
+            <span>Presences</span>
+          </a>
+          <a class="menu-item" href="/documents/">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H7a2 2 0 0 0-2 2v16h14V8z"></path><path d="M14 2v6h6"></path></svg>
+            <span>Documents</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="pt-3">
+        <p class="px-3 pb-2 text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-slate-500">Gestion de l’entreprise</p>
+        <div class="space-y-0.5">
+          <a class="menu-item" href="{% url 'django_paie:dashboard' %}">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v14H4z"></path><path d="M8 9h8"></path><path d="M8 13h3"></path><path d="M15 13h1"></path></svg>
+            <span>Paie salariale</span>
+          </a>
+          <a class="menu-item" href="{% url 'dashboard:rh-dashboard' %}">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 12a4 4 0 1 0-4-4"></path><path d="M5 21a7 7 0 0 1 14 0"></path></svg>
+            <span>Ressources humaines</span>
+          </a>
+          <a class="menu-item" href="{% url 'comptabilite:dashboard' %}">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"></path><path d="M8 8h8"></path><path d="M8 12h2"></path><path d="M14 12h2"></path><path d="M8 16h2"></path><path d="M14 16h2"></path></svg>
+            <span>Comptabilité OHADA</span>
+          </a>
+          <a class="menu-item" href="{% url 'comptes:dashboard' %}" title="Comptes financiers">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14"></rect><path d="M3 9h18"></path><path d="M7 14h3"></path></svg>
+            <span>Comptes financiers</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <p class="px-3 pb-2 text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-slate-500">Paramètres</p>
+        <div class="space-y-0.5">
+          <a class="menu-item" href="{% url 'dashboard:organisation-settings' %}">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h16"></path><path d="M6 20V10l6-4 6 4v10"></path><path d="M9 12h.01"></path><path d="M15 12h.01"></path><path d="M9 16h6"></path></svg>
+            <span>Paramètres de l’entreprise</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-user mt-2 border-t border-white/10 pt-2">
+      <div class="flex items-center gap-2 px-2">
+        <div class="grid h-8 w-8 shrink-0 place-items-center bg-white/10 text-[11px] font-bold text-white">{{ user.username|slice:":2"|upper }}</div>
+        <div class="sidebar-label min-w-0 flex-1"><p class="truncate text-xs font-semibold text-white">{{ user.get_full_name|default:user.username }}</p><p class="truncate text-[10px] text-slate-400">{{ user.get_role_display }}</p></div>
+        <a href="/accounts/logout/" title="Déconnexion" class="text-slate-400 hover:text-white"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path><path d="M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"></path></svg></a>
+      </div>
+    </div>
+  </aside>
+
+  <section class="min-w-0">
+    <div class="topbar flex h-12 items-center justify-between border-b border-slate-200 bg-white px-3 lg:px-4">
+      <div class="flex shrink-0 items-center gap-1.5">
+        <button type="button" @click="sidebarOpen = true" class="grid h-8 w-8 place-items-center border border-slate-200 text-slate-600 lg:hidden" aria-label="Ouvrir le menu"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg></button>
+        <button type="button" @click="toggleSidebar()" class="hidden h-8 w-8 place-items-center border border-slate-200 text-slate-500 hover:bg-slate-50 lg:grid" :aria-label="sidebarCollapsed ? 'Déployer le menu' : 'Réduire le menu'"><svg class="ui-icon transition-transform" :class="{ 'rotate-180': sidebarCollapsed }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"></path></svg></button>
+      </div>
+      <p class="text-sm text-slate-500">Administration <span class="mx-2 text-slate-300">/</span> <span class="font-medium text-slate-800">{% block breadcrumb %}Vue générale{% endblock %}</span></p>
+      <div class="flex items-center gap-3"><span class="h-2 w-2 rounded-full bg-emerald-500"></span><span class="text-xs font-medium text-slate-600">Système opérationnel</span></div>
+    </div>
+    <div class="workspace space-y-3 p-3 lg:p-4">
+    <header class="border-b border-slate-200 pb-3">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-slate-950">{% block page_title %}Tableau de bord{% endblock %}</h1>
+          <p class="mt-1.5 max-w-3xl text-sm leading-6 text-slate-500">{% block page_subtitle %}Vue d'ensemble de l'activité formation, finance et suivi pédagogique.{% endblock %}</p>
+        </div>
+        {% block page_actions %}{% endblock %}
+      </div>
+    </header>
+
+    {% block dashboard_content %}{% endblock %}
+    </div>
+  </section>
+  {% include "components/global_modal.html" %}
+</div>
+
+<style>
+  @media (min-width: 1024px) {
+    .app-shell { grid-template-columns: 220px minmax(0, 1fr); }
+    .app-shell.sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr); }
+    .sidebar-collapsed .sidebar-label,
+    .sidebar-collapsed .sidebar-section,
+    .sidebar-collapsed .sidebar-nav > div > p,
+    .sidebar-collapsed .menu-item span { display: none; }
+    .sidebar-collapsed .brand-block,
+    .sidebar-collapsed .menu-item,
+    .sidebar-collapsed .sidebar-user > div { justify-content: center; }
+    .sidebar-collapsed .brand-logo { width: 40px; }
+    .sidebar-collapsed .menu-item { padding-inline: 0.5rem; border-left-color: transparent; }
+    .sidebar-collapsed .sidebar-user a { display: none; }
+  }
+  .topbar > p { min-width: 0; flex: 1; margin-inline: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .75rem; }
+  .topbar > div:last-child { flex: 0 0 auto; }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    border-radius: 0.2rem;
+    padding: 0.48rem 0.6rem;
+    color: rgb(203 213 225);
+    transition: transform .15s ease, background .15s ease, color .15s ease;
+  }
+  .menu-item:hover {
+    background: rgba(255,255,255,0.10);
+    color: white;
+    transform: none;
+  }
+  .stat-card {
+    position: relative;
+    border-radius: 0.25rem;
+    background: #ffffff;
+    padding: 0.9rem;
+    box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    border: 1px solid var(--baly-border);
+  }
+  .stat-card::before { content:""; position:absolute; left:-1px; top:13px; width:3px; height:26px; background:var(--baly-blue); }
+  .stat-label { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgb(100 116 139); }
+  .stat-value { margin-top: 0.3rem; font-size: 1.4rem; line-height: 1.1; font-weight: 700; color: rgb(15 23 42); }
+  .stat-hint { margin-top: 0.3rem; font-size: 0.72rem; color: rgb(148 163 184); }
+  .workspace .baly-surface { border-radius: 0.25rem !important; }
+  .workspace table th { padding-top: .65rem !important; padding-bottom: .65rem !important; }
+  .workspace table td { padding-top: .7rem !important; padding-bottom: .7rem !important; }
+  .workspace form p { margin: 0; }
+  @media (max-width: 1023px) {
+    .topbar > p { display: none; }
+  }
+</style>
+{% endblock %}

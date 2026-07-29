@@ -1,0 +1,21 @@
+{% extends "layouts/dashboard.html" %}
+{% block page_title %}Départements{% endblock %}
+{% block page_subtitle %}Structurez les équipes et rattachez les employés à leur unité organisationnelle.{% endblock %}
+{% block breadcrumb %}Ressources humaines / Départements{% endblock %}
+{% block page_actions %}<a href="{% url 'dashboard:rh-dashboard' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Dashboard RH</a>{% endblock %}
+{% block dashboard_content %}
+<div x-data="{ modalOpen: false }" @department-created.window="modalOpen = false">
+{% include "components/messages.html" %}
+<div class="baly-surface overflow-hidden rounded-lg">
+  <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-5"><div><h2 class="font-bold text-slate-950">Organisation interne</h2><p class="mt-1 text-sm text-slate-500">{{ departments|length }} département{{ departments|length|pluralize }} enregistré{{ departments|length|pluralize }}.</p></div><button type="button" @click="modalOpen = true" hx-get="{% url 'dashboard:rh-department-create' %}" hx-target="#department-modal-content" hx-swap="innerHTML" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Nouveau département</button></div>
+  <div id="department-grid" class="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-3">
+    {% for department in departments %}
+    {% include "django_rh/partials/department_card.html" %}
+    {% empty %}
+    <div id="department-empty" class="col-span-full bg-white px-6 py-16 text-center"><p class="font-semibold text-slate-900">Aucun département créé</p><p class="mt-2 text-sm text-slate-500">Commencez par structurer l’organisation.</p><button type="button" @click="modalOpen = true" hx-get="{% url 'dashboard:rh-department-create' %}" hx-target="#department-modal-content" class="mt-4 text-sm font-semibold text-blue-700 hover:underline">Créer le premier département</button></div>
+    {% endfor %}
+  </div>
+</div>
+{% include "components/modal.html" with modal_id="department-modal" modal_content_id="department-modal-content" modal_title="Nouveau département" modal_eyebrow="Ressources humaines" modal_width="max-w-2xl" %}
+</div>
+{% endblock %}

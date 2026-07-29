@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion | BALY'S FORMATION MANAGER{% endblock %}
+
+{% block content %}
+<div class="mx-auto mt-8 max-w-md rounded-lg baly-surface p-9">
+  <div class="mb-7 flex justify-center">
+    <img src="/static/images/balygroupe.jpg" alt="BALY'S Group" class="h-20 w-auto object-contain">
+  </div>
+  <div class="mb-7">
+    <div class="mb-3 flex justify-center">
+      <span class="baly-badge baly-badge-blue">Acces securise</span>
+    </div>
+    <p class="text-center text-sm font-medium text-slate-500">Espace interne BALY'S GROUP</p>
+    <h1 class="mt-2 text-center text-3xl font-extrabold tracking-tight text-slate-950">Connexion</h1>
+    <p class="mt-2 text-center text-sm leading-6 text-slate-600">Connecte-toi pour accéder au tableau de bord.</p>
+  </div>
+
+  {% if form.errors %}
+    <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+      Identifiants invalides. Vérifie ton nom d'utilisateur et ton mot de passe.
+    </div>
+  {% endif %}
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <div>
+      <label for="id_username" class="mb-1 block text-sm font-semibold text-slate-700">Nom d'utilisateur</label>
+      <input type="text" name="username" autofocus required id="id_username"
+        class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[var(--baly-blue)] focus:ring-2 focus:ring-blue-100">
+    </div>
+    <div>
+      <label for="id_password" class="mb-1 block text-sm font-semibold text-slate-700">Mot de passe</label>
+      <input type="password" name="password" required id="id_password"
+        class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[var(--baly-blue)] focus:ring-2 focus:ring-blue-100">
+    </div>
+    <button type="submit"
+      class="baly-btn-primary w-full rounded-md px-4 py-3 font-semibold transition">
+      Se connecter
+    </button>
+  </form>
+</div>
+{% endblock %}

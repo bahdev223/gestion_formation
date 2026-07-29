@@ -1,0 +1,22 @@
+{% extends "layouts/dashboard.html" %}
+{% block page_title %}Nouvelle catégorie{% endblock %}
+{% block page_subtitle %}Enregistrez une catégorie qui pourra être sélectionnée lors de la création d’une formation.{% endblock %}
+{% block dashboard_content %}
+<form method="post" class="baly-surface max-w-3xl rounded-lg">
+  {% csrf_token %}
+  <div class="border-b border-slate-200 px-6 py-5"><h2 class="text-lg font-bold text-slate-950">Informations de la catégorie</h2></div>
+  <div class="space-y-5 p-6">
+    {% for field in form %}
+    <div>
+      <label for="{{ field.id_for_label }}" class="mb-2 block text-sm font-semibold text-slate-800">{{ field.label }}{% if field.field.required %} <span class="text-red-600">*</span>{% endif %}</label>
+      {{ field }}
+      {% for error in field.errors %}<p class="mt-1.5 text-sm font-medium text-red-600">{{ error }}</p>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  <div class="flex flex-wrap justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-5">
+    <a href="{% url 'formations:categorie-list' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Annuler</a>
+    <button type="submit" class="baly-btn-primary rounded-md px-6 py-3 text-sm font-semibold text-white">Enregistrer la catégorie</button>
+  </div>
+</form>
+{% endblock %}

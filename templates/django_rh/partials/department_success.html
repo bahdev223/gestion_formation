@@ -1,0 +1,13 @@
+<div class="p-8 text-center">
+  <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-50 text-emerald-700">
+    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6"></path></svg>
+  </div>
+  <h3 class="mt-4 font-bold text-slate-950">Département enregistré</h3>
+  <p class="mt-2 text-sm text-slate-500">{{ department.name }} a été ajouté à la structure RH.</p>
+</div>
+<div id="department-grid" hx-swap-oob="beforeend">
+  {% include "django_rh/partials/department_card.html" %}
+</div>
+<script>
+  document.getElementById("department-empty")?.remove();
+</script>

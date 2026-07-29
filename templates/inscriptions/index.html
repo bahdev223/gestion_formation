@@ -1,0 +1,32 @@
+{% extends "layouts/dashboard.html" %}
+{% block page_title %}Inscriptions{% endblock %}
+{% block page_subtitle %}Gestion des inscriptions, statuts et soldes.{% endblock %}
+{% block dashboard_content %}
+{% if messages %}{% for message in messages %}<div class="mb-4 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ message }}</div>{% endfor %}{% endif %}
+<div class="baly-surface overflow-hidden rounded-xl">
+  <div class="flex flex-col gap-3 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <div><h2 class="text-lg font-bold text-slate-950">Registre des inscriptions</h2><p class="mt-1 text-sm text-slate-500">Participants inscrits aux différentes sessions.</p></div>
+    <a href="{% url 'inscriptions:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'inscriptions:create' %}" hx-target="#global-modal-content" class="baly-btn-accent rounded-md px-4 py-2.5 text-sm font-semibold">Nouvelle inscription</a>
+  </div>
+  {% if inscriptions %}
+  <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Numéro</th><th class="px-6 py-4">Participant</th><th class="px-6 py-4">Session</th><th class="px-6 py-4">Date</th><th class="px-6 py-4">Montant</th><th class="px-6 py-4">Inscription</th><th class="px-6 py-4">Paiement</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for inscription in inscriptions %}
+      <tr class="hover:bg-blue-50/40">
+        <td class="whitespace-nowrap px-6 py-4 font-mono text-xs text-slate-500">{{ inscription.numero }}</td>
+        <td class="px-6 py-4"><p class="font-semibold text-slate-900">{{ inscription.participant.nom_complet }}</p><p class="mt-1 text-xs text-slate-500">{{ inscription.participant.matricule }}</p></td>
+        <td class="px-6 py-4"><p class="text-slate-700">{{ inscription.session.titre }}</p><p class="mt-1 text-xs text-slate-500">{{ inscription.session.formation.nom }}</p></td>
+        <td class="whitespace-nowrap px-6 py-4 text-slate-600">{{ inscription.date_inscription|date:"d/m/Y" }}</td>
+        <td class="whitespace-nowrap px-6 py-4 font-semibold text-slate-900">{{ inscription.montant_final|floatformat:0 }} FCFA</td>
+        <td class="px-6 py-4"><span class="baly-badge">{{ inscription.get_statut_display }}</span></td>
+        <td class="px-6 py-4"><span class="baly-badge">{{ inscription.get_statut_paiement_display }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="px-6 py-16 text-center"><h3 class="font-bold text-slate-900">Aucune inscription enregistrée</h3><p class="mt-2 text-sm text-slate-500">Créez d’abord un participant et une session, puis inscrivez-le.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

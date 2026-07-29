@@ -1,0 +1,16 @@
+<form method="post"
+      hx-post="{% url 'dashboard:rh-department-create' %}"
+      hx-target="#department-modal-content"
+      hx-swap="innerHTML">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="mx-6 mt-5 border-l-3 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="grid gap-5 p-6 md:grid-cols-2">
+    {% for field in form %}
+      {% include "components/form_field.html" with field=field full_width_fields="description manager" %}
+    {% endfor %}
+  </div>
+  <footer class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
+    <button type="button" @click="modalOpen = false" class="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700">Annuler</button>
+    <button type="submit" class="baly-btn-primary rounded-md px-5 py-2.5 text-sm font-semibold text-white">Enregistrer</button>
+  </footer>
+</form>

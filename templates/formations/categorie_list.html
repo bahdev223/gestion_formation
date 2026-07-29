@@ -1,0 +1,26 @@
+{% extends "layouts/dashboard.html" %}
+{% block page_title %}Catégories de formation{% endblock %}
+{% block page_subtitle %}Organisez le catalogue avec des catégories réutilisables dans les formations.{% endblock %}
+{% block dashboard_content %}
+{% if messages %}{% for message in messages %}<div class="mb-4 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ message }}</div>{% endfor %}{% endif %}
+<div class="baly-surface overflow-hidden rounded-lg">
+  <div class="flex flex-col gap-3 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <div><h2 class="text-lg font-bold text-slate-950">Catégories enregistrées</h2><p class="mt-1 text-sm text-slate-500">Ces catégories seront proposées dans le formulaire des formations.</p></div>
+    <a href="{% url 'formations:categorie-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'formations:categorie-create' %}" hx-target="#global-modal-content" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Nouvelle catégorie</a>
+  </div>
+  {% if categories %}
+  <div class="divide-y divide-slate-100">
+    {% for categorie in categories %}
+    <div class="flex items-center gap-4 px-6 py-4">
+      <span class="h-9 w-1 rounded-sm" style="background: {{ categorie.couleur }};"></span>
+      <div class="min-w-0 flex-1"><p class="font-semibold text-slate-900">{{ categorie.nom }}</p><p class="mt-1 truncate text-sm text-slate-500">{{ categorie.description|default:"Aucune description" }}</p></div>
+      <span class="baly-badge {% if categorie.is_active %}baly-badge-blue{% else %}baly-badge-red{% endif %}">{% if categorie.is_active %}Active{% else %}Inactive{% endif %}</span>
+      <span class="text-sm text-slate-500">{{ categorie.formations.count }} formation{{ categorie.formations.count|pluralize }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="px-6 py-14 text-center"><h3 class="font-bold text-slate-900">Aucune catégorie enregistrée</h3><p class="mt-2 text-sm text-slate-500">Créez la première catégorie pour organiser le catalogue.</p></div>
+  {% endif %}
+</div>
+{% endblock %}
