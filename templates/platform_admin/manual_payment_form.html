@@ -1,0 +1,33 @@
+{% extends "platform_admin/base.html" %}
+{% block page_title %}Paiement et renouvellement{% endblock %}
+{% block platform_content %}
+<div class="mx-auto max-w-4xl">
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="font-bold text-slate-950">{{ organisation_obj.nom }}</h2>
+      <p class="text-xs text-slate-500">Échéance actuelle : {{ abonnement.date_fin|date:"d/m/Y H:i" }} · {{ abonnement.get_statut_display }}</p>
+    </div>
+    <a href="{% url 'platform_admin:organisation-detail' organisation_obj.pk %}" class="border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700">Annuler</a>
+  </div>
+  <form method="post" class="platform-card p-5">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="mb-4 border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="grid gap-4 md:grid-cols-2">
+      {% include "platform_admin/includes/form_field.html" with field=form.plan %}
+      {% include "platform_admin/includes/form_field.html" with field=form.cycle %}
+      {% include "platform_admin/includes/form_field.html" with field=form.montant %}
+      {% include "platform_admin/includes/form_field.html" with field=form.mode_paiement %}
+      {% include "platform_admin/includes/form_field.html" with field=form.date_paiement %}
+      {% include "platform_admin/includes/form_field.html" with field=form.reference %}
+      {% include "platform_admin/includes/form_field.html" with field=form.notes wrapper_class="md:col-span-2" %}
+    </div>
+    <div class="mt-5 border border-cyan-200 bg-cyan-50 p-3 text-xs text-cyan-900">
+      La validation active immédiatement l’entreprise, prolonge l’échéance, crée un paiement validé et génère automatiquement la facture correspondante.
+    </div>
+    <div class="mt-5 flex justify-end gap-3">
+      <a href="{% url 'platform_admin:organisation-detail' organisation_obj.pk %}" class="border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700">Annuler</a>
+      <button class="platform-btn px-5 py-2.5">Valider le paiement et renouveler</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

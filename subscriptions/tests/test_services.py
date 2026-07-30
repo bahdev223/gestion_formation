@@ -2,10 +2,13 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core import mail
+from django.core.management import call_command
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from organisations.models import MembreOrganisation, Organisation
+from platform_admin.models import PlatformAuditEvent
 from subscriptions.models import Abonnement, PlanAbonnement
 from subscriptions.services import FeatureService, QuotaService
 
@@ -55,3 +58,31 @@ class SubscriptionServicesTest(TestCase):
         )
 
         self.assertFalse(QuotaService.can_add_user(self.organisation))
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        PUBLIC_APP_URL="https://formix.saheltech.tech",
+    )
+    def test_alerte_echeance_est_envoyee_une_seule_fois(self):
+        owner = get_user_model().objects.create_user(
+            username="owner-alert",
+            email="owner-alert@example.test",
+        )
+        MembreOrganisation.objects.create(
+            organisation=self.organisation,
+            user=owner,
+            role=MembreOrganisation.Role.PROPRIETAIRE,
+        )
+        self.abonnement.date_fin = timezone.now() + timedelta(days=3)
+        self.abonnement.save(update_fields=["date_fin", "updated_at"])
+
+        call_command("notify_expiring_subscriptions")
+        call_command("notify_expiring_subscriptions")
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertTrue(
+            PlatformAuditEvent.objects.filter(
+                organisation=self.organisation,
+                objet_type="SubscriptionExpiryAlert",
+            ).exists()
+        )

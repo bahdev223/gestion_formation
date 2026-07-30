@@ -1,3 +1,35 @@
+from datetime import timedelta
+from math import ceil
+
+from django.utils import timezone
+
+from .models import Abonnement
+
+
+def expiring_subscription_alerts(days=7, overdue_days=7):
+    now = timezone.now()
+    subscriptions = (
+        Abonnement.objects.filter(
+            statut__in=[Abonnement.Statut.ACTIF, Abonnement.Statut.ESSAI],
+            date_fin__gte=now - timedelta(days=overdue_days),
+            date_fin__lte=now + timedelta(days=days),
+        )
+        .select_related("organisation", "plan")
+        .order_by("date_fin")
+    )
+    alerts = []
+    for subscription in subscriptions:
+        seconds = (subscription.date_fin - now).total_seconds()
+        alerts.append(
+            {
+                "abonnement": subscription,
+                "jours_restants": ceil(seconds / 86400),
+                "expire": seconds < 0,
+            }
+        )
+    return alerts
+
+
 class FeatureService:
     @staticmethod
     def has_feature(organisation, feature_code):

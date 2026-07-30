@@ -8,7 +8,7 @@ from django.views.generic import CreateView, ListView
 
 from django_rh.models import Department, Employee, Position
 from django_rh.services import EmployeeService
-from organisations.utils import get_request_organisation, tenant_reverse
+from organisations.utils import require_request_organisation, tenant_reverse
 
 from .rh_forms import DepartmentForm, EmployeeCreateForm
 
@@ -16,14 +16,12 @@ from .rh_forms import DepartmentForm, EmployeeCreateForm
 @login_required
 @permission_required("rh.view_employee", raise_exception=True)
 def rh_dashboard(request, **kwargs):
-    organisation = get_request_organisation(request)
-    employees = Employee.objects.select_related("department", "position")
-    departments = Department.objects.all()
-    positions = Position.objects.all()
-    if organisation is not None:
-        employees = employees.filter(organisation=organisation)
-        departments = departments.filter(organisation=organisation)
-        positions = positions.filter(organisation=organisation)
+    organisation = require_request_organisation(request)
+    employees = Employee.objects.select_related("department", "position").filter(
+        organisation=organisation
+    )
+    departments = Department.objects.filter(organisation=organisation)
+    positions = Position.objects.filter(organisation=organisation)
     active_employees = employees.filter(status=Employee.Status.ACTIVE)
     salary_mass = (
         active_employees.aggregate(total=Sum("salaire_mensuel"))["total"] or 0
@@ -48,7 +46,7 @@ def rh_dashboard(request, **kwargs):
 @login_required
 @permission_required("rh.add_employee", raise_exception=True)
 def rh_employee_create(request, **kwargs):
-    organisation = get_request_organisation(request)
+    organisation = require_request_organisation(request)
     form = EmployeeCreateForm(request.POST or None, organisation=organisation)
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
@@ -102,11 +100,12 @@ class DepartmentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = "rh.view_department"
 
     def get_queryset(self):
-        qs = Department.objects.select_related("manager").order_by("name")
-        organisation = get_request_organisation(self.request)
-        if organisation is not None:
-            qs = qs.filter(organisation=organisation)
-        return qs
+        organisation = require_request_organisation(self.request)
+        return (
+            Department.objects.select_related("manager")
+            .filter(organisation=organisation)
+            .order_by("name")
+        )
 
 
 class DepartmentCreateView(
@@ -130,13 +129,11 @@ class DepartmentCreateView(
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["organisation"] = get_request_organisation(self.request)
+        kwargs["organisation"] = require_request_organisation(self.request)
         return kwargs
 
     def form_valid(self, form):
-        organisation = get_request_organisation(self.request)
-        if organisation is not None:
-            form.instance.organisation = organisation
+        form.instance.organisation = require_request_organisation(self.request)
         self.object = form.save()
         if self.request.headers.get("HX-Request") == "true":
             response = render(

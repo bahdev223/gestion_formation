@@ -1,6 +1,11 @@
 {% extends "platform_admin/base.html" %}
 {% block page_title %}{{ organisation_obj.nom }}{% endblock %}
 {% block platform_content %}
+{% if platform_role == "SUPER_ADMIN" or platform_role == "FINANCE" %}
+<div class="mb-3 flex justify-end">
+  <a href="{% url 'platform_admin:subscription-manual-payment' organisation_obj.pk %}" class="platform-btn">Enregistrer un paiement et renouveler</a>
+</div>
+{% endif %}
 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
   <div><p class="text-sm text-slate-500">{{ organisation_obj.email }} · {{ organisation_obj.telephone }} · créée le {{ organisation_obj.created_at|date:"d/m/Y" }}</p></div>
   <div class="flex gap-2"><a href="/o/{{ organisation_obj.slug }}/dashboard/" class="border border-slate-300 bg-white px-3 py-2 text-xs font-bold">Ouvrir l’espace</a><a href="{% url 'platform_admin:organisation-export' organisation_obj.pk %}" class="platform-btn">Exporter JSON</a></div>
@@ -16,6 +21,19 @@
 
 <div class="mt-5 grid gap-5 xl:grid-cols-[1.4fr_1fr]">
   <div class="space-y-5">
+    <section class="platform-card overflow-hidden">
+      <header class="border-b border-slate-200 px-4 py-3"><h2 class="font-bold">Paiements d’abonnement</h2></header>
+      <table class="platform-table">
+        <thead><tr><th>Référence</th><th>Mode</th><th>Date</th><th>Montant</th></tr></thead>
+        <tbody>
+          {% for paiement in paiements %}
+            <tr><td class="font-mono">{{ paiement.reference }}</td><td>{{ paiement.mode_paiement }}</td><td>{{ paiement.date_paiement|date:"d/m/Y H:i" }}</td><td class="font-bold">{{ paiement.montant|floatformat:0 }} FCFA</td></tr>
+          {% empty %}
+            <tr><td colspan="4" class="py-8 text-center text-slate-500">Aucun paiement enregistré.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
     <section class="platform-card overflow-hidden"><header class="border-b border-slate-200 px-4 py-3"><h2 class="font-bold">Membres et administrateurs</h2></header><table class="platform-table"><thead><tr><th>Utilisateur</th><th>Rôle</th><th>Dernière connexion</th><th>Actif</th></tr></thead><tbody>{% for membre in membres %}<tr><td><p class="font-bold">{{ membre.user.get_full_name|default:membre.user.username }}</p><p class="text-[10px] text-slate-400">{{ membre.user.email }}</p></td><td>{{ membre.get_role_display }}</td><td>{{ membre.user.last_login|date:"d/m/Y H:i"|default:"Jamais" }}</td><td>{{ membre.is_active|yesno:"Oui,Non" }}</td></tr>{% empty %}<tr><td colspan="4">Aucun membre.</td></tr>{% endfor %}</tbody></table></section>
     <section class="platform-card overflow-hidden"><header class="border-b border-slate-200 px-4 py-3"><h2 class="font-bold">Journal récent</h2></header><div class="divide-y divide-slate-100">{% for event in events %}<div class="px-4 py-3"><div class="flex justify-between gap-3"><p class="text-xs font-bold">{{ event.get_type_evenement_display }}</p><span class="text-[10px] text-slate-400">{{ event.created_at|date:"d/m/Y H:i" }}</span></div><p class="mt-1 text-xs text-slate-500">{{ event.description }}</p></div>{% empty %}<p class="p-6 text-center text-xs text-slate-500">Aucun événement.</p>{% endfor %}</div></section>
   </div>

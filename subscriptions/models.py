@@ -1,4 +1,5 @@
 from datetime import timedelta
+from math import ceil
 
 from django.db import models
 from django.utils import timezone
@@ -102,6 +103,10 @@ class Abonnement(TimeStampedModel):
     @property
     def is_read_only(self):
         return self.is_expired and not self.is_in_grace_period
+
+    @property
+    def days_remaining(self):
+        return ceil((self.date_fin - timezone.now()).total_seconds() / 86400)
 
 
 class PaiementAbonnement(TimeStampedModel):

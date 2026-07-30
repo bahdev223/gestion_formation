@@ -11,8 +11,8 @@ from django.views.generic import UpdateView
 from formations.models import Formation, SessionFormation
 from inscriptions.models import Inscription
 from organisations.utils import (
-    get_request_organisation,
     get_user_default_organisation,
+    require_request_organisation,
     tenant_reverse,
 )
 from paiements.models import Paiement
@@ -33,18 +33,12 @@ def dashboard_home(request, **kwargs):
             )
 
     today = timezone.localdate()
-    organisation = get_request_organisation(request)
-    payments_qs = Paiement.objects.all()
-    registrations_qs = Inscription.objects.all()
-    sessions_qs = SessionFormation.objects.all()
-    formations_qs = Formation.objects.all()
-    participants_qs = Participant.objects.all()
-    if organisation:
-        payments_qs = payments_qs.filter(organisation=organisation)
-        registrations_qs = registrations_qs.filter(organisation=organisation)
-        sessions_qs = sessions_qs.filter(organisation=organisation)
-        formations_qs = formations_qs.filter(organisation=organisation)
-        participants_qs = participants_qs.filter(organisation=organisation)
+    organisation = require_request_organisation(request)
+    payments_qs = Paiement.objects.filter(organisation=organisation)
+    registrations_qs = Inscription.objects.filter(organisation=organisation)
+    sessions_qs = SessionFormation.objects.filter(organisation=organisation)
+    formations_qs = Formation.objects.filter(organisation=organisation)
+    participants_qs = Participant.objects.filter(organisation=organisation)
     valid_payments = payments_qs.filter(statut=Paiement.Statut.VALIDE)
     active_registrations = registrations_qs.exclude(
         statut=Inscription.Statut.ANNULE
@@ -105,10 +99,10 @@ class ConfigurationOrganisationView(
     success_message = "Les paramètres de l’entreprise ont été enregistrés."
 
     def get_object(self, queryset=None):
-        organisation = get_request_organisation(self.request)
-        qs = ConfigurationOrganisation.objects.order_by("pk")
-        if organisation:
-            qs = qs.filter(organisation=organisation)
+        organisation = require_request_organisation(self.request)
+        qs = ConfigurationOrganisation.objects.filter(
+            organisation=organisation
+        ).order_by("pk")
         configuration = qs.first()
         if configuration is None:
             configuration = ConfigurationOrganisation.objects.create(

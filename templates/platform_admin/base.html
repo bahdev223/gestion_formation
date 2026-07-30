@@ -22,6 +22,9 @@
         <a href="{% url 'platform_admin:dashboard' %}" class="platform-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Vue générale</a>
         <a href="{% url 'platform_admin:analytics' %}" class="platform-nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">Statistiques</a>
         <a href="{% url 'platform_admin:organisation-list' %}" class="platform-nav-link {% if 'organisation' in request.resolver_match.url_name %}active{% endif %}">Organisations</a>
+        {% if platform_role == "SUPER_ADMIN" or platform_role == "OPS" or platform_role == "FINANCE" %}
+          <a href="{% url 'platform_admin:organisation-create' %}" class="platform-nav-link pl-5 text-cyan-300">+ Créer une entreprise</a>
+        {% endif %}
       </div>
       <div>
         <p class="mb-2 px-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500">Revenus & clients</p>

@@ -57,3 +57,33 @@ class EmailOrMatriculeLoginTest(TestCase):
             "/o/alpha-formation/dashboard/",
             fetch_redirect_response=False,
         )
+
+    def test_mot_de_passe_temporaire_force_le_changement(self):
+        self.user.must_change_password = True
+        self.user.save(update_fields=["must_change_password", "updated_at"])
+        self.client.force_login(self.user)
+
+        response = self.client.get("/o/alpha-formation/dashboard/")
+
+        self.assertRedirects(
+            response,
+            "/accounts/change-password/",
+            fetch_redirect_response=False,
+        )
+
+        response = self.client.post(
+            "/accounts/change-password/",
+            {
+                "old_password": "secret1234",
+                "new_password1": "Nouveau-Mot-De-Passe-2026!",
+                "new_password2": "Nouveau-Mot-De-Passe-2026!",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            "/o/alpha-formation/dashboard/",
+            fetch_redirect_response=False,
+        )
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.must_change_password)

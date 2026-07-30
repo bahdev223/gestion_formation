@@ -3,9 +3,11 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from core.views import health_check
 from organisations.platform_views import create_organisation, landing_page
 
 urlpatterns = [
+    path("health/", health_check, name="health-check"),
     path("", landing_page, name="platform-landing"),
     path("creer-entreprise/", create_organisation, name="platform-create-organisation"),
     path("admin/", admin.site.urls),

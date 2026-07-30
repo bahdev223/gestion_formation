@@ -259,3 +259,140 @@ class PlatformOperationsTest(TestCase):
                 statut=SaaSInvoice.Statut.PAYEE,
             ).exists()
         )
+
+
+class PlatformClientOnboardingTest(TestCase):
+    def setUp(self):
+        self.ops = get_user_model().objects.create_user(
+            username="onboarding-agent",
+            email="onboarding@saheltech.test",
+            password="test1234",
+            is_staff=True,
+        )
+        PlatformStaffProfile.objects.create(
+            user=self.ops,
+            role=PlatformStaffProfile.Role.OPS,
+        )
+        self.plan = PlanAbonnement.objects.create(
+            code=PlanAbonnement.Code.PREMIUM,
+            nom="Premium onboarding",
+            prix_mensuel=Decimal("45000"),
+            prix_annuel=Decimal("450000"),
+            max_utilisateurs=10,
+            max_participants=2000,
+            max_formations_actives=50,
+            max_stockage_mo=4096,
+        )
+        self.client.force_login(self.ops)
+
+    def test_ops_cree_entreprise_proprietaire_et_essai(self):
+        response = self.client.post(
+            "/platform/organisations/creer/",
+            {
+                "organisation_nom": "Academie Horizon",
+                "organisation_email": "contact@horizon.test",
+                "organisation_telephone": "+22370000100",
+                "ville": "Bamako",
+                "pays": "Mali",
+                "owner_first_name": "Awa",
+                "owner_last_name": "Traore",
+                "owner_email": "awa@horizon.test",
+                "owner_telephone": "+22370000101",
+                "owner_matricule": "HOR-ADMIN",
+                "plan": self.plan.pk,
+                "cycle": Abonnement.Cycle.MENSUEL,
+                "activation": "ESSAI",
+                "jours_essai": 21,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        organisation = Organisation.objects.get(slug="academie-horizon")
+        owner = organisation.membres.get(
+            role=MembreOrganisation.Role.PROPRIETAIRE
+        ).user
+        self.assertTrue(owner.must_change_password)
+        self.assertEqual(owner.username, "HOR-ADMIN")
+        self.assertEqual(organisation.abonnement.statut, Abonnement.Statut.ESSAI)
+        self.assertContains(response, "Mot de passe temporaire")
+        self.assertTrue(
+            PlatformAuditEvent.objects.filter(
+                organisation=organisation,
+                type_evenement=PlatformAuditEvent.Type.ORGANISATION_CREATED,
+            ).exists()
+        )
+
+
+class PlatformManualPaymentTest(TestCase):
+    def setUp(self):
+        self.finance = get_user_model().objects.create_user(
+            username="finance-agent",
+            email="finance@saheltech.test",
+            password="test1234",
+            is_staff=True,
+        )
+        PlatformStaffProfile.objects.create(
+            user=self.finance,
+            role=PlatformStaffProfile.Role.FINANCE,
+        )
+        self.organisation = Organisation.objects.create(
+            nom="Client Renouvellement",
+            slug="client-renouvellement",
+            email="client@renew.test",
+            telephone="+22370000110",
+            statut=Organisation.Statut.ESSAI,
+        )
+        self.plan = PlanAbonnement.objects.create(
+            code=PlanAbonnement.Code.PRO,
+            nom="Pro renouvellement",
+            prix_mensuel=Decimal("95000"),
+            prix_annuel=Decimal("950000"),
+            max_utilisateurs=30,
+            max_participants=10000,
+            max_formations_actives=200,
+            max_stockage_mo=10240,
+        )
+        self.abonnement = Abonnement.objects.create(
+            organisation=self.organisation,
+            plan=self.plan,
+            cycle=Abonnement.Cycle.MENSUEL,
+            statut=Abonnement.Statut.ESSAI,
+            date_debut=timezone.now(),
+            date_fin=timezone.now() + timedelta(days=2),
+            montant=self.plan.prix_mensuel,
+        )
+        self.client.force_login(self.finance)
+
+    def test_finance_enregistre_paiement_et_renouvelle(self):
+        old_end = self.abonnement.date_fin
+        response = self.client.post(
+            f"/platform/organisations/{self.organisation.pk}/paiement/",
+            {
+                "plan": self.plan.pk,
+                "cycle": Abonnement.Cycle.MENSUEL,
+                "montant": "95000",
+                "mode_paiement": "ESPECES",
+                "date_paiement": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
+                "reference": "B2B-CASH-001",
+                "notes": "Paiement remis au bureau.",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            f"/platform/organisations/{self.organisation.pk}/",
+            fetch_redirect_response=False,
+        )
+        self.abonnement.refresh_from_db()
+        self.organisation.refresh_from_db()
+        payment = PaiementAbonnement.objects.get(reference="B2B-CASH-001")
+        self.assertEqual(self.abonnement.statut, Abonnement.Statut.ACTIF)
+        self.assertGreater(self.abonnement.date_fin, old_end)
+        self.assertEqual(self.organisation.statut, Organisation.Statut.ACTIVE)
+        self.assertEqual(payment.statut, PaiementAbonnement.Statut.VALIDE)
+        self.assertTrue(
+            SaaSInvoice.objects.filter(
+                paiement=payment,
+                statut=SaaSInvoice.Statut.PAYEE,
+            ).exists()
+        )

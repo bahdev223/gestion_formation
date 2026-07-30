@@ -1,0 +1,89 @@
+{% extends "platform_admin/base.html" %}
+{% block page_title %}Créer une entreprise cliente{% endblock %}
+{% block platform_content %}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <p class="text-sm text-slate-600">Préparez l’espace, le propriétaire et son abonnement en une seule opération.</p>
+    <p class="mt-1 text-xs text-slate-500">Le mot de passe temporaire ne sera affiché qu’une seule fois.</p>
+  </div>
+  <a href="{% url 'platform_admin:organisation-list' %}" class="border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700">Annuler</a>
+</div>
+
+{% if form.non_field_errors %}
+  <div class="mb-4 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="space-y-4" x-data="{ activation: '{{ form.activation.value|default:'ESSAI' }}' }">
+  {% csrf_token %}
+  <section class="platform-card p-4">
+    <div class="mb-4 border-b border-slate-200 pb-3">
+      <h2 class="font-bold text-slate-950">1. Entreprise</h2>
+      <p class="text-xs text-slate-500">Informations visibles sur les documents et dans l’espace client.</p>
+    </div>
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {% include "platform_admin/includes/form_field.html" with field=form.organisation_nom %}
+      {% include "platform_admin/includes/form_field.html" with field=form.organisation_email %}
+      {% include "platform_admin/includes/form_field.html" with field=form.organisation_telephone %}
+      {% include "platform_admin/includes/form_field.html" with field=form.logo %}
+      {% include "platform_admin/includes/form_field.html" with field=form.ville %}
+      {% include "platform_admin/includes/form_field.html" with field=form.pays %}
+      {% include "platform_admin/includes/form_field.html" with field=form.adresse wrapper_class="md:col-span-2 xl:col-span-3" %}
+    </div>
+  </section>
+
+  <section class="platform-card p-4">
+    <div class="mb-4 border-b border-slate-200 pb-3">
+      <h2 class="font-bold text-slate-950">2. Compte propriétaire</h2>
+      <p class="text-xs text-slate-500">Le propriétaire pourra se connecter avec son email ou son matricule.</p>
+    </div>
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {% include "platform_admin/includes/form_field.html" with field=form.owner_first_name %}
+      {% include "platform_admin/includes/form_field.html" with field=form.owner_last_name %}
+      {% include "platform_admin/includes/form_field.html" with field=form.owner_telephone %}
+      {% include "platform_admin/includes/form_field.html" with field=form.owner_email %}
+      {% include "platform_admin/includes/form_field.html" with field=form.owner_matricule %}
+      {% include "platform_admin/includes/form_field.html" with field=form.owner_password %}
+    </div>
+    <label class="mt-4 flex items-start gap-3 border border-slate-200 bg-slate-50 p-3 text-sm">
+      {{ form.envoyer_identifiants }}
+      <span><strong class="block text-slate-900">{{ form.envoyer_identifiants.label }}</strong><span class="text-xs text-slate-500">Nécessite une configuration SMTP valide en production.</span></span>
+    </label>
+  </section>
+
+  <section class="platform-card p-4">
+    <div class="mb-4 border-b border-slate-200 pb-3">
+      <h2 class="font-bold text-slate-950">3. Abonnement initial</h2>
+      <p class="text-xs text-slate-500">Démarrez un essai ou activez immédiatement un paiement reçu hors ligne.</p>
+    </div>
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {% include "platform_admin/includes/form_field.html" with field=form.plan %}
+      {% include "platform_admin/includes/form_field.html" with field=form.cycle %}
+      <div>
+        <label for="{{ form.activation.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-700">{{ form.activation.label }} <span class="text-red-600">*</span></label>
+        <select name="{{ form.activation.html_name }}" id="{{ form.activation.id_for_label }}" class="{{ form.activation.field.widget.attrs.class }}" x-model="activation">
+          {% for value,label in form.activation.field.choices %}<option value="{{ value }}" {% if form.activation.value == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        {% for error in form.activation.errors %}<p class="mt-1 text-xs font-semibold text-red-600">{{ error }}</p>{% endfor %}
+      </div>
+      <div x-show="activation === 'ESSAI'" x-cloak>
+        {% include "platform_admin/includes/form_field.html" with field=form.jours_essai %}
+      </div>
+      <div x-show="activation === 'PAYE'" x-cloak>
+        {% include "platform_admin/includes/form_field.html" with field=form.montant_paye %}
+      </div>
+      <div x-show="activation === 'PAYE'" x-cloak>
+        {% include "platform_admin/includes/form_field.html" with field=form.mode_paiement %}
+      </div>
+      <div x-show="activation === 'PAYE'" x-cloak>
+        {% include "platform_admin/includes/form_field.html" with field=form.reference_paiement %}
+      </div>
+      {% include "platform_admin/includes/form_field.html" with field=form.notes wrapper_class="md:col-span-2 xl:col-span-3" %}
+    </div>
+  </section>
+
+  <div class="flex justify-end gap-3">
+    <a href="{% url 'platform_admin:organisation-list' %}" class="border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700">Annuler</a>
+    <button type="submit" class="platform-btn px-5 py-2.5">Créer l’entreprise et les accès</button>
+  </div>
+</form>
+{% endblock %}

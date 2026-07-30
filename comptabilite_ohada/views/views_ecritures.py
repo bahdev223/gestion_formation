@@ -4,7 +4,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import DeleteView, DetailView, ListView, View
 
-from organisations.utils import get_request_organisation, tenant_reverse
+from organisations.utils import require_request_organisation, tenant_reverse
 
 from ..forms import EcritureForm, LigneEcritureFormSet
 from ..models import EcritureComptable
@@ -25,9 +25,7 @@ class EcritureListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             .select_related("journal", "exercice")
             .prefetch_related("lignes__compte")
         )
-        organisation = get_request_organisation(self.request)
-        if organisation is not None:
-            qs = qs.filter(organisation=organisation)
+        qs = qs.filter(organisation=require_request_organisation(self.request))
         status = self.request.GET.get("status")
         if status == "validee":
             qs = qs.filter(validee=True)
@@ -51,9 +49,7 @@ class EcritureDetailView(
             .select_related("journal", "exercice")
             .prefetch_related("lignes__compte")
         )
-        organisation = get_request_organisation(self.request)
-        if organisation is not None:
-            qs = qs.filter(organisation=organisation)
+        qs = qs.filter(organisation=require_request_organisation(self.request))
         return qs
 
 
@@ -83,7 +79,7 @@ class EcritureFormView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 ecriture = form.save(commit=False)
                 ecriture.created_by = request.user.get_username()
                 ecriture.validee = False
-                ecriture.organisation = get_request_organisation(request)
+                ecriture.organisation = require_request_organisation(request)
                 ecriture.save()
                 formset.instance = ecriture
                 formset.save()
@@ -120,7 +116,7 @@ class EcritureUpdateView(EcritureFormView):
             EcritureComptable,
             pk=self.kwargs["pk"],
             validee=False,
-            organisation=get_request_organisation(self.request),
+            organisation=require_request_organisation(self.request),
         )
 
 
@@ -136,9 +132,7 @@ class EcritureDeleteView(
 
     def get_queryset(self):
         qs = super().get_queryset().filter(validee=False)
-        organisation = get_request_organisation(self.request)
-        if organisation is not None:
-            qs = qs.filter(organisation=organisation)
+        qs = qs.filter(organisation=require_request_organisation(self.request))
         return qs
 
     def form_valid(self, form):
@@ -156,7 +150,7 @@ class EcritureValiderView(
         ecriture = get_object_or_404(
             EcritureComptable,
             pk=self.kwargs["pk"],
-            organisation=get_request_organisation(request),
+            organisation=require_request_organisation(request),
         )
         try:
             EcritureService.valider_ecriture(ecriture, request.user)

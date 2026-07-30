@@ -1,6 +1,15 @@
 {% extends "platform_admin/base.html" %}
 {% block page_title %}Facturation SaaS{% endblock %}
 {% block platform_content %}
+{% if platform_role == "SUPER_ADMIN" or platform_role == "FINANCE" %}
+<div class="mb-4 flex flex-wrap items-center justify-end gap-2">
+  <label for="payment-organisation" class="text-xs font-bold text-slate-600">Nouveau paiement pour</label>
+  <select id="payment-organisation" class="border border-slate-300 bg-white px-3 py-2 text-xs" onchange="if(this.value){window.location.href=this.value}">
+    <option value="">Choisir une entreprise…</option>
+    {% for organisation in organisations %}<option value="{% url 'platform_admin:subscription-manual-payment' organisation.pk %}">{{ organisation.nom }}</option>{% endfor %}
+  </select>
+</div>
+{% endif %}
 <div class="mb-5 grid gap-3 sm:grid-cols-3"><article class="platform-card p-4"><p class="text-xs text-slate-500">Revenu total validé</p><p class="mt-2 text-2xl font-bold">{{ revenu_total|floatformat:0 }} FCFA</p></article><article class="platform-card p-4"><p class="text-xs text-slate-500">Factures</p><p class="mt-2 text-2xl font-bold">{{ factures|length }}</p></article><article class="platform-card p-4"><p class="text-xs text-slate-500">Coupons actifs</p><p class="mt-2 text-2xl font-bold">{{ coupons|length }}</p></article></div>
 <section class="platform-card overflow-hidden"><header class="border-b border-slate-200 px-4 py-3"><h2 class="font-bold">Paiements d’abonnement</h2></header><table class="platform-table"><thead><tr><th>Référence</th><th>Entreprise</th><th>Plan</th><th>Montant</th><th>Mode</th><th>Statut</th><th>Date</th></tr></thead><tbody>{% for item in paiements %}<tr><td class="font-mono">{{ item.reference }}</td><td>{{ item.abonnement.organisation.nom }}</td><td>{{ item.abonnement.plan.nom }}</td><td class="font-bold">{{ item.montant|floatformat:0 }} FCFA</td><td>{{ item.mode_paiement }}</td><td><span class="platform-badge">{{ item.get_statut_display }}</span></td><td>{{ item.date_paiement|date:"d/m/Y H:i"|default:"—" }}</td></tr>{% empty %}<tr><td colspan="7" class="py-12 text-center">Aucun paiement.</td></tr>{% endfor %}</tbody></table></section>
 {% endblock %}

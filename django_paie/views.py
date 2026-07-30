@@ -3,14 +3,13 @@ from datetime import date
 from django import forms
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import FormView
 
 from documents.services.pdf_service import render_pdf
-from organisations.utils import get_request_organisation, tenant_reverse
+from organisations.utils import require_request_organisation, tenant_reverse
 
 from .conf import paie_settings
 from .models import EcheanceSalariale, PaiementSalarial
@@ -19,17 +18,7 @@ from .services import ModeSimpleService, StatistiquesPaieService
 
 class EnterpriseFilterMixin:
     def get_entreprise_id(self):
-        organisation = get_request_organisation(self.request)
-        if organisation is not None:
-            return organisation.slug
-        if paie_settings.MODE_PAR_ENTREPRISE:
-            entreprise_id = getattr(self.request.user, "entreprise_id", "")
-            if not entreprise_id:
-                raise PermissionDenied(
-                    "Aucune entreprise associée à cet utilisateur."
-                )
-            return str(entreprise_id)
-        return ""
+        return require_request_organisation(self.request).slug
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -189,24 +178,15 @@ class DashboardView(PermissionRequiredMixin, EnterpriseFilterMixin, TemplateView
 @login_required
 @permission_required("django_paie.view_paiementsalarial", raise_exception=True)
 def paiement_bulletin_pdf(request, pk, **kwargs):
-    organisation = get_request_organisation(request)
-    entreprise_id = organisation.slug if organisation is not None else ""
+    entreprise_id = require_request_organisation(request).slug
     paiement = get_object_or_404(
         PaiementSalarial.objects.select_related(
             "echeance",
             "echeance__employe_content_type",
         ),
         pk=pk,
+        echeance__entreprise_id=entreprise_id,
     )
-    if entreprise_id:
-        if paiement.echeance.entreprise_id != entreprise_id:
-            raise PermissionDenied("Paiement introuvable pour cette entreprise.")
-    elif paie_settings.MODE_PAR_ENTREPRISE:
-        entreprise_id = getattr(request.user, "entreprise_id", "")
-        if not entreprise_id:
-            raise PermissionDenied("Aucune entreprise associee a cet utilisateur.")
-        if paiement.echeance.entreprise_id != str(entreprise_id):
-            raise PermissionDenied("Paiement introuvable pour cette entreprise.")
 
     echeance = paiement.echeance
     bulletins = getattr(echeance, "bulletin_detail", None)

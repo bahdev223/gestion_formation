@@ -1,0 +1,43 @@
+{% extends "platform_admin/base.html" %}
+{% block page_title %}Entreprise créée{% endblock %}
+{% block platform_content %}
+<div class="mx-auto max-w-3xl">
+  <section class="platform-card overflow-hidden">
+    <header class="border-b border-emerald-200 bg-emerald-50 px-5 py-4">
+      <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Création réussie</p>
+      <h2 class="mt-1 text-xl font-bold text-slate-950">{{ organisation_obj.nom }}</h2>
+      <p class="mt-1 text-sm text-slate-600">L’espace client, le propriétaire et l’abonnement sont prêts.</p>
+    </header>
+    <div class="p-5">
+      <div class="mb-5 border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <strong>Copiez ces informations maintenant.</strong> Le mot de passe temporaire ne sera plus affiché après avoir quitté cette page.
+      </div>
+      <dl class="grid gap-3 text-sm sm:grid-cols-[180px_1fr]">
+        <dt class="text-slate-500">Lien de connexion</dt>
+        <dd><a href="{{ login_url }}" class="font-bold text-cyan-700">{{ login_url }}</a></dd>
+        <dt class="text-slate-500">Espace entreprise</dt>
+        <dd><a href="{{ organisation_url }}" class="font-bold text-cyan-700">{{ organisation_url }}</a></dd>
+        <dt class="text-slate-500">Email</dt>
+        <dd class="font-semibold">{{ owner.email }}</dd>
+        <dt class="text-slate-500">Matricule</dt>
+        <dd class="font-mono font-bold">{{ owner.username }}</dd>
+        <dt class="text-slate-500">Mot de passe temporaire</dt>
+        <dd class="border border-slate-300 bg-slate-950 px-3 py-2 font-mono text-base font-bold text-white">{{ temporary_password }}</dd>
+      </dl>
+      <div class="mt-5 border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+        {% if email_requested and email_sent %}
+          Les identifiants ont également été envoyés à {{ owner.email }}.
+        {% elif email_requested %}
+          L’email n’a pas pu être confirmé. Copiez les accès ci-dessus et vérifiez la configuration SMTP.
+        {% else %}
+          L’envoi par email n’a pas été demandé.
+        {% endif %}
+      </div>
+      <div class="mt-5 flex flex-wrap justify-end gap-3">
+        <a href="{% url 'platform_admin:organisation-create' %}" class="border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700">Créer une autre entreprise</a>
+        <a href="{% url 'platform_admin:organisation-detail' organisation_obj.pk %}" class="platform-btn px-4 py-2.5">Gérer l’entreprise</a>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

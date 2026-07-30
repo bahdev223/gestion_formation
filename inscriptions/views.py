@@ -6,7 +6,7 @@ from django.shortcuts import redirect
 from django.views.generic import CreateView, FormView, ListView
 
 from core.mixins import HtmxModalFormMixin, OrganisationScopedMixin
-from organisations.utils import tenant_reverse
+from organisations.utils import require_request_organisation, tenant_reverse
 from participants.models import Participant
 
 from .forms import InscriptionForm, NouvelApprenantInscriptionForm
@@ -74,19 +74,9 @@ class NouvelApprenantInscriptionView(HtmxModalFormMixin, LoginRequiredMixin, Per
     submit_label = "Créer et inscrire"
     full_width_fields = "session observations"
 
-    def get_current_organisation(self):
-        organisation = getattr(self.request, "organisation", None)
-        if organisation is not None:
-            return organisation
-        from organisations.models import Organisation
-
-        return Organisation.objects.filter(slug="balys-group").first()
-
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        organisation = self.get_current_organisation()
-        if organisation is not None:
-            kwargs["organisation"] = organisation
+        kwargs["organisation"] = require_request_organisation(self.request)
         return kwargs
 
     def get_initial(self):

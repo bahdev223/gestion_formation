@@ -5,13 +5,13 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import F
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from django_paie.models import EcheanceSalariale, PaiementSalarial
 from django_paie.services import ModeSimpleService
 from django_paie.utils import extraire_mois_annee
 from django_rh.models import Employee
-from organisations.utils import get_request_organisation, tenant_reverse
+from organisations.utils import require_request_organisation, tenant_reverse
 
 
 class SalaryDueChoiceField(forms.ModelChoiceField):
@@ -82,11 +82,11 @@ class SalaryPaymentForm(forms.Form):
 @login_required
 @permission_required("django_paie.add_paiementsalarial", raise_exception=True)
 def payroll_payment_create(request, **kwargs):
-    organisation = get_request_organisation(request)
+    organisation = require_request_organisation(request)
     form = SalaryPaymentForm(request.POST or None, organisation=organisation)
     if request.method == "POST" and form.is_valid():
         paiement = ModeSimpleService(
-            entreprise_id=organisation.slug if organisation is not None else ""
+            entreprise_id=organisation.slug
         ).enregistrer_paiement(
             echeance_id=form.cleaned_data["echeance"].pk,
             montant=form.cleaned_data["montant"],
@@ -108,12 +108,12 @@ def payroll_payment_create(request, **kwargs):
 @login_required
 @permission_required("rh.change_employee", raise_exception=True)
 def payroll_employees(request, **kwargs):
-    users = Employee.objects.exclude(status=Employee.Status.ARCHIVED).order_by(
-        "last_name", "first_name"
+    organisation = require_request_organisation(request)
+    users = (
+        Employee.objects.filter(organisation=organisation)
+        .exclude(status=Employee.Status.ARCHIVED)
+        .order_by("last_name", "first_name")
     )
-    organisation = get_request_organisation(request)
-    if organisation is not None:
-        users = users.filter(organisation=organisation)
     return render(
         request,
         "django_paie/employees.html",
@@ -127,11 +127,10 @@ def payroll_employee_salary_update(request, user_id, **kwargs):
     if request.method != "POST":
         return redirect(tenant_reverse(request, "dashboard:payroll-employees"))
 
-    employees = Employee.objects.all()
-    organisation = get_request_organisation(request)
-    if organisation is not None:
-        employees = employees.filter(organisation=organisation)
-    employee = employees.get(pk=user_id)
+    organisation = require_request_organisation(request)
+    employee = get_object_or_404(
+        Employee.objects.filter(organisation=organisation), pk=user_id
+    )
     raw_salary = request.POST.get("salaire_mensuel", "").strip()
     try:
         salary = Decimal(raw_salary) if raw_salary else None
@@ -169,17 +168,14 @@ def payroll_generate(request, **kwargs):
         messages.error(request, str(exc))
         return redirect(tenant_reverse(request, "django_paie:dashboard"))
 
+    organisation = require_request_organisation(request)
     employees = Employee.objects.filter(
         status=Employee.Status.ACTIVE,
         salaire_mensuel__isnull=False,
         salaire_mensuel__gt=0,
+        organisation=organisation,
     )
-    organisation = get_request_organisation(request)
-    if organisation is not None:
-        employees = employees.filter(organisation=organisation)
-    service = ModeSimpleService(
-        entreprise_id=organisation.slug if organisation is not None else ""
-    )
+    service = ModeSimpleService(entreprise_id=organisation.slug)
     generated = 0
     errors = []
 

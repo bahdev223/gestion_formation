@@ -43,6 +43,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.MandatoryPasswordChangeMiddleware",
     "organisations.middleware.CurrentOrganisationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -102,6 +103,8 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/accounts/login/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+PUBLIC_APP_URL = "http://127.0.0.1:8000"
+DEFAULT_FROM_EMAIL = "Formix <noreply@saheltech.tech>"
 
 UNFOLD = {
     "SITE_TITLE": "SahelTech Platform Admin",

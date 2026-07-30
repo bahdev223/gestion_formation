@@ -10,31 +10,32 @@ from documents.services.attestation_service import generate_attestation
 from documents.services.generation_service import generate_document
 from formations.models import Seance, SessionFormation
 from inscriptions.models import Inscription
-from organisations.utils import get_request_organisation, tenant_reverse
+from organisations.utils import require_request_organisation, tenant_reverse
 from paiements.models import Paiement
 
 
 @login_required
 @permission_required("documents.view_documentgenere", raise_exception=True)
 def document_index(request, **kwargs):
-    organisation = get_request_organisation(request)
-    documents_qs = DocumentGenere.objects.select_related("genere_par")
+    organisation = require_request_organisation(request)
+    documents_qs = DocumentGenere.objects.select_related("genere_par").filter(
+        organisation=organisation
+    )
     attestations_qs = Attestation.objects.select_related(
         "inscription", "generee_par"
+    ).filter(organisation=organisation)
+    paiements_qs = Paiement.objects.filter(
+        statut=Paiement.Statut.VALIDE, organisation=organisation
     )
-    paiements_qs = Paiement.objects.filter(statut=Paiement.Statut.VALIDE)
-    sessions_qs = SessionFormation.objects.exclude(
+    sessions_qs = SessionFormation.objects.filter(organisation=organisation).exclude(
         statut=SessionFormation.Statut.ANNULEE
     )
-    seances_qs = Seance.objects.exclude(statut=Seance.Statut.ANNULEE)
-    inscriptions_qs = Inscription.objects.filter(statut=Inscription.Statut.TERMINE)
-    if organisation:
-        documents_qs = documents_qs.filter(organisation=organisation)
-        attestations_qs = attestations_qs.filter(organisation=organisation)
-        paiements_qs = paiements_qs.filter(organisation=organisation)
-        sessions_qs = sessions_qs.filter(organisation=organisation)
-        seances_qs = seances_qs.filter(organisation=organisation)
-        inscriptions_qs = inscriptions_qs.filter(organisation=organisation)
+    seances_qs = Seance.objects.filter(organisation=organisation).exclude(
+        statut=Seance.Statut.ANNULEE
+    )
+    inscriptions_qs = Inscription.objects.filter(
+        statut=Inscription.Statut.TERMINE, organisation=organisation
+    )
     return render(
         request,
         "documents/index.html",
@@ -61,14 +62,12 @@ def document_index(request, **kwargs):
 @permission_required("documents.add_documentgenere", raise_exception=True)
 @require_POST
 def generate_receipt(request, **kwargs):
-    organisation = get_request_organisation(request)
+    organisation = require_request_organisation(request)
     paiements = Paiement.objects.select_related(
         "inscription__participant",
         "inscription__session__formation",
         "enregistre_par",
-    )
-    if organisation:
-        paiements = paiements.filter(organisation=organisation)
+    ).filter(organisation=organisation)
     paiement = get_object_or_404(
         paiements,
         pk=request.POST.get("paiement_id"),
@@ -92,10 +91,10 @@ def generate_receipt(request, **kwargs):
 @permission_required("documents.add_documentgenere", raise_exception=True)
 @require_POST
 def generate_participant_list(request, **kwargs):
-    organisation = get_request_organisation(request)
-    sessions = SessionFormation.objects.select_related("formation", "formateur")
-    if organisation:
-        sessions = sessions.filter(organisation=organisation)
+    organisation = require_request_organisation(request)
+    sessions = SessionFormation.objects.select_related(
+        "formation", "formateur"
+    ).filter(organisation=organisation)
     session = get_object_or_404(
         sessions,
         pk=request.POST.get("session_id"),
@@ -124,10 +123,10 @@ def generate_participant_list(request, **kwargs):
 @permission_required("documents.add_documentgenere", raise_exception=True)
 @require_POST
 def generate_attendance_sheet(request, **kwargs):
-    organisation = get_request_organisation(request)
-    seances = Seance.objects.select_related("session__formation")
-    if organisation:
-        seances = seances.filter(organisation=organisation)
+    organisation = require_request_organisation(request)
+    seances = Seance.objects.select_related("session__formation").filter(
+        organisation=organisation
+    )
     seance = get_object_or_404(
         seances,
         pk=request.POST.get("seance_id"),
@@ -156,12 +155,10 @@ def generate_attendance_sheet(request, **kwargs):
 @permission_required("documents.add_attestation", raise_exception=True)
 @require_POST
 def create_attestation(request, **kwargs):
-    organisation = get_request_organisation(request)
+    organisation = require_request_organisation(request)
     inscriptions = Inscription.objects.select_related(
         "participant", "session__formation", "session__formateur"
-    )
-    if organisation:
-        inscriptions = inscriptions.filter(organisation=organisation)
+    ).filter(organisation=organisation)
     inscription = get_object_or_404(
         inscriptions,
         pk=request.POST.get("inscription_id"),
@@ -188,10 +185,8 @@ def create_attestation(request, **kwargs):
 @login_required
 @permission_required("documents.view_documentgenere", raise_exception=True)
 def download_document(request, document_id, **kwargs):
-    organisation = get_request_organisation(request)
-    documents = DocumentGenere.objects.all()
-    if organisation:
-        documents = documents.filter(organisation=organisation)
+    organisation = require_request_organisation(request)
+    documents = DocumentGenere.objects.filter(organisation=organisation)
     document = get_object_or_404(documents, pk=document_id)
     if not document.fichier:
         raise Http404("Fichier indisponible.")
@@ -205,10 +200,8 @@ def download_document(request, document_id, **kwargs):
 @login_required
 @permission_required("documents.view_attestation", raise_exception=True)
 def download_attestation(request, attestation_id, **kwargs):
-    organisation = get_request_organisation(request)
-    attestations = Attestation.objects.all()
-    if organisation:
-        attestations = attestations.filter(organisation=organisation)
+    organisation = require_request_organisation(request)
+    attestations = Attestation.objects.filter(organisation=organisation)
     attestation = get_object_or_404(attestations, pk=attestation_id)
     if not attestation.fichier_pdf:
         raise Http404("Fichier indisponible.")

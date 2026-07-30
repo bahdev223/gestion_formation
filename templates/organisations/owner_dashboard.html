@@ -5,6 +5,20 @@
 {% block breadcrumb %}Organisation / Tableau de bord{% endblock %}
 
 {% block dashboard_content %}
+{% if abonnement and abonnement.days_remaining <= 7 %}
+<section class="mb-3 border {% if abonnement.is_expired %}border-red-300 bg-red-50 text-red-900{% else %}border-amber-300 bg-amber-50 text-amber-900{% endif %} px-4 py-3">
+  <p class="text-sm font-bold">
+    {% if abonnement.is_expired %}
+      Votre abonnement est arrivé à échéance.
+    {% elif abonnement.days_remaining == 0 %}
+      Votre abonnement expire aujourd’hui.
+    {% else %}
+      Votre abonnement expire dans {{ abonnement.days_remaining }} jour{{ abonnement.days_remaining|pluralize }}.
+    {% endif %}
+  </p>
+  <p class="mt-1 text-xs">Contactez l’équipe SahelTech pour enregistrer votre renouvellement et conserver un accès complet.</p>
+</section>
+{% endif %}
 <div class="grid gap-3 lg:grid-cols-3">
   <article class="stat-card">
     <p class="stat-label">Plan actuel</p>

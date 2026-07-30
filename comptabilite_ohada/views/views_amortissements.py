@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.views.generic import DetailView, ListView
 
-from organisations.utils import get_request_organisation
+from organisations.utils import require_request_organisation
 
 from ..models import Immobilisation
 
@@ -9,9 +9,7 @@ from ..models import Immobilisation
 class OrganisationFilteredQuerysetMixin:
     def get_queryset(self):
         qs = super().get_queryset()
-        organisation = get_request_organisation(self.request)
-        if organisation is not None:
-            qs = qs.filter(organisation=organisation)
+        qs = qs.filter(organisation=require_request_organisation(self.request))
         return qs
 
 

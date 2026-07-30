@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
 TENANT_NAMESPACES = {
@@ -38,14 +39,26 @@ def tenant_reverse(request, view_name, args=None, kwargs=None):
     )
 
 
-def get_default_organisation():
-    from organisations.models import Organisation
-
-    return Organisation.objects.filter(slug="balys-group").first()
-
-
 def get_request_organisation(request):
-    return getattr(request, "organisation", None) or get_default_organisation()
+    """Retourne l'organisation courante ou None.
+
+    Reserve aux contextes qui s'executent aussi hors espace client
+    (context processors, pages publiques, console plateforme). Une vue metier
+    doit utiliser require_request_organisation.
+    """
+    return getattr(request, "organisation", None)
+
+
+def require_request_organisation(request):
+    """Retourne l'organisation courante ou refuse l'acces.
+
+    Toute vue metier doit passer par cette fonction : sans contexte tenant,
+    un queryset non filtre exposerait les donnees de toutes les organisations.
+    """
+    organisation = getattr(request, "organisation", None)
+    if organisation is None:
+        raise PermissionDenied("Cette operation necessite un contexte organisation.")
+    return organisation
 
 
 def get_user_default_organisation(user):
@@ -60,6 +73,4 @@ def get_user_default_organisation(user):
     )
     if membership is not None:
         return membership.organisation
-    if user.is_superuser:
-        return get_default_organisation()
     return None

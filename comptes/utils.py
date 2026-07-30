@@ -1,15 +1,9 @@
-from organisations.utils import get_request_organisation
+from organisations.utils import require_request_organisation
 
 
 def organisation_filter(request):
-    organisation = get_request_organisation(request)
-    if organisation is None:
-        return {}
-    return {"organisation": organisation}
+    return {"organisation": require_request_organisation(request)}
 
 
 def scope_accounts(request, queryset):
-    filters = organisation_filter(request)
-    if filters:
-        return queryset.filter(**filters)
-    return queryset
+    return queryset.filter(**organisation_filter(request))

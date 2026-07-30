@@ -4,9 +4,11 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.core.exceptions import PermissionDenied
+from django.core.mail import send_mail
 from django.db.models import Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.views.decorators.http import require_POST
@@ -17,6 +19,7 @@ from subscriptions.models import (
     PaiementAbonnement,
     PlanAbonnement,
 )
+from subscriptions.services import expiring_subscription_alerts
 
 from .access import platform_role_required
 from .backup_service import create_tenant_backup
@@ -24,6 +27,8 @@ from .forms import (
     AnnouncementForm,
     FeatureFlagForm,
     MaintenanceWindowForm,
+    ManualSubscriptionPaymentForm,
+    PlatformOrganisationCreateForm,
     SupportTicketUpdateForm,
 )
 from .models import (
@@ -42,11 +47,13 @@ from .models import (
 )
 from .services import (
     analytics_data,
+    create_platform_organisation,
     live_system_health,
     log_platform_event,
     organisation_queryset,
     organisation_usage,
     platform_dashboard_stats,
+    renew_subscription_manually,
 )
 
 
@@ -54,6 +61,7 @@ from .services import (
 def dashboard(request):
     context = {
         "stats": platform_dashboard_stats(),
+        "subscription_alerts": expiring_subscription_alerts(),
         "organisations_recentes": organisation_queryset()[:6],
         "tickets_critiques": SupportTicket.objects.exclude(
             statut__in=[
@@ -70,6 +78,81 @@ def dashboard(request):
         "health": live_system_health(),
     }
     return render(request, "platform_admin/dashboard.html", context)
+
+
+@platform_role_required(
+    PlatformStaffProfile.Role.OPS,
+    PlatformStaffProfile.Role.FINANCE,
+)
+def organisation_create(request):
+    form = PlatformOrganisationCreateForm(request.POST or None, request.FILES or None)
+    if request.method == "POST" and form.is_valid():
+        (
+            organisation,
+            owner,
+            temporary_password,
+            abonnement,
+            payment,
+        ) = create_platform_organisation(form.cleaned_data, actor=request.user)
+        login_url = request.build_absolute_uri(reverse("accounts:login"))
+        organisation_url = request.build_absolute_uri(
+            reverse(
+                "organisations:owner-dashboard",
+                kwargs={"organisation_slug": organisation.slug},
+            )
+        )
+        email_sent = False
+        if form.cleaned_data.get("envoyer_identifiants"):
+            email_sent = (
+                send_mail(
+                    subject=f"Vos accès à {organisation.nom}",
+                    message=(
+                        f"Bonjour {owner.get_full_name() or owner.get_username()},\n\n"
+                        f"Votre espace {organisation.nom} est prêt.\n"
+                        f"Lien de connexion : {login_url}\n"
+                        f"Matricule : {owner.get_username()}\n"
+                        f"Mot de passe temporaire : {temporary_password}\n\n"
+                        "Vous devrez modifier ce mot de passe à votre première connexion."
+                    ),
+                    from_email=None,
+                    recipient_list=[owner.email],
+                    fail_silently=True,
+                )
+                == 1
+            )
+        log_platform_event(
+            request,
+            PlatformAuditEvent.Type.ORGANISATION_CREATED,
+            f"Organisation {organisation.nom} créée par l’équipe SahelTech.",
+            organisation=organisation,
+            object_type="Organisation",
+            object_id=organisation.pk,
+            metadata={
+                "action": "platform_create",
+                "activation": form.cleaned_data["activation"],
+                "plan": abonnement.plan.code,
+                "payment_id": payment.pk if payment else None,
+                "credentials_email_sent": email_sent,
+            },
+        )
+        return render(
+            request,
+            "platform_admin/organisation_created.html",
+            {
+                "organisation_obj": organisation,
+                "owner": owner,
+                "temporary_password": temporary_password,
+                "login_url": login_url,
+                "organisation_url": organisation_url,
+                "email_sent": email_sent,
+                "email_requested": form.cleaned_data.get("envoyer_identifiants"),
+            },
+        )
+    return render(
+        request,
+        "platform_admin/organisation_form.html",
+        {"form": form},
+    )
 
 
 @platform_role_required()
@@ -112,6 +195,59 @@ def organisation_detail(request, organisation_id):
             "events": organisation.evenements_plateforme.select_related(
                 "acteur"
             )[:10],
+            "paiements": organisation.abonnement.paiements.all()[:10],
+        },
+    )
+
+
+@platform_role_required(PlatformStaffProfile.Role.FINANCE)
+def subscription_manual_payment(request, organisation_id):
+    organisation = get_object_or_404(
+        Organisation.objects.select_related("abonnement", "abonnement__plan"),
+        pk=organisation_id,
+    )
+    abonnement = organisation.abonnement
+    form = ManualSubscriptionPaymentForm(
+        request.POST or None,
+        abonnement=abonnement,
+    )
+    if request.method == "POST" and form.is_valid():
+        abonnement, payment = renew_subscription_manually(
+            abonnement,
+            form.cleaned_data,
+            actor=request.user,
+        )
+        log_platform_event(
+            request,
+            PlatformAuditEvent.Type.BILLING,
+            (
+                f"Paiement manuel {payment.reference} validé et abonnement de "
+                f"{organisation.nom} renouvelé."
+            ),
+            organisation=organisation,
+            object_type="PaiementAbonnement",
+            object_id=payment.pk,
+            metadata={
+                "action": "manual_renewal",
+                "amount": str(payment.montant),
+                "period_end": abonnement.date_fin.isoformat(),
+            },
+        )
+        messages.success(
+            request,
+            (
+                f"Paiement {payment.reference} enregistré. "
+                f"Abonnement actif jusqu’au {abonnement.date_fin:%d/%m/%Y}."
+            ),
+        )
+        return redirect("platform_admin:organisation-detail", organisation.pk)
+    return render(
+        request,
+        "platform_admin/manual_payment_form.html",
+        {
+            "organisation_obj": organisation,
+            "abonnement": abonnement,
+            "form": form,
         },
     )
 
@@ -352,6 +488,7 @@ def subscriptions_view(request):
         {
             "abonnements": abonnements,
             "plans": PlanAbonnement.objects.all(),
+            "subscription_alerts": expiring_subscription_alerts(),
         },
     )
 
@@ -377,6 +514,10 @@ def billing_view(request):
                 statut=PaiementAbonnement.Statut.VALIDE
             ).aggregate(total=Sum("montant"))["total"]
             or Decimal("0"),
+            "organisations": Organisation.objects.filter(
+                abonnement__isnull=False,
+                is_active=True,
+            ).order_by("nom"),
         },
     )
 

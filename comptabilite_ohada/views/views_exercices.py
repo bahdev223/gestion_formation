@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.shortcuts import redirect
 from django.views.generic import CreateView, DetailView, ListView
 
-from organisations.utils import get_request_organisation, tenant_reverse
+from organisations.utils import require_request_organisation, tenant_reverse
 
 from ..models import ExerciceComptable
 from ..services.exercice_service import ExerciceService
@@ -12,9 +12,7 @@ from ..services.exercice_service import ExerciceService
 class OrganisationFilteredQuerysetMixin:
     def get_queryset(self):
         qs = super().get_queryset()
-        organisation = get_request_organisation(self.request)
-        if organisation is not None:
-            qs = qs.filter(organisation=organisation)
+        qs = qs.filter(organisation=require_request_organisation(self.request))
         return qs
 
 
@@ -56,7 +54,7 @@ class ExerciceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
         )
 
     def form_valid(self, form):
-        form.instance.organisation = get_request_organisation(self.request)
+        form.instance.organisation = require_request_organisation(self.request)
         messages.success(self.request, "Exercice créé avec succès.")
         return super().form_valid(form)
 

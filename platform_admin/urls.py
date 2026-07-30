@@ -8,9 +8,19 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("organisations/", views.organisation_list, name="organisation-list"),
     path(
+        "organisations/creer/",
+        views.organisation_create,
+        name="organisation-create",
+    ),
+    path(
         "organisations/<int:organisation_id>/",
         views.organisation_detail,
         name="organisation-detail",
+    ),
+    path(
+        "organisations/<int:organisation_id>/paiement/",
+        views.subscription_manual_payment,
+        name="subscription-manual-payment",
     ),
     path(
         "organisations/<int:organisation_id>/action/",

@@ -1,14 +1,19 @@
 import shutil
+from datetime import timedelta
 from decimal import Decimal
 from time import perf_counter
+from uuid import uuid4
 
-from django.db import connection
+from django.contrib.auth import get_user_model
+from django.db import connection, transaction
 from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from django.utils.crypto import get_random_string
+from django.utils.text import slugify
 
 from formations.models import Formation
-from organisations.models import Organisation
+from organisations.models import MembreOrganisation, Organisation
 from participants.models import Participant
 from subscriptions.models import Abonnement, PaiementAbonnement
 
@@ -215,3 +220,205 @@ def analytics_data():
         "organisations_monthly": organisations_monthly,
         "revenue_by_plan": revenue_by_plan,
     }
+
+
+def _unique_organisation_slug(name):
+    base = slugify(name) or "entreprise"
+    candidate = base
+    suffix = 2
+    while Organisation.objects.filter(slug=candidate).exists():
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+    return candidate
+
+
+def _unique_owner_username(organisation_slug):
+    base = f"{organisation_slug[:24].upper()}-ADMIN"
+    candidate = base
+    suffix = 2
+    user_model = get_user_model()
+    while user_model.objects.filter(username__iexact=candidate).exists():
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+    return candidate
+
+
+def _payment_reference(reference=""):
+    if reference:
+        return reference
+    while True:
+        candidate = f"SUB-{timezone.localdate():%Y%m%d}-{uuid4().hex[:8].upper()}"
+        if not PaiementAbonnement.objects.filter(reference=candidate).exists():
+            return candidate
+
+
+def _cycle_duration(cycle):
+    if cycle == Abonnement.Cycle.ANNUEL:
+        return timedelta(days=365)
+    return timedelta(days=30)
+
+
+def _plan_price(plan, cycle):
+    if cycle == Abonnement.Cycle.ANNUEL:
+        return plan.prix_annuel
+    return plan.prix_mensuel
+
+
+def _create_validated_payment(
+    *,
+    abonnement,
+    amount,
+    mode,
+    paid_at,
+    reference="",
+    actor=None,
+    notes="",
+    period_start=None,
+    period_end=None,
+):
+    return PaiementAbonnement.objects.create(
+        abonnement=abonnement,
+        reference=_payment_reference(reference),
+        montant=amount,
+        mode_paiement=mode,
+        statut=PaiementAbonnement.Statut.VALIDE,
+        date_paiement=paid_at,
+        donnees_prestataire={
+            "manual": True,
+            "received_by": actor.get_username() if actor else "",
+            "notes": notes,
+            "period_start": period_start.isoformat() if period_start else "",
+            "period_end": period_end.isoformat() if period_end else "",
+        },
+    )
+
+
+@transaction.atomic
+def create_platform_organisation(cleaned_data, *, actor):
+    slug = _unique_organisation_slug(cleaned_data["organisation_nom"])
+    activation = cleaned_data["activation"]
+    is_paid = activation == "PAYE"
+    organisation = Organisation.objects.create(
+        nom=cleaned_data["organisation_nom"],
+        slug=slug,
+        logo=cleaned_data.get("logo"),
+        email=cleaned_data["organisation_email"],
+        telephone=cleaned_data["organisation_telephone"],
+        adresse=cleaned_data.get("adresse", ""),
+        ville=cleaned_data.get("ville", ""),
+        pays=cleaned_data.get("pays") or "Mali",
+        statut=(
+            Organisation.Statut.ACTIVE if is_paid else Organisation.Statut.ESSAI
+        ),
+        is_active=True,
+    )
+
+    username = (
+        cleaned_data.get("owner_matricule")
+        or _unique_owner_username(organisation.slug)
+    )
+    temporary_password = cleaned_data.get("owner_password") or (
+        f"St-{get_random_string(12)}"
+    )
+    owner = get_user_model().objects.create_user(
+        username=username,
+        email=cleaned_data["owner_email"],
+        password=temporary_password,
+        first_name=cleaned_data["owner_first_name"],
+        last_name=cleaned_data["owner_last_name"],
+        telephone=cleaned_data.get("owner_telephone", ""),
+        role="ADMIN",
+        must_change_password=True,
+    )
+    MembreOrganisation.objects.create(
+        organisation=organisation,
+        user=owner,
+        role=MembreOrganisation.Role.PROPRIETAIRE,
+        invited_by=actor,
+    )
+
+    now = timezone.now()
+    plan = cleaned_data["plan"]
+    cycle = cleaned_data["cycle"]
+    if is_paid:
+        period_end = now + _cycle_duration(cycle)
+        subscription_status = Abonnement.Statut.ACTIF
+    else:
+        period_end = now + timedelta(days=cleaned_data.get("jours_essai") or 14)
+        subscription_status = Abonnement.Statut.ESSAI
+        organisation.date_fin_essai = period_end
+        organisation.save(update_fields=["date_fin_essai", "updated_at"])
+
+    abonnement = Abonnement.objects.create(
+        organisation=organisation,
+        plan=plan,
+        cycle=cycle,
+        statut=subscription_status,
+        date_debut=now,
+        date_fin=period_end,
+        montant=_plan_price(plan, cycle),
+    )
+    payment = None
+    if is_paid:
+        payment = _create_validated_payment(
+            abonnement=abonnement,
+            amount=cleaned_data["montant_paye"],
+            mode=cleaned_data["mode_paiement"],
+            paid_at=now,
+            reference=cleaned_data.get("reference_paiement", ""),
+            actor=actor,
+            notes=cleaned_data.get("notes", ""),
+            period_start=now,
+            period_end=period_end,
+        )
+    return organisation, owner, temporary_password, abonnement, payment
+
+
+@transaction.atomic
+def renew_subscription_manually(abonnement, cleaned_data, *, actor):
+    abonnement = Abonnement.objects.select_for_update().get(pk=abonnement.pk)
+    paid_at = cleaned_data["date_paiement"]
+    plan = cleaned_data["plan"]
+    cycle = cleaned_data["cycle"]
+    period_start = max(abonnement.date_fin, paid_at)
+    period_end = period_start + _cycle_duration(cycle)
+
+    abonnement.plan = plan
+    abonnement.cycle = cycle
+    abonnement.statut = Abonnement.Statut.ACTIF
+    abonnement.date_debut = period_start
+    abonnement.date_fin = period_end
+    abonnement.montant = _plan_price(plan, cycle)
+    abonnement.save(
+        update_fields=[
+            "plan",
+            "cycle",
+            "statut",
+            "date_debut",
+            "date_fin",
+            "montant",
+            "updated_at",
+        ]
+    )
+
+    organisation = abonnement.organisation
+    organisation.statut = Organisation.Statut.ACTIVE
+    organisation.is_active = True
+    organisation.date_fin_essai = None
+    organisation.save(
+        update_fields=["statut", "is_active", "date_fin_essai", "updated_at"]
+    )
+
+    payment = _create_validated_payment(
+        abonnement=abonnement,
+        amount=cleaned_data["montant"],
+        mode=cleaned_data["mode_paiement"],
+        paid_at=paid_at,
+        reference=cleaned_data.get("reference", ""),
+        actor=actor,
+        notes=cleaned_data.get("notes", ""),
+        period_start=period_start,
+        period_end=period_end,
+    )
+    return abonnement, payment
+

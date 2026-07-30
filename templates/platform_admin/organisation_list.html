@@ -1,6 +1,11 @@
 {% extends "platform_admin/base.html" %}
 {% block page_title %}Organisations clientes{% endblock %}
 {% block platform_content %}
+{% if platform_role == "SUPER_ADMIN" or platform_role == "OPS" or platform_role == "FINANCE" %}
+<div class="mb-4 flex justify-end">
+  <a href="{% url 'platform_admin:organisation-create' %}" class="platform-btn">Créer une entreprise</a>
+</div>
+{% endif %}
 <form method="get" class="platform-card mb-4 grid gap-3 p-4 md:grid-cols-[1fr_220px_auto]">
   <input name="q" value="{{ request.GET.q }}" placeholder="Nom, email ou slug…" class="border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-cyan-600">
   <select name="statut" class="border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Tous les statuts</option>{% for value,label in statuts %}<option value="{{ value }}" {% if request.GET.statut == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>

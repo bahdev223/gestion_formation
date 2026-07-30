@@ -6,7 +6,7 @@ from django.views.decorators.http import require_http_methods
 
 from formations.models import Seance
 from inscriptions.models import Inscription
-from organisations.utils import get_request_organisation, tenant_reverse
+from organisations.utils import require_request_organisation, tenant_reverse
 from presences.models import Presence
 from presences.services.presence_service import save_presence
 
@@ -14,10 +14,10 @@ from presences.services.presence_service import save_presence
 @login_required
 @permission_required("presences.view_presence", raise_exception=True)
 def presence_index(request, **kwargs):
-    organisation = get_request_organisation(request)
-    seances_qs = Seance.objects.select_related("session", "session__formation")
-    if organisation:
-        seances_qs = seances_qs.filter(organisation=organisation)
+    organisation = require_request_organisation(request)
+    seances_qs = Seance.objects.select_related(
+        "session", "session__formation"
+    ).filter(organisation=organisation)
     seances = (
         seances_qs
         .annotate(
@@ -52,10 +52,10 @@ def presence_index(request, **kwargs):
 @permission_required("presences.view_presence", raise_exception=True)
 @require_http_methods(["GET", "POST"])
 def presence_sheet(request, seance_id, **kwargs):
-    organisation = get_request_organisation(request)
-    seances = Seance.objects.select_related("session", "session__formation")
-    if organisation:
-        seances = seances.filter(organisation=organisation)
+    organisation = require_request_organisation(request)
+    seances = Seance.objects.select_related(
+        "session", "session__formation"
+    ).filter(organisation=organisation)
     seance = get_object_or_404(
         seances,
         pk=seance_id,
@@ -108,9 +108,11 @@ def presence_sheet(request, seance_id, **kwargs):
             )
         )
 
-    presences = Presence.objects.filter(seance=seance, inscription__in=inscriptions)
-    if organisation:
-        presences = presences.filter(organisation=organisation)
+    presences = Presence.objects.filter(
+        seance=seance,
+        inscription__in=inscriptions,
+        organisation=organisation,
+    )
     existing = {
         item.inscription_id: item
         for item in presences
