@@ -1,3 +1,4 @@
+# Dépendances nécessaires au conteneur de production Formix.
 -r base.txt
 psycopg[binary]>=3.2
 dj-database-url>=3.0,<4

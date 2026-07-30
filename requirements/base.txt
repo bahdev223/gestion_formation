@@ -1,3 +1,4 @@
+# Dépendances communes aux environnements de développement et de production.
 Django>=5.2,<5.3
 djangorestframework>=3.15,<3.16
 django-unfold>=0.81,<0.82

@@ -1,11 +1,12 @@
 [project]
-name = "balys-formation-manager"
+name = "formix"
 version = "1.0.0"
-description = "Application de gestion de formations"
+description = "Plateforme SaaS multi-entreprise de gestion des organismes de formation"
 requires-python = ">=3.12"
 dependencies = [
     "django>=5.2,<5.3",
     "djangorestframework>=3.15,<3.16",
+    "django-unfold>=0.81,<0.82",
     "pillow>=10.4",
     "weasyprint>=62",
     "reportlab>=4.0",
@@ -13,8 +14,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = []
-prod = ["psycopg[binary]>=3.2", "gunicorn>=23"]
+dev = [
+    "coverage>=7.6",
+    "pre-commit>=4.0",
+    "ruff>=0.9",
+]
+prod = [
+    "psycopg[binary]>=3.2",
+    "dj-database-url>=3.0,<4",
+    "gunicorn>=23",
+    "whitenoise>=6.9,<7",
+]
 
 [tool.ruff]
 line-length = 100

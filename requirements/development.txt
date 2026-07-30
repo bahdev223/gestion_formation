@@ -1,3 +1,4 @@
+# Dépendances réservées au développement, aux tests et à la qualité du code.
 -r base.txt
 coverage>=7.6
 pre-commit>=4.0
