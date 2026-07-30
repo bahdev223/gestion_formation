@@ -159,3 +159,15 @@ COMPTES = {
     "ALLOW_OVERDRAFT": False,
     "AUTO_CREATE_ACCOUNTING_ENTRIES": True,
 }
+
+# Sans ce bloc, DRF applique AllowAny par defaut : tout ViewSet qui oublie
+# permission_classes devient accessible sans authentification. Le defaut doit
+# etre ferme, et chaque API qui veut s'ouvrir doit le declarer explicitement.
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}

@@ -10,26 +10,26 @@ from ..models import EcritureComptable, ExerciceComptable, LigneEcritureComptabl
 class DashboardService:
     """Agrégation des données pour le tableau de bord comptable."""
 
-    def __init__(self, organisation=None):
+    def __init__(self, organisation):
+        # organisation est obligatoire : un repli sur None produisait des
+        # statistiques comptables consolidant toutes les organisations.
+        if organisation is None:
+            raise ValueError(
+                "DashboardService exige une organisation : sans elle, les "
+                "agregats melangeraient les donnees de tous les clients."
+            )
         self.organisation = organisation
 
     def _ecritures(self):
-        qs = EcritureComptable.objects.all()
-        if self.organisation is not None:
-            qs = qs.filter(organisation=self.organisation)
-        return qs
+        return EcritureComptable.objects.filter(organisation=self.organisation)
 
     def _exercices(self):
-        qs = ExerciceComptable.objects.all()
-        if self.organisation is not None:
-            qs = qs.filter(organisation=self.organisation)
-        return qs
+        return ExerciceComptable.objects.filter(organisation=self.organisation)
 
     def _lignes(self):
-        qs = LigneEcritureComptable.objects.select_related("ecriture", "compte")
-        if self.organisation is not None:
-            qs = qs.filter(ecriture__organisation=self.organisation)
-        return qs
+        return LigneEcritureComptable.objects.select_related(
+            "ecriture", "compte"
+        ).filter(ecriture__organisation=self.organisation)
 
     def synthese(self, exercice=None):
         if exercice is None:
@@ -107,10 +107,9 @@ class DashboardService:
         try:
             from ..models import ConfigurationComptable
 
-            config_qs = ConfigurationComptable.objects.all()
-            if self.organisation is not None:
-                config_qs = config_qs.filter(organisation=self.organisation)
-            config = config_qs.first()
+            config = ConfigurationComptable.objects.filter(
+                organisation=self.organisation
+            ).first()
         except Exception:
             return alerts
 

@@ -3,7 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters import rest_framework as filters
 from django.db.models import Sum, Q
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
+
+from core.mixins import OrganisationScopedViewSetMixin
+from organisations.utils import require_request_organisation
 
 from ..models import (
     CompteComptable, EcritureComptable, LigneEcritureComptable,
@@ -23,25 +27,48 @@ from .serializers import (
 )
 
 
-class CompteComptableViewSet(viewsets.ModelViewSet):
+class CompteComptableViewSet(viewsets.ReadOnlyModelViewSet):
+    """Plan comptable SYSCOHADA : referentiel partage entre organisations.
+
+    En lecture seule cote client : le plan est charge depuis le fichier
+    standard par la commande charger_plan_comptable. Sans cette restriction,
+    un client pouvait modifier ou supprimer des comptes utilises par tous
+    les autres.
+    """
+
     queryset = CompteComptable.objects.all()
     serializer_class = CompteComptableSerializer
     filterset_fields = ["code", "nature", "type_compte", "categorie", "actif"]
     search_fields = ["code", "libelle"]
 
     @action(detail=True, methods=["get"])
-    def solde(self, request, pk=None):
+    def solde(self, request, pk=None, **kwargs):
         compte = self.get_object()
-        exercice_id = request.query_params.get("exercice")
+        # Le compte est partage, mais son solde est propre a l'organisation :
+        # sans ce filtre, le solde cumulait les ecritures de tous les clients.
+        organisation = require_request_organisation(request)
         qs = LigneEcritureComptable.objects.filter(
-            compte=compte, ecriture__validee=True,
+            compte=compte,
+            ecriture__validee=True,
+            ecriture__organisation=organisation,
         )
+        exercice_id = request.query_params.get("exercice")
+        if exercice_id:
+            exercice = get_object_or_404(
+                ExerciceComptable, pk=exercice_id, organisation=organisation
+            )
+            qs = qs.filter(
+                ecriture__date_ecriture__gte=exercice.date_debut,
+                ecriture__date_ecriture__lte=exercice.date_fin,
+            )
         total_debit = qs.aggregate(total=Sum("debit"))["total"] or 0
         total_credit = qs.aggregate(total=Sum("credit"))["total"] or 0
         return Response({"solde": float(total_debit) - float(total_credit)})
 
 
-class EcritureComptableViewSet(viewsets.ModelViewSet):
+class EcritureComptableViewSet(
+    OrganisationScopedViewSetMixin, viewsets.ModelViewSet
+):
     queryset = EcritureComptable.objects.prefetch_related("lignes__compte").all()
     filterset_fields = ["validee", "journal", "exercice"]
     search_fields = ["reference", "libelle"]
@@ -52,7 +79,7 @@ class EcritureComptableViewSet(viewsets.ModelViewSet):
         return EcritureComptableSerializer
 
     @action(detail=True, methods=["post"])
-    def valider(self, request, pk=None):
+    def valider(self, request, pk=None, **kwargs):
         ecriture = self.get_object()
         if ecriture.validee:
             return Response({"error": "Déjà validée"}, status=status.HTTP_400_BAD_REQUEST)
@@ -63,7 +90,7 @@ class EcritureComptableViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["post"])
-    def annuler(self, request, pk=None):
+    def annuler(self, request, pk=None, **kwargs):
         ecriture = self.get_object()
         try:
             EcritureService.annuler_ecriture(ecriture, request.user)
@@ -71,50 +98,75 @@ class EcritureComptableViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    def _scoped_exercice(self, request):
+        """Resout l'exercice demande dans l'organisation courante.
+
+        Sans ce filtre, un exercice appartenant a une autre organisation
+        pouvait etre passe aux services d'etats financiers.
+        """
+        return self.scoped_object(
+            ExerciceComptable, request.query_params.get("exercice")
+        )
+
     @action(detail=False, methods=["get"])
-    def balance(self, request):
-        exercice_id = request.query_params.get("exercice")
+    def balance(self, request, **kwargs):
+        organisation = self.get_organisation()
         service = BalanceService()
-        exercice = ExerciceComptable.objects.filter(pk=exercice_id).first() if exercice_id else None
-        data = service.balance(exercice=exercice)
+        data = service.balance(
+            exercice=self._scoped_exercice(request),
+            organisation=organisation,
+        )
         return Response(data)
 
     @action(detail=False, methods=["get"])
-    def grand_livre(self, request):
-        compte_code = request.query_params.get("compte")
-        exercice_id = request.query_params.get("exercice")
+    def grand_livre(self, request, **kwargs):
+        organisation = self.get_organisation()
         service = GrandLivreService()
-        exercice = ExerciceComptable.objects.filter(pk=exercice_id).first() if exercice_id else None
-        data = service.grand_livre(compte_code=compte_code, exercice=exercice)
+        data = service.grand_livre(
+            compte_code=request.query_params.get("compte"),
+            exercice=self._scoped_exercice(request),
+            organisation=organisation,
+        )
         return Response(data)
 
     @action(detail=False, methods=["get"])
-    def bilan(self, request):
-        exercice_id = request.query_params.get("exercice")
+    def bilan(self, request, **kwargs):
+        organisation = self.get_organisation()
         service = BilanService()
-        exercice = ExerciceComptable.objects.filter(pk=exercice_id).first() if exercice_id else None
-        bilan = service.bilan(exercice=exercice)
+        bilan = service.bilan(
+            exercice=self._scoped_exercice(request),
+            organisation=organisation,
+        )
         return Response(bilan)
 
     @action(detail=False, methods=["get"])
-    def compte_resultat(self, request):
-        exercice_id = request.query_params.get("exercice")
+    def compte_resultat(self, request, **kwargs):
+        organisation = self.get_organisation()
         service = BilanService()
-        exercice = ExerciceComptable.objects.filter(pk=exercice_id).first() if exercice_id else None
-        resultat = service.compte_resultat(exercice=exercice)
+        resultat = service.compte_resultat(
+            exercice=self._scoped_exercice(request),
+            organisation=organisation,
+        )
         return Response(resultat)
 
 
-class JournalComptableViewSet(viewsets.ModelViewSet):
+class JournalComptableViewSet(viewsets.ReadOnlyModelViewSet):
+    """Journaux standards SYSCOHADA : referentiel partage, lecture seule."""
+
     queryset = JournalComptable.objects.all()
     serializer_class = JournalComptableSerializer
     filterset_fields = ["code", "actif"]
     search_fields = ["code", "libelle"]
 
     @action(detail=True, methods=["get"])
-    def ecritures(self, request, pk=None):
+    def ecritures(self, request, pk=None, **kwargs):
         journal = self.get_object()
-        ecritures = EcritureComptable.objects.filter(journal=journal)
+        # Le journal est partage : ses ecritures doivent etre limitees au
+        # tenant courant.
+        ecritures = EcritureComptable.objects.filter(
+            journal=journal,
+            organisation=require_request_organisation(request),
+        )
         page = self.paginate_queryset(ecritures)
         if page is not None:
             serializer = EcritureComptableSerializer(page, many=True)
@@ -123,14 +175,16 @@ class JournalComptableViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ExerciceComptableViewSet(viewsets.ModelViewSet):
+class ExerciceComptableViewSet(
+    OrganisationScopedViewSetMixin, viewsets.ModelViewSet
+):
     queryset = ExerciceComptable.objects.all()
     serializer_class = ExerciceComptableSerializer
     filterset_fields = ["cloture"]
     search_fields = ["code"]
 
     @action(detail=True, methods=["post"])
-    def cloturer(self, request, pk=None):
+    def cloturer(self, request, pk=None, **kwargs):
         exercice = self.get_object()
         try:
             ExerciceService.cloturer(exercice, request.user)
@@ -139,7 +193,7 @@ class ExerciceComptableViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["post"])
-    def rouvrir(self, request, pk=None):
+    def rouvrir(self, request, pk=None, **kwargs):
         exercice = self.get_object()
         try:
             ExerciceService.rouvrir(exercice)
@@ -148,19 +202,23 @@ class ExerciceComptableViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ConfigurationComptableViewSet(viewsets.ModelViewSet):
+class ConfigurationComptableViewSet(
+    OrganisationScopedViewSetMixin, viewsets.ModelViewSet
+):
     queryset = ConfigurationComptable.objects.all()
     serializer_class = ConfigurationComptableSerializer
 
 
-class ImmobilisationViewSet(viewsets.ModelViewSet):
+class ImmobilisationViewSet(
+    OrganisationScopedViewSetMixin, viewsets.ModelViewSet
+):
     queryset = Immobilisation.objects.prefetch_related("plan_amortissement").all()
     serializer_class = ImmobilisationSerializer
     filterset_fields = ["statut", "type_immobilisation"]
     search_fields = ["libelle", "code"]
 
     @action(detail=True, methods=["post"])
-    def calculer_amortissement(self, request, pk=None):
+    def calculer_amortissement(self, request, pk=None, **kwargs):
         immobilisation = self.get_object()
         try:
             AmortissementService.generer_plan_amortissement(immobilisation, request.user)
@@ -169,7 +227,7 @@ class ImmobilisationViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["post"])
-    def comptabiliser_amortissement(self, request, pk=None):
+    def comptabiliser_amortissement(self, request, pk=None, **kwargs):
         immobilisation = self.get_object()
         try:
             AmortissementService.comptabiliser_amortissement(immobilisation, request.user)

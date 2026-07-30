@@ -16,7 +16,7 @@ class BilanService:
     CLASSE_PRODUITS = ["7"]
 
     @staticmethod
-    def bilan(exercice=None, date_arret=None):
+    def bilan(*, organisation, exercice=None, date_arret=None):
         if date_arret is None:
             if exercice:
                 date_arret = exercice.date_fin
@@ -26,6 +26,7 @@ class BilanService:
         lignes = LigneEcritureComptable.objects.filter(
             ecriture__validee=True,
             ecriture__date_ecriture__lte=date_arret,
+            ecriture__organisation=organisation,
         )
         if exercice:
             lignes = lignes.filter(ecriture__date_ecriture__gte=exercice.date_debut)
@@ -64,13 +65,16 @@ class BilanService:
         }
 
     @staticmethod
-    def compte_resultat(exercice=None, date_debut=None, date_fin=None):
+    def compte_resultat(
+        *, organisation, exercice=None, date_debut=None, date_fin=None
+    ):
         if exercice:
             date_debut = exercice.date_debut
             date_fin = exercice.date_fin
 
         lignes = LigneEcritureComptable.objects.filter(
             ecriture__validee=True,
+            ecriture__organisation=organisation,
         )
         if date_debut:
             lignes = lignes.filter(ecriture__date_ecriture__gte=date_debut)

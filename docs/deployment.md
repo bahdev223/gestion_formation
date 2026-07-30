@@ -42,6 +42,24 @@ rediriger le trafic HTTP vers HTTPS.
 7. Monter un volume persistant sur `/app/media`.
 8. Utiliser `/health/` comme chemin de contrôle de santé.
 
+### Connexion PostgreSQL dans Coolify
+
+L’application accepte en priorité une URL PostgreSQL complète :
+
+```env
+DATABASE_URL=postgresql://utilisateur:mot-de-passe@hote-interne:5432/base
+```
+
+Dans Coolify, créez une ressource PostgreSQL dans le même projet et utilisez le
+sélecteur de variables pour exposer son URL interne à l’application sous le nom
+`DATABASE_URL`. Ne copiez pas l’URL publique de la base si les deux ressources
+partagent le même réseau Coolify.
+
+Si `DATABASE_URL` n’est pas utilisée, les quatre variables `DB_NAME`, `DB_USER`,
+`DB_PASSWORD` et `DB_HOST` deviennent obligatoires. Le conteneur s’arrête
+maintenant avec un diagnostic court et explicite lorsqu’une de ces valeurs
+manque, au lieu de redémarrer avec un `KeyError`.
+
 Variables recommandées :
 
 ```env
@@ -50,6 +68,7 @@ DJANGO_SECRET_KEY=une-longue-valeur-aleatoire-et-secrete
 DJANGO_ALLOWED_HOSTS=formix.saheltech.tech
 DJANGO_CSRF_TRUSTED_ORIGINS=https://formix.saheltech.tech
 DJANGO_SECURE_HSTS_SECONDS=31536000
+DATABASE_URL=postgresql://formix:mot-de-passe@postgres:5432/formix
 DB_NAME=formix
 DB_USER=formix
 DB_PASSWORD=un-mot-de-passe-fort
