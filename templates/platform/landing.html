@@ -272,7 +272,7 @@
           {% for plan in plans %}
             <article class="plan-card{% if forloop.counter == 2 %} recommended{% endif %}">
               {% if forloop.counter == 2 %}<span class="recommended-label">Recommandé</span>{% endif %}
-              <span class="plan-code">{{ plan.code }}</span>
+              <span class="plan-code">Offre Formix</span>
               <h3>{{ plan.nom }}</h3>
               <p class="plan-description">{{ plan.description|default:"Un environnement complet pour structurer et piloter votre activité." }}</p>
               <p class="plan-price"><strong>{{ plan.prix_mensuel|floatformat:0 }}</strong><span>FCFA<br>/ mois</span></p>

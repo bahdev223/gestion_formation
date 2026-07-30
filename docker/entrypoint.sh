@@ -28,6 +28,11 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     python manage.py migrate --noinput
 fi
 
+if [ "${SEED_DEFAULT_PLANS:-true}" = "true" ]; then
+    echo "Ensuring default subscription plans..."
+    python manage.py seed_plans
+fi
+
 if [ "${COLLECT_STATIC:-true}" = "true" ]; then
     echo "Collecting static files..."
     python manage.py collectstatic --noinput --clear

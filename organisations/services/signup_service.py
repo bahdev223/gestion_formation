@@ -14,7 +14,7 @@ def get_or_create_trial_plan():
     plan, _ = PlanAbonnement.objects.get_or_create(
         code=PlanAbonnement.Code.STARTER,
         defaults={
-            "nom": "Starter",
+            "nom": "Basic",
             "description": "Plan d'essai pour démarrer la gestion de formation.",
             "prix_mensuel": 0,
             "prix_annuel": 0,

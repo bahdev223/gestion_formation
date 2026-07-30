@@ -9,9 +9,9 @@ from core.models import TimeStampedModel
 
 class PlanAbonnement(TimeStampedModel):
     class Code(models.TextChoices):
-        STARTER = "STARTER", "Starter"
-        PREMIUM = "PREMIUM", "Premium"
-        PRO = "PRO", "Pro"
+        STARTER = "STARTER", "Basic"
+        PREMIUM = "PREMIUM", "Business"
+        PRO = "PRO", "Enterprise"
 
     code = models.CharField(max_length=20, choices=Code.choices, unique=True)
     nom = models.CharField(max_length=100)
