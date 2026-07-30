@@ -63,6 +63,10 @@ class PayrollGenerateViewTest(TestCase):
             email="contact@client-paie.test",
             telephone="+22370000001",
         )
+        # Les modules paie et RH sont optionnels : ils exigent un abonnement.
+        from core.testing import souscrire_plan_complet
+
+        souscrire_plan_complet(self.organisation)
         self.employee = Employee.objects.create(
             organisation=self.organisation,
             matricule="TEST-PAIE-001",

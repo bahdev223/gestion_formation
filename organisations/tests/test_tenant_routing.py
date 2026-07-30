@@ -13,6 +13,11 @@ class TenantRoutingTest(TestCase):
             email="contact@alpha.test",
             telephone="+22300000000",
         )
+        # Ce test verifie le prefixe tenant des liens du menu, y compris ceux
+        # des modules optionnels : il faut donc un abonnement qui les active.
+        from core.testing import souscrire_plan_complet
+
+        souscrire_plan_complet(cls.organisation)
         cls.user = get_user_model().objects.create_superuser(
             username="route-admin",
             email="route-admin@alpha.test",

@@ -35,6 +35,11 @@ PLANS = [
             "notifications": False,
             "api": False,
             "custom_domain": False,
+            # Modules de gestion d'entreprise : reserves aux paliers superieurs.
+            "hr": False,
+            "payroll": False,
+            "accounting": False,
+            "treasury": False,
         },
     },
     {
@@ -63,6 +68,10 @@ PLANS = [
             "notifications": True,
             "api": False,
             "custom_domain": False,
+            "hr": False,
+            "payroll": False,
+            "accounting": True,
+            "treasury": True,
         },
     },
     {
@@ -94,6 +103,10 @@ PLANS = [
             "complete_audit": True,
             "api": True,
             "custom_domain": True,
+            "hr": True,
+            "payroll": True,
+            "accounting": True,
+            "treasury": True,
         },
     },
 ]

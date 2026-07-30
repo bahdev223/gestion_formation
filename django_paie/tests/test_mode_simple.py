@@ -445,6 +445,10 @@ class PaiementBulletinPDFViewTest(TestCase):
             email="paie-pdf@entreprise.test",
             telephone="+22370000003",
         )
+        # Le module paie est optionnel : sans abonnement l'acces est refuse.
+        from core.testing import souscrire_plan_complet
+
+        souscrire_plan_complet(self.organisation)
         self.service = ModeSimpleService(entreprise_id=self.organisation.slug)
         self.client.force_login(self.user)
 

@@ -45,6 +45,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "accounts.middleware.MandatoryPasswordChangeMiddleware",
     "organisations.middleware.CurrentOrganisationMiddleware",
+    "core.middleware.ModuleAccessMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -66,6 +67,7 @@ TEMPLATES = [
                 "organisations.context_processors.current_organisation",
                 "dashboard.context_processors.organisation",
                 "platform_admin.context_processors.platform_status",
+                "core.context_processors.modules",
             ],
         },
     },

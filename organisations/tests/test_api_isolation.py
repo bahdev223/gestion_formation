@@ -31,12 +31,16 @@ API_TRESO = "/o/{slug}/api/comptes-financiers"
 
 
 def build_accounting_tenant(suffix, slug, journal):
+    from core.testing import souscrire_plan_complet
+
     organisation = Organisation.objects.create(
         nom=f"Centre {suffix}",
         slug=slug,
         email=f"{slug}@test.test",
         telephone="+22300000000",
     )
+    # Comptabilite et tresorerie sont des modules optionnels.
+    souscrire_plan_complet(organisation)
     exercice = ExerciceComptable.objects.create(
         code=f"EX-{suffix}",
         date_debut="2025-01-01",

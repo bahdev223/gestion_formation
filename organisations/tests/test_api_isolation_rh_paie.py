@@ -26,12 +26,16 @@ API_PAIE = "/o/{slug}/paie-salariale/api"
 
 
 def build_hr_tenant(suffix, slug, employe_user):
+    from core.testing import souscrire_plan_complet
+
     organisation = Organisation.objects.create(
         nom=f"Centre {suffix}",
         slug=slug,
         email=f"{slug}@test.test",
         telephone="+22300000000",
     )
+    # RH et paie sont des modules optionnels.
+    souscrire_plan_complet(organisation)
     # Department.code et Position.code sont uniques globalement (defaut
     # multi-tenant connu) : on suffixe pour eviter une collision entre les
     # deux organisations du test.
