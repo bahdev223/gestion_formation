@@ -56,4 +56,4 @@ ENTRYPOINT ["sh", "/app/docker/entrypoint.sh"]
 CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-3} --timeout ${GUNICORN_TIMEOUT:-120} --access-logfile - --error-logfile -"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.getenv('PORT', '8000') + '/health/', timeout=4)"
+    CMD python -c "import os, urllib.request; host = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost').split(',')[0].strip() or 'localhost'; request = urllib.request.Request('http://127.0.0.1:' + os.getenv('PORT', '8000') + '/health/', headers={'Host': host}); urllib.request.urlopen(request, timeout=4)"

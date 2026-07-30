@@ -11,6 +11,8 @@ class PlatformSignupTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Créer mon entreprise")
+        self.assertNotContains(response, "python manage.py")
+        self.assertNotContains(response, "/o/votre-entreprise/")
 
     def test_creation_entreprise_connecte_et_redirige_vers_slug(self):
         response = self.client.post(
