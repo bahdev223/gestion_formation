@@ -282,19 +282,19 @@ a {
 .official-logo {
   position: absolute;
   top: 18px;
-  left: 30px;
+  right: 30px;
   display: block;
-  width: 158px;
-  height: 92px;
+  width: 120px;
+  height: 70px;
   overflow: hidden;
   mix-blend-mode: multiply;
 }
 
 .official-logo img {
   display: block;
-  width: 162px;
+  width: 124px;
   max-width: none;
-  transform: translate(-2px, -25px);
+  transform: translate(-2px, -19px);
 }
 
 .mobile-brand {

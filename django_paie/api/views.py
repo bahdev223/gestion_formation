@@ -6,6 +6,7 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from organisations.utils import require_request_organisation
 from ..models import EcheanceSalariale, PaiementSalarial, PeriodePaie, RubriquePaie
 from ..models.bulletin import BulletinPaie, LigneBulletin, CotisationBulletin, ValidationPaie
 from ..services import ModeSimpleService, ModeCompletService, StatistiquesPaieService
@@ -14,23 +15,29 @@ from .docs_content import API_DOCS
 
 
 class APIView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Base des API de paie, isolee par organisation.
+
+    L'isolation reposait auparavant sur paie_settings.MODE_PAR_ENTREPRISE et
+    sur request.user.entreprise_id. Ce mecanisme etait inoperant ici :
+
+    - MODE_PAR_ENTREPRISE vaut False, donc get_entreprise_id() renvoyait une
+      chaine vide et tous les filtres `if entreprise_id:` etaient ignores ;
+    - le modele User de ce projet ne porte pas de champ entreprise_id, donc
+      activer le mode aurait refuse tous les appels.
+
+    Le tenant vient desormais de l'URL /o/<slug>/, seule source fiable : un
+    utilisateur peut etre membre de plusieurs organisations.
+    """
+
     permission_required = "django_paie.view_echeancesalariale"
     raise_exception = True
 
-    def dispatch(self, request, *args, **kwargs):
-        if paie_settings.MODE_PAR_ENTREPRISE:
-            entreprise_id = getattr(request.user, "entreprise_id", "")
-            if not entreprise_id:
-                raise PermissionDenied("Aucune entreprise associée à cet utilisateur.")
-        return super().dispatch(request, *args, **kwargs)
+    def get_organisation(self):
+        return require_request_organisation(self.request)
 
     def get_entreprise_id(self):
-        if not paie_settings.MODE_PAR_ENTREPRISE:
-            return ""
-        entreprise_id = getattr(self.request.user, "entreprise_id", "")
-        if not entreprise_id:
-            raise PermissionDenied("Aucune entreprise associée à cet utilisateur.")
-        return str(entreprise_id)
+        # Les modeles de paie stockent le tenant sous forme de slug.
+        return self.get_organisation().slug
 
 
 def _json_error(msg, status=400):
@@ -63,12 +70,15 @@ def _parse_date(val):
 
 
 def _verifier_employe_entreprise(request, employe):
-    if not paie_settings.MODE_PAR_ENTREPRISE:
-        return
-    entreprise_id = getattr(request.user, "entreprise_id", "")
-    champ = paie_settings.EMPLOYE_ENTREPRISE_FIELD
-    valeur = getattr(employe, champ, None)
-    if valeur is None or str(valeur) != str(entreprise_id):
+    """Refuse un employe appartenant a une autre organisation.
+
+    L'ancienne version sortait immediatement quand MODE_PAR_ENTREPRISE etait
+    False (le cas ici) et ne verifiait donc rien : n'importe quel employe
+    pouvait etre designe par son identifiant. Employee porte un FK
+    organisation, c'est lui qui fait foi.
+    """
+    organisation = require_request_organisation(request)
+    if getattr(employe, "organisation_id", None) != organisation.pk:
         raise PermissionDenied(
             "Employé introuvable ou rattaché à une autre entreprise."
         )
@@ -153,11 +163,10 @@ def _serialize_bulletin(b):
 class EcheanceListAPI(APIView):
     permission_required = "django_paie.view_echeancesalariale"
 
-    def get(self, request):
-        entreprise_id = self.get_entreprise_id()
-        qs = EcheanceSalariale.objects.all()
-        if entreprise_id:
-            qs = qs.filter(entreprise_id=entreprise_id)
+    def get(self, request, **kwargs):
+        qs = EcheanceSalariale.objects.filter(
+            entreprise_id=self.get_entreprise_id()
+        )
 
         statut = request.GET.get("statut")
         if statut:
@@ -178,7 +187,7 @@ class EcheanceListAPI(APIView):
             {"data": [_serialize_echeance(e) for e in qs], "count": qs.count()}
         )
 
-    def post(self, request):
+    def post(self, request, **kwargs):
         if not request.user.has_perm("django_paie.add_echeancesalariale"):
             return _json_error("Permission refusée.", 403)
         data = _parse_json(request)
@@ -216,30 +225,32 @@ class EcheanceListAPI(APIView):
 class EcheanceDetailAPI(APIView):
     permission_required = "django_paie.view_echeancesalariale"
 
-    def _verifier_acces(self, echeance):
-        if not paie_settings.MODE_PAR_ENTREPRISE:
-            return True
-        return echeance.entreprise_id == self.get_entreprise_id()
+    def _echeance_du_tenant(self, pk, prefetch=False):
+        """Resout l'echeance dans l'organisation courante uniquement.
 
-    def get(self, request, pk):
-        try:
-            e = EcheanceSalariale.objects.prefetch_related("paiements").get(pk=pk)
-        except EcheanceSalariale.DoesNotExist:
+        _verifier_acces() renvoyait True des que MODE_PAR_ENTREPRISE etait
+        False : n'importe quelle echeance etait accessible par son pk.
+        """
+        qs = EcheanceSalariale.objects.filter(
+            entreprise_id=self.get_entreprise_id()
+        )
+        if prefetch:
+            qs = qs.prefetch_related("paiements")
+        return qs.filter(pk=pk).first()
+
+    def get(self, request, pk, **kwargs):
+        e = self._echeance_du_tenant(pk, prefetch=True)
+        if e is None:
             return _json_error("Échéance introuvable.", 404)
-        if not self._verifier_acces(e):
-            return _json_error("Accès refusé.", 403)
         return JsonResponse({"data": _serialize_echeance(e, include_paiements=True)})
 
-    def post(self, request, pk):
+    def post(self, request, pk, **kwargs):
         data = _parse_json(request)
         if not data:
             return _json_error("Corps JSON requis.")
-        try:
-            e = EcheanceSalariale.objects.get(pk=pk)
-        except EcheanceSalariale.DoesNotExist:
+        e = self._echeance_du_tenant(pk)
+        if e is None:
             return _json_error("Échéance introuvable.", 404)
-        if not self._verifier_acces(e):
-            return _json_error("Accès refusé.", 403)
         action = data.get("action")
         if action == "cloturer":
             if not request.user.has_perm("django_paie.cloturer_periode"):
@@ -274,11 +285,10 @@ class EcheanceDetailAPI(APIView):
 class PaiementListAPI(APIView):
     permission_required = "django_paie.view_paiementsalarial"
 
-    def get(self, request):
-        entreprise_id = self.get_entreprise_id()
-        qs = PaiementSalarial.objects.select_related("echeance").all()
-        if entreprise_id:
-            qs = qs.filter(echeance__entreprise_id=entreprise_id)
+    def get(self, request, **kwargs):
+        qs = PaiementSalarial.objects.select_related("echeance").filter(
+            echeance__entreprise_id=self.get_entreprise_id()
+        )
         echeance_id = request.GET.get("echeance_id")
         if echeance_id:
             qs = qs.filter(echeance_id=echeance_id)
@@ -287,7 +297,7 @@ class PaiementListAPI(APIView):
             {"data": [_serialize_paiement(p) for p in qs], "count": qs.count()}
         )
 
-    def post(self, request):
+    def post(self, request, **kwargs):
         if not request.user.has_perm("django_paie.add_paiementsalarial"):
             return _json_error("Permission refusée.", 403)
         data = _parse_json(request)
@@ -312,14 +322,18 @@ class PaiementListAPI(APIView):
 class PaiementAnnulerAPI(APIView):
     permission_required = "django_paie.annuler_paiement"
 
-    def post(self, request, pk):
-        try:
-            paiement = PaiementSalarial.objects.get(pk=pk)
-        except PaiementSalarial.DoesNotExist:
+    def post(self, request, pk, **kwargs):
+        # Le filtre etait conditionne a MODE_PAR_ENTREPRISE (False ici) : tout
+        # paiement salarial d'un autre client pouvait etre annule par son pk.
+        paiement = (
+            PaiementSalarial.objects.select_related("echeance")
+            .filter(
+                pk=pk, echeance__entreprise_id=self.get_entreprise_id()
+            )
+            .first()
+        )
+        if paiement is None:
             return _json_error("Paiement introuvable.", 404)
-        if paie_settings.MODE_PAR_ENTREPRISE:
-            if paiement.echeance.entreprise_id != self.get_entreprise_id():
-                return _json_error("Accès refusé.", 403)
         try:
             paiement.annuler()
         except Exception as e:
@@ -331,7 +345,7 @@ class PaiementAnnulerAPI(APIView):
 class AvanceAPI(APIView):
     permission_required = "django_paie.add_paiementsalarial"
 
-    def post(self, request):
+    def post(self, request, **kwargs):
         data = _parse_json(request)
         if not data:
             return _json_error("Corps JSON requis.")
@@ -371,7 +385,7 @@ class AvanceAPI(APIView):
 class BulletinCalculAPI(APIView):
     permission_required = "django_paie.add_bulletinpaie"
 
-    def post(self, request):
+    def post(self, request, **kwargs):
         data = _parse_json(request)
         if not data:
             return _json_error("Corps JSON requis.")
@@ -402,11 +416,10 @@ class BulletinCalculAPI(APIView):
 class BulletinListAPI(APIView):
     permission_required = "django_paie.view_bulletinpaie"
 
-    def get(self, request):
-        entreprise_id = self.get_entreprise_id()
-        qs = BulletinPaie.objects.select_related("echeance").all()
-        if entreprise_id:
-            qs = qs.filter(echeance__entreprise_id=entreprise_id)
+    def get(self, request, **kwargs):
+        qs = BulletinPaie.objects.select_related("echeance").filter(
+            echeance__entreprise_id=self.get_entreprise_id()
+        )
         employe_id = request.GET.get("employe_id")
         if employe_id:
             qs = qs.filter(echeance__employe_object_id=employe_id)
@@ -426,7 +439,7 @@ class BulletinListAPI(APIView):
 class MasseSalarialeAPI(APIView):
     permission_required = "django_paie.add_bulletinpaie"
 
-    def post(self, request):
+    def post(self, request, **kwargs):
         data = _parse_json(request)
         if not data:
             return _json_error("Corps JSON requis.")
@@ -437,9 +450,30 @@ class MasseSalarialeAPI(APIView):
         if not employes_ids:
             return _json_error("employes_ids requis (liste).")
 
-        entreprise_id = self.get_entreprise_id()
-        service = ModeCompletService(entreprise_id=entreprise_id)
-        resultats = service.calculer_masse(employes_ids, periode)
+        # Chaque identifiant vient du client : on ne garde que les employes de
+        # l'organisation courante, sinon la masse salariale d'un autre client
+        # pouvait etre calculee en passant ses identifiants.
+        from django.apps import apps
+
+        model = apps.get_model(paie_settings.EMPLOYE_MODEL)
+        try:
+            demandes = [int(i) for i in employes_ids]
+        except (TypeError, ValueError):
+            return _json_error("employes_ids doit contenir des entiers.")
+        autorises = set(
+            model.objects.filter(
+                pk__in=demandes, organisation=self.get_organisation()
+            ).values_list("pk", flat=True)
+        )
+        refuses = [i for i in demandes if i not in autorises]
+        if refuses:
+            return _json_error(
+                f"Employés introuvables dans cette entreprise : {refuses}.",
+                404,
+            )
+
+        service = ModeCompletService(entreprise_id=self.get_entreprise_id())
+        resultats = service.calculer_masse(sorted(autorises), periode)
         succes = sum(1 for r in resultats if r["succes"])
         echec = sum(1 for r in resultats if not r["succes"])
         return JsonResponse({
@@ -454,7 +488,7 @@ class MasseSalarialeAPI(APIView):
 class StatsResumeAPI(APIView):
     permission_required = "django_paie.view_echeancesalariale"
 
-    def get(self, request):
+    def get(self, request, **kwargs):
         entreprise_id = self.get_entreprise_id()
         stats = StatistiquesPaieService(entreprise_id=entreprise_id)
         annee = request.GET.get("annee")
@@ -472,7 +506,7 @@ class StatsResumeAPI(APIView):
 class StatsArrieresAPI(APIView):
     permission_required = "django_paie.view_echeancesalariale"
 
-    def get(self, request):
+    def get(self, request, **kwargs):
         entreprise_id = self.get_entreprise_id()
         stats = StatistiquesPaieService(entreprise_id=entreprise_id)
         return JsonResponse({"data": stats.arrieres()})
@@ -481,7 +515,7 @@ class StatsArrieresAPI(APIView):
 class StatsAvancesAPI(APIView):
     permission_required = "django_paie.view_echeancesalariale"
 
-    def get(self, request):
+    def get(self, request, **kwargs):
         entreprise_id = self.get_entreprise_id()
         stats = StatistiquesPaieService(entreprise_id=entreprise_id)
         return JsonResponse({"data": stats.avances()})
@@ -490,7 +524,7 @@ class StatsAvancesAPI(APIView):
 class DashboardAPI(APIView):
     permission_required = "django_paie.view_echeancesalariale"
 
-    def get(self, request):
+    def get(self, request, **kwargs):
         entreprise_id = self.get_entreprise_id()
         stats = StatistiquesPaieService(entreprise_id=entreprise_id)
         annee = request.GET.get("annee")
@@ -519,5 +553,5 @@ class DashboardAPI(APIView):
 class DocsAPI(APIView):
     permission_required = "django_paie.view_echeancesalariale"
 
-    def get(self, request):
+    def get(self, request, **kwargs):
         return JsonResponse({"data": API_DOCS})

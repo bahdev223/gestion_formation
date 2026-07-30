@@ -22,21 +22,21 @@ class EmployeeAdmin(admin.ModelAdmin):
     def hire_employees(self, request, queryset):
         svc = EmployeeService()
         for emp in queryset.filter(status="recruited"):
-            svc.hire(emp.id, performed_by_id=request.user.id)
+            svc.hire(emp.id, organisation=emp.organisation, performed_by_id=request.user.id)
         self.message_user(request, f"{queryset.count()} employé(s) embauché(s).")
     hire_employees.short_description = "Embaucher la sélection"
 
     def suspend_employees(self, request, queryset):
         svc = EmployeeService()
         for emp in queryset.filter(status="active"):
-            svc.suspend(emp.id, performed_by_id=request.user.id)
+            svc.suspend(emp.id, organisation=emp.organisation, performed_by_id=request.user.id)
         self.message_user(request, f"{queryset.count()} employé(s) suspendu(s).")
     suspend_employees.short_description = "Suspendre la sélection"
 
     def terminate_employees(self, request, queryset):
         svc = EmployeeService()
         for emp in queryset.filter(status__in=["active", "suspended"]):
-            svc.terminate(emp.id, performed_by_id=request.user.id)
+            svc.terminate(emp.id, organisation=emp.organisation, performed_by_id=request.user.id)
         self.message_user(request, f"{queryset.count()} employé(s) terminé(s).")
     terminate_employees.short_description = "Terminer la sélection"
 

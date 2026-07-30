@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -77,6 +78,24 @@
         flex: 0 0 auto;
         color: currentColor;
       }
+      .formix-logo-crop {
+        display: block;
+        overflow: hidden;
+        background: #ffffff;
+        mix-blend-mode: multiply;
+      }
+      .formix-logo-crop img {
+        display: block;
+        max-width: none;
+      }
+      .formix-logo-nav {
+        width: 120px;
+        height: 62px;
+      }
+      .formix-logo-nav img {
+        width: 120px;
+        transform: translate(0, -18px);
+      }
       .feature-icon {
         display: grid;
         place-items: center;
@@ -93,9 +112,8 @@
     {% if not user.is_authenticated %}
     <nav class="border-b border-slate-200 bg-white">
         <div class="container mx-auto flex items-center justify-between px-4 py-3">
-            <a href="/" class="flex items-center gap-3 font-bold text-lg text-[var(--baly-blue-dark)]">
-                <span class="grid h-10 w-10 place-items-center bg-cyan-600 text-sm font-black text-white">ST</span>
-                <span class="tracking-tight">SahelTech</span>
+            <a href="/" class="formix-logo-crop formix-logo-nav" aria-label="Accueil Formix">
+                <img src="{% static 'images/formix-logo.png' %}" alt="Formix — Solutions, Innovation, Performance">
             </a>
             <div class="flex items-center gap-3 text-sm">
                 {% if user.is_authenticated %}

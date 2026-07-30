@@ -1,27 +1,34 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Connexion | SahelTech{% endblock %}
+{% block title %}Connexion | Formix{% endblock %}
 
 {% block content %}
 <div class="mx-auto mt-8 max-w-md rounded-lg baly-surface p-9">
-  <div class="mb-7 flex justify-center">
-    <div class="grid h-16 w-16 place-items-center bg-cyan-600 text-xl font-black text-white">ST</div>
+  <div class="mb-5 flex justify-center">
+    <a href="{% url 'platform-landing' %}"
+       class="formix-logo-crop h-[132px] w-[220px]"
+       aria-label="Accueil Formix">
+      <img src="{% static 'images/formix-logo.png' %}"
+           alt="Formix — Solutions, Innovation, Performance"
+           class="w-[224px] -translate-x-[2px] -translate-y-[42px]">
+    </a>
   </div>
 
   <div class="mb-7">
     <div class="mb-3 flex justify-center">
       <span class="baly-badge baly-badge-blue">Accès sécurisé</span>
     </div>
-    <p class="text-center text-sm font-medium text-slate-500">SahelTech · Accès plateforme</p>
+    <p class="text-center text-sm font-medium text-slate-500">Formix par SahelTech · Accès plateforme</p>
     <h1 class="mt-2 text-center text-3xl font-extrabold tracking-tight text-slate-950">Connexion</h1>
     <p class="mt-2 text-center text-sm leading-6 text-slate-600">
-      Connecte-toi avec ton email ou ton matricule. SahelTech vous dirigera vers votre entreprise ou la console d’administration selon votre rôle.
+      Connectez-vous avec votre email ou votre matricule. Formix vous dirigera vers votre entreprise ou la console d’administration selon votre rôle.
     </p>
   </div>
 
   {% if form.errors %}
     <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-      Identifiants invalides. Vérifie ton email/matricule et ton mot de passe.
+      Identifiants invalides. Vérifiez votre email, votre matricule et votre mot de passe.
     </div>
   {% endif %}
 

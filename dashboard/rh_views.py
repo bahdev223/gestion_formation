@@ -67,7 +67,11 @@ def rh_employee_create(request, **kwargs):
         employee.salaire_mensuel = data["salaire_mensuel"]
         employee.save(update_fields=["salaire_mensuel"])
         if data["activate_now"]:
-            service.hire(employee.pk, performed_by_id=request.user.pk)
+            service.hire(
+                employee.pk,
+                organisation=organisation,
+                performed_by_id=request.user.pk,
+            )
         messages.success(
             request,
             f"L’employé {employee.first_name} {employee.last_name} a été créé.",

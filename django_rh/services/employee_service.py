@@ -32,8 +32,8 @@ class EmployeeService:
         self._publish_event(EmployeeEvents.CREATED, employee, {})
         return employee
 
-    def hire(self, employee_id: int, performed_by_id: int | None = None) -> Employee:
-        employee = self._get_or_raise(employee_id)
+    def hire(self, employee_id: int, *, organisation, performed_by_id: int | None = None) -> Employee:
+        employee = self._get_or_raise(employee_id, organisation)
         entity = self._to_entity(employee)
         self.domain.hire(entity)
         employee.status = entity.status
@@ -44,8 +44,8 @@ class EmployeeService:
         self._publish_event(EmployeeEvents.HIRED, employee, {})
         return employee
 
-    def suspend(self, employee_id: int, reason: str = "", performed_by_id: int | None = None) -> Employee:
-        employee = self._get_or_raise(employee_id)
+    def suspend(self, employee_id: int, *, organisation, reason: str = "", performed_by_id: int | None = None) -> Employee:
+        employee = self._get_or_raise(employee_id, organisation)
         entity = self._to_entity(employee)
         self.domain.suspend(entity)
         employee.status = entity.status
@@ -55,8 +55,8 @@ class EmployeeService:
         self._publish_event(EmployeeEvents.SUSPENDED, employee, {"reason": reason})
         return employee
 
-    def terminate(self, employee_id: int, reason: str = "", performed_by_id: int | None = None) -> Employee:
-        employee = self._get_or_raise(employee_id)
+    def terminate(self, employee_id: int, *, organisation, reason: str = "", performed_by_id: int | None = None) -> Employee:
+        employee = self._get_or_raise(employee_id, organisation)
         entity = self._to_entity(employee)
         self.domain.terminate(entity)
         employee.status = entity.status
@@ -67,9 +67,21 @@ class EmployeeService:
         self._publish_event(EmployeeEvents.TERMINATED, employee, {"reason": reason})
         return employee
 
-    def _get_or_raise(self, employee_id: int) -> Employee:
+    def _get_or_raise(self, employee_id: int, organisation) -> Employee:
+        """Resout un employe dans une organisation donnee.
+
+        organisation est obligatoire : sans elle, hire/suspend/terminate
+        acceptaient n'importe quel identifiant et permettaient d'agir sur
+        l'employe d'un autre client.
+        """
+        if organisation is None:
+            raise ValueError(
+                "organisation est obligatoire pour resoudre un employe."
+            )
         try:
-            return Employee.objects.select_related("department", "position").get(id=employee_id)
+            return Employee.objects.select_related("department", "position").get(
+                id=employee_id, organisation=organisation
+            )
         except Employee.DoesNotExist:
             raise EmployeeNotFoundError(employee_id)
 

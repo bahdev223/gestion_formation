@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
 
 from ..models import EcheanceSalariale, PeriodePaie
@@ -304,11 +304,22 @@ class PeriodePaieModelTest(TestCase):
 
 class APITest(TestCase):
     def setUp(self):
+        from organisations.models import Organisation
+
         self.employe = get_user_model().objects.create_user(
             username="api_test", password="test123", is_staff=True,
         )
+        # Les API de paie sont isolees par organisation : le tenant vient de
+        # l'URL /o/<slug>/, et entreprise_id vaut le slug de l'organisation.
+        self.organisation = Organisation.objects.create(
+            nom="Centre Paie",
+            slug="centre-paie",
+            email="paie@test.test",
+            telephone="+22300000000",
+        )
+        self.service = ModeSimpleService(entreprise_id=self.organisation.slug)
 
-    def _api_request(self, method, path, data=None):
+    def _api_request(self, method, path, data=None, organisation=...):
         from django.test import RequestFactory
         factory = RequestFactory()
         if method == "GET":
@@ -318,6 +329,11 @@ class APITest(TestCase):
         self.employe.is_superuser = True
         self.employe.save(update_fields=["is_superuser"])
         request.user = self.employe
+        # RequestFactory ne passe pas par le middleware tenant : on pose
+        # l'organisation a la main, comme le ferait /o/<slug>/.
+        request.organisation = (
+            self.organisation if organisation is ... else organisation
+        )
         return request
 
     def test_api_echeance_list(self):
@@ -331,8 +347,7 @@ class APITest(TestCase):
 
     def test_api_paiement_create(self):
         from ..api.views import PaiementListAPI
-        service = ModeSimpleService()
-        echeance = service.creer_echeance(self.employe, "07/2026", 50000)
+        echeance = self.service.creer_echeance(self.employe, "07/2026", 50000)
         request = self._api_request("POST", "/api/paiements/",
                                     {"echeance_id": echeance.id, "montant": 50000})
         response = PaiementListAPI.as_view()(request)
@@ -342,11 +357,10 @@ class APITest(TestCase):
 
     def test_api_cloture_refuse_si_autre_echeance_impayee(self):
         from ..api.views import EcheanceDetailAPI
-        service = ModeSimpleService()
         autre = get_user_model().objects.create_user(username="autre")
-        echeance_payee = service.creer_echeance(self.employe, "07/2026", 50000)
-        service.creer_echeance(autre, "07/2026", 50000)
-        service.enregistrer_paiement(echeance_payee.id, 50000)
+        echeance_payee = self.service.creer_echeance(self.employe, "07/2026", 50000)
+        self.service.creer_echeance(autre, "07/2026", 50000)
+        self.service.enregistrer_paiement(echeance_payee.id, 50000)
         request = self._api_request(
             "POST", f"/api/echeances/{echeance_payee.id}/", {"action": "cloturer"}
         )
@@ -362,14 +376,30 @@ class APITest(TestCase):
         with self.assertRaises(PermissionDenied):
             EcheanceListAPI.as_view()(request)
 
-    @override_settings(
-        DJANGO_PAIE={"MODE": "SIMPLE", "MODE_PAR_ENTREPRISE": True}
-    )
-    def test_api_refuse_utilisateur_sans_entreprise(self):
+    def test_api_refuse_sans_contexte_organisation(self):
+        """Sans tenant, l'API doit refuser au lieu de tout renvoyer."""
         from ..api.views import EcheanceListAPI
-        request = self._api_request("GET", "/api/echeances/")
+        request = self._api_request("GET", "/api/echeances/", organisation=None)
         with self.assertRaises(PermissionDenied):
             EcheanceListAPI.as_view()(request)
+
+    def test_api_nexpose_pas_les_echeances_dune_autre_organisation(self):
+        from organisations.models import Organisation
+
+        from ..api.views import EcheanceListAPI
+
+        voisin = Organisation.objects.create(
+            nom="Centre Voisin", slug="centre-voisin",
+            email="voisin@test.test", telephone="+22300000001",
+        )
+        ModeSimpleService(entreprise_id=voisin.slug).creer_echeance(
+            self.employe, "07/2026", 90000
+        )
+
+        request = self._api_request("GET", "/api/echeances/")
+        response = EcheanceListAPI.as_view()(request)
+        payload = json.loads(response.content)
+        self.assertEqual(payload["count"], 0)
 
 
 class StatistiquesPaieServiceTest(TestCase):
