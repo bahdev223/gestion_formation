@@ -1,4 +1,5 @@
 {% extends "layouts/dashboard.html" %}
+{% load static %}
 {% block page_title %}Formations{% endblock %}
 {% block page_subtitle %}Gestion des categories, formations, sessions et seances.{% endblock %}
 {% block dashboard_content %}
@@ -15,8 +16,8 @@
       <p class="mt-1 text-sm text-slate-500">{{ formations|length }} formation{{ formations|length|pluralize }} affichée{{ formations|length|pluralize }}</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="{% url 'formations:categorie-list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Gérer les catégories</a>
-      <a href="{% url 'formations:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'formations:create' %}" hx-target="#global-modal-content" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Ajouter une formation</a>
+      <a href="{% tenant_url 'formations:categorie-list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Gérer les catégories</a>
+      <a href="{% tenant_url 'formations:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'formations:create' %}" hx-target="#global-modal-content" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Ajouter une formation</a>
     </div>
   </div>
 
@@ -25,7 +26,6 @@
       <table class="w-full text-left text-sm">
         <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
           <tr>
-            <th class="px-6 py-4">Code</th>
             <th class="px-6 py-4">Formation</th>
             <th class="px-6 py-4">Catégorie</th>
             <th class="px-6 py-4">Durée</th>
@@ -36,8 +36,22 @@
         <tbody class="divide-y divide-slate-100">
           {% for formation in formations %}
             <tr class="transition hover:bg-blue-50/40">
-              <td class="whitespace-nowrap px-6 py-4 font-mono text-xs text-slate-500">{{ formation.code }}</td>
-              <td class="px-6 py-4 font-semibold text-slate-900">{{ formation.nom }}</td>
+              <td class="px-6 py-4">
+                <div class="flex min-w-[260px] items-center gap-3">
+                  <img
+                    src="{% if formation.image %}{{ formation.image.url }}{% else %}{% static 'images/formation-cover-default.svg' %}{% endif %}"
+                    alt="Couverture de {{ formation.nom }}"
+                    class="h-12 w-20 shrink-0 border border-slate-200 object-cover"
+                    loading="lazy"
+                  >
+                  <div class="min-w-0">
+                    <p class="font-semibold text-slate-900">{{ formation.nom }}</p>
+                    {% if formation.description %}
+                      <p class="mt-1 max-w-md truncate text-xs text-slate-500">{{ formation.description }}</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
               <td class="px-6 py-4 text-slate-600">{{ formation.categorie.nom }}</td>
               <td class="whitespace-nowrap px-6 py-4 text-slate-600">{{ formation.duree }} {{ formation.get_unite_duree_display|lower }}</td>
               <td class="whitespace-nowrap px-6 py-4 font-semibold text-slate-900">{{ formation.prix_standard|floatformat:0 }} FCFA</td>

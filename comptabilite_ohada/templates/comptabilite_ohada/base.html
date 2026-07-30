@@ -19,7 +19,7 @@
 <body>
     <nav class="navbar navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'comptabilite:dashboard' %}">Comptabilit&eacute; OHADA</a>
+            <a class="navbar-brand" href="{% tenant_url 'comptabilite:dashboard' %}">Comptabilit&eacute; OHADA</a>
             <div class="d-flex">
                 <span class="navbar-text me-3">{{ user.get_full_name|default:user.username }}</span>
                 <a href="/admin/logout/" class="btn btn-outline-light btn-sm">D&eacute;connexion</a>
@@ -28,17 +28,17 @@
     </nav>
 
     <div class="sidebar">
-        <a href="{% url 'comptabilite:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Tableau de bord</a>
-        <a href="{% url 'comptabilite:ecriture_list' %}" class="{% if 'ecriture' in request.resolver_match.url_name %}active{% endif %}">&Eacute;critures</a>
-        <a href="{% url 'comptabilite:compte_list' %}" class="{% if 'compte' in request.resolver_match.url_name %}active{% endif %}">Plan comptable</a>
-        <a href="{% url 'comptabilite:journal_list' %}" class="{% if 'journal' in request.resolver_match.url_name %}active{% endif %}">Journaux</a>
-        <a href="{% url 'comptabilite:balance' %}" class="{% if 'balance' in request.resolver_match.url_name %}active{% endif %}">Balance</a>
-        <a href="{% url 'comptabilite:grand_livre' %}" class="{% if 'grand_livre' in request.resolver_match.url_name %}active{% endif %}">Grand livre</a>
-        <a href="{% url 'comptabilite:bilan' %}" class="{% if 'bilan' in request.resolver_match.url_name %}active{% endif %}">Bilan</a>
-        <a href="{% url 'comptabilite:compte_resultat' %}" class="{% if 'compte_resultat' in request.resolver_match.url_name %}active{% endif %}">Compte de r&eacute;sultat</a>
-        <a href="{% url 'comptabilite:exercice_list' %}" class="{% if 'exercice' in request.resolver_match.url_name %}active{% endif %}">Exercices</a>
-        <a href="{% url 'comptabilite:immobilisation_list' %}" class="{% if 'immobilisation' in request.resolver_match.url_name %}active{% endif %}">Immobilisations</a>
-        <a href="{% url 'comptabilite:rapprochement_list' %}" class="{% if 'rapprochement' in request.resolver_match.url_name %}active{% endif %}">Rapprochement</a>
+        <a href="{% tenant_url 'comptabilite:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Tableau de bord</a>
+        <a href="{% tenant_url 'comptabilite:ecriture_list' %}" class="{% if 'ecriture' in request.resolver_match.url_name %}active{% endif %}">&Eacute;critures</a>
+        <a href="{% tenant_url 'comptabilite:compte_list' %}" class="{% if 'compte' in request.resolver_match.url_name %}active{% endif %}">Plan comptable</a>
+        <a href="{% tenant_url 'comptabilite:journal_list' %}" class="{% if 'journal' in request.resolver_match.url_name %}active{% endif %}">Journaux</a>
+        <a href="{% tenant_url 'comptabilite:balance' %}" class="{% if 'balance' in request.resolver_match.url_name %}active{% endif %}">Balance</a>
+        <a href="{% tenant_url 'comptabilite:grand_livre' %}" class="{% if 'grand_livre' in request.resolver_match.url_name %}active{% endif %}">Grand livre</a>
+        <a href="{% tenant_url 'comptabilite:bilan' %}" class="{% if 'bilan' in request.resolver_match.url_name %}active{% endif %}">Bilan</a>
+        <a href="{% tenant_url 'comptabilite:compte_resultat' %}" class="{% if 'compte_resultat' in request.resolver_match.url_name %}active{% endif %}">Compte de r&eacute;sultat</a>
+        <a href="{% tenant_url 'comptabilite:exercice_list' %}" class="{% if 'exercice' in request.resolver_match.url_name %}active{% endif %}">Exercices</a>
+        <a href="{% tenant_url 'comptabilite:immobilisation_list' %}" class="{% if 'immobilisation' in request.resolver_match.url_name %}active{% endif %}">Immobilisations</a>
+        <a href="{% tenant_url 'comptabilite:rapprochement_list' %}" class="{% if 'rapprochement' in request.resolver_match.url_name %}active{% endif %}">Rapprochement</a>
     </div>
 
     <div class="content">

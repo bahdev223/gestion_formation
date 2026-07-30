@@ -19,7 +19,7 @@
             <tbody>
                 {% for immo in immobilisations %}
                 <tr>
-                    <td><a href="{% url 'comptabilite:immobilisation_detail' immo.pk %}">{{ immo.code }}</a></td>
+                    <td><a href="{% tenant_url 'comptabilite:immobilisation_detail' immo.pk %}">{{ immo.code }}</a></td>
                     <td>{{ immo.designation }}</td>
                     <td class="text-end">{{ immo.valeur_acquisition|floatformat:2 }}</td>
                     <td>{{ immo.get_mode_amortissement_display }}</td>

@@ -2,7 +2,6 @@ from django import forms
 
 from .models import CategorieFormation, Formation, Seance, SessionFormation
 
-
 FIELD_CLASSES = (
     "w-full border border-slate-300 bg-white px-3.5 py-3 text-sm "
     "text-slate-900 outline-none transition focus:border-blue-600 "
@@ -43,6 +42,10 @@ class FormationForm(forms.ModelForm):
             "duree": "Durée",
             "unite_duree": "Unité",
             "prix_standard": "Prix standard (FCFA)",
+            "image": "Image de couverture",
+        }
+        help_texts = {
+            "image": "Formats JPG, PNG ou WebP. Taille maximale : 5 Mo.",
         }
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
@@ -50,16 +53,42 @@ class FormationForm(forms.ModelForm):
             "programme": forms.Textarea(attrs={"rows": 5}),
             "prix_standard": forms.NumberInput(attrs={"min": 0, "step": 500}),
             "duree": forms.NumberInput(attrs={"min": 1}),
+            "image": forms.ClearableFileInput(
+                attrs={"accept": "image/jpeg,image/png,image/webp"}
+            ),
         }
 
     def __init__(self, *args, **kwargs):
+        organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
         self.fields["categorie"].required = False
-        self.fields["categorie"].queryset = CategorieFormation.objects.filter(
+        categories = CategorieFormation.objects.filter(
             is_active=True
-        ).order_by("nom")
+        )
+        if organisation:
+            categories = categories.filter(organisation=organisation)
+        self.fields["categorie"].queryset = categories.order_by("nom")
 
         style_form_fields(self)
+
+    def clean_image(self):
+        image = self.cleaned_data.get("image")
+        if not image:
+            return image
+        if image.size > 5 * 1024 * 1024:
+            raise forms.ValidationError(
+                "L’image de couverture ne doit pas dépasser 5 Mo."
+            )
+        content_type = getattr(image, "content_type", "")
+        if content_type and content_type not in {
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+        }:
+            raise forms.ValidationError(
+                "Utilisez une image JPG, PNG ou WebP."
+            )
+        return image
 
     def clean(self):
         cleaned_data = super().clean()
@@ -79,6 +108,9 @@ class FormationForm(forms.ModelForm):
             categorie, _ = CategorieFormation.objects.get_or_create(
                 nom=nouvelle_categorie
             )
+            if formation.organisation_id and not categorie.organisation_id:
+                categorie.organisation = formation.organisation
+                categorie.save(update_fields=["organisation"])
             formation.categorie = categorie
         if commit:
             formation.save()
@@ -101,6 +133,7 @@ class CategorieFormationForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
         style_form_fields(self)
         self.fields["is_active"].widget.attrs["class"] = (
@@ -147,10 +180,14 @@ class SessionFormationForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
-        self.fields["formation"].queryset = Formation.objects.exclude(
+        formations = Formation.objects.exclude(
             statut=Formation.Statut.ARCHIVEE
-        ).order_by("nom")
+        )
+        if organisation:
+            formations = formations.filter(organisation=organisation)
+        self.fields["formation"].queryset = formations.order_by("nom")
         style_form_fields(self)
 
     def clean(self):
@@ -187,10 +224,14 @@ class SeanceForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
-        self.fields["session"].queryset = SessionFormation.objects.select_related(
+        sessions = SessionFormation.objects.select_related(
             "formation"
-        ).exclude(statut=SessionFormation.Statut.ANNULEE).order_by("-date_debut")
+        ).exclude(statut=SessionFormation.Statut.ANNULEE)
+        if organisation:
+            sessions = sessions.filter(organisation=organisation)
+        self.fields["session"].queryset = sessions.order_by("-date_debut")
         style_form_fields(self)
 
     def clean(self):

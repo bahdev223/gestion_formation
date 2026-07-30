@@ -1,6 +1,6 @@
 {% extends "comptes/base_comptes.html" %}
 {% block compte_title %}Rapprochement — {{ rapprochement.compte.nom }}{% endblock %}
-{% block page_actions %}<a href="{% url 'comptes:rapprochement_liste' %}" class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700">Retour</a>{% endblock %}
+{% block page_actions %}<a href="{% tenant_url 'comptes:rapprochement_liste' %}" class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700">Retour</a>{% endblock %}
 {% block compte_content %}
 <div class="mt-3 space-y-3">
   <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><article class="stat-card"><p class="stat-label">Solde relevé</p><p class="stat-value text-blue-700">{{ rapprochement.solde_releve|floatformat:0 }}</p></article><article class="stat-card"><p class="stat-label">Solde comptable</p><p class="stat-value">{{ rapprochement.solde_comptable|floatformat:0 }}</p></article><article class="stat-card"><p class="stat-label">Écart</p><p class="stat-value {% if rapprochement.ecart %}text-red-700{% else %}text-emerald-700{% endif %}">{{ rapprochement.ecart|floatformat:0 }}</p></article><article class="stat-card"><p class="stat-label">Statut</p><p class="mt-2"><span class="baly-badge baly-badge-blue">{{ rapprochement.get_statut_display }}</span></p><p class="stat-hint">{{ rapprochement.date_debut|date:"d/m/Y" }} – {{ rapprochement.date_fin|date:"d/m/Y" }}</p></article></div>

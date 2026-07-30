@@ -1,6 +1,5 @@
 from django.urls import path
 
-from .views import ConfigurationOrganisationView, dashboard_home
 from .payroll_views import (
     payroll_employee_salary_update,
     payroll_employees,
@@ -12,6 +11,7 @@ from .rh_views import (
     rh_dashboard,
     rh_employee_create,
 )
+from .views import ConfigurationOrganisationView, dashboard_home
 
 app_name = "dashboard"
 

@@ -5,9 +5,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 db.sqlite3
+default_*.sqlite3
+test_*.sqlite3
 media/
 static/dist/
 .env
 .env.local
 *.log
-

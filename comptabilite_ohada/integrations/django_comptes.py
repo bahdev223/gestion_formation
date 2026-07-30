@@ -1,31 +1,28 @@
-"""
-Intégration avec django-comptes.
+"""Intégration atomique entre les comptes financiers et la comptabilité."""
 
-Écoute les signaux de django-comptes pour créer automatiquement
-les écritures comptables correspondant aux mouvements financiers.
-"""
+from datetime import date
 
 from django.dispatch import receiver
 
 
 def connect():
-    """Connecte les handlers aux signaux de django-comptes."""
-    try:
-        from comptes.signals.mouvement import (
-            mouvement_valide, mouvement_annule, transfert_effectue,
-        )
-    except ImportError:
-        return
-
+    from comptes.models import NatureMouvement
+    from comptes.signals.mouvement import (
+        mouvement_annule,
+        mouvement_valide,
+        transfert_effectue,
+    )
     from comptabilite_ohada.services.ecriture_service import EcritureService
 
-    @receiver(mouvement_valide)
-    def on_mouvement_valide(sender, instance, nature, montant, user, **kwargs):
-        """À chaque mouvement validé dans comptes, créer l'écriture comptable."""
-        compte = instance.compte
-        compte_code = compte.compte_comptable_code or "571"
-
-        if nature in ("ENCAISSEMENT", "TRANSFERT"):
+    @receiver(
+        mouvement_valide,
+        dispatch_uid="comptabilite.mouvement_valide",
+    )
+    def on_mouvement_valide(
+        sender, instance, nature, montant, user, **kwargs
+    ):
+        compte_code = instance.compte.compte_comptable_code or "571"
+        if nature == NatureMouvement.ENCAISSEMENT:
             EcritureService.creer_ecriture_vente(
                 compte_caisse_code=compte_code,
                 montant=montant,
@@ -33,7 +30,7 @@ def connect():
                 compte_produit_code="706",
                 user=user,
             )
-        elif nature == "DECAISSEMENT":
+        elif nature == NatureMouvement.DECAISSEMENT:
             EcritureService.creer_ecriture_charge(
                 compte_caisse_code=compte_code,
                 montant=montant,
@@ -41,32 +38,75 @@ def connect():
                 compte_charge_code="658",
                 user=user,
             )
+        # Un transfert est comptabilisé une seule fois par
+        # on_transfert_effectue, après les deux mouvements financiers.
 
-    @receiver(transfert_effectue)
-    def on_transfert_effectue(sender, instance, source, destination, montant, user, **kwargs):
-        """À chaque transfert comptes → comptes, créer l'écriture de virement."""
+    @receiver(
+        transfert_effectue,
+        dispatch_uid="comptabilite.transfert_effectue",
+    )
+    def on_transfert_effectue(
+        sender, instance, source, destination, montant, user, **kwargs
+    ):
         source_code = source.compte_comptable_code or "571"
-        dest_code = destination.compte_comptable_code or "571"
-
+        destination_code = destination.compte_comptable_code or "571"
         EcritureService.creer_ecriture_transfert(
             compte_source_code=source_code,
-            compte_dest_code=dest_code,
+            compte_dest_code=destination_code,
             montant=montant,
-            libelle=instance.notes or f"Virement {source.nom} → {destination.nom}",
+            libelle=(
+                instance.notes
+                or f"Virement {source.nom} → {destination.nom}"
+            ),
             user=user,
         )
 
-    from comptes.signals.mouvement import mouvement_annule
-
-    @receiver(mouvement_annule)
-    def on_mouvement_annule(sender, instance, annulation, user, **kwargs):
-        """À chaque annulation, créer l'écriture d'annulation."""
-        compte = instance.compte
-        compte_code = compte.compte_comptable_code or "571"
-        EcritureService.creer_ecriture_regularisation(
-            montant=instance.montant,
+    @receiver(
+        mouvement_annule,
+        dispatch_uid="comptabilite.mouvement_annule",
+    )
+    def on_mouvement_annule(
+        sender, instance, annulation, user, **kwargs
+    ):
+        compte_code = instance.compte.compte_comptable_code or "571"
+        caisse = EcritureService.get_compte(compte_code)
+        if instance.nature == NatureMouvement.ENCAISSEMENT:
+            contrepartie = EcritureService.get_compte("706")
+            lignes = [
+                {
+                    "compte": contrepartie,
+                    "debit": instance.montant,
+                    "libelle": f"Annulation {instance.libelle}",
+                },
+                {
+                    "compte": caisse,
+                    "credit": instance.montant,
+                    "libelle": f"Annulation {instance.libelle}",
+                },
+            ]
+        elif instance.nature == NatureMouvement.DECAISSEMENT:
+            contrepartie = EcritureService.get_compte("658")
+            lignes = [
+                {
+                    "compte": caisse,
+                    "debit": instance.montant,
+                    "libelle": f"Annulation {instance.libelle}",
+                },
+                {
+                    "compte": contrepartie,
+                    "credit": instance.montant,
+                    "libelle": f"Annulation {instance.libelle}",
+                },
+            ]
+        else:
+            return
+        EcritureService.creer_ecriture(
+            reference=EcritureService.generer_reference("ANN"),
+            date_ecriture=date.today(),
             libelle=f"Annulation {instance.reference or instance.libelle}",
-            compte_debit_code=compte_code,
-            compte_credit_code=compte_code,
+            journal=EcritureService.get_or_create_journal(
+                "OD", "Opérations diverses", "OD"
+            ),
+            lignes=lignes,
             user=user,
         )

@@ -1,22 +1,41 @@
+from datetime import timedelta
 from decimal import Decimal
-from datetime import date, timedelta
 
-from django.db.models import Sum, Q
+from django.db.models import Q, Sum
 from django.utils import timezone
 
-from ..models import CompteComptable, EcritureComptable, LigneEcritureComptable
-from ..models import ExerciceComptable
+from ..models import EcritureComptable, ExerciceComptable, LigneEcritureComptable
 
 
 class DashboardService:
     """Agrégation des données pour le tableau de bord comptable."""
 
-    @staticmethod
-    def synthese(exercice=None):
-        if exercice is None:
-            exercice = ExerciceComptable.objects.filter(cloture=False).first()
+    def __init__(self, organisation=None):
+        self.organisation = organisation
 
-        base = LigneEcritureComptable.objects.filter(ecriture__validee=True)
+    def _ecritures(self):
+        qs = EcritureComptable.objects.all()
+        if self.organisation is not None:
+            qs = qs.filter(organisation=self.organisation)
+        return qs
+
+    def _exercices(self):
+        qs = ExerciceComptable.objects.all()
+        if self.organisation is not None:
+            qs = qs.filter(organisation=self.organisation)
+        return qs
+
+    def _lignes(self):
+        qs = LigneEcritureComptable.objects.select_related("ecriture", "compte")
+        if self.organisation is not None:
+            qs = qs.filter(ecriture__organisation=self.organisation)
+        return qs
+
+    def synthese(self, exercice=None):
+        if exercice is None:
+            exercice = self._exercices().filter(cloture=False).first()
+
+        base = self._lignes().filter(ecriture__validee=True)
         if exercice:
             base = base.filter(
                 ecriture__date_ecriture__gte=exercice.date_debut,
@@ -27,18 +46,24 @@ class DashboardService:
         total_credit = base.aggregate(t=Sum("credit"))["t"] or Decimal("0.00")
 
         tresorerie = base.filter(
-            Q(compte__code__startswith="57") |
-            Q(compte__code__startswith="52") |
-            Q(compte__code__startswith="581"),
-        ).aggregate(
-            debit=Sum("debit"), credit=Sum("credit"),
+            Q(compte__code__startswith="57")
+            | Q(compte__code__startswith="52")
+            | Q(compte__code__startswith="581")
+        ).aggregate(debit=Sum("debit"), credit=Sum("credit"))
+        solde_tresorerie = (tresorerie["debit"] or Decimal("0.00")) - (
+            tresorerie["credit"] or Decimal("0.00")
         )
-        solde_tresorerie = (tresorerie["debit"] or Decimal("0.00")) - (tresorerie["credit"] or Decimal("0.00"))
 
-        charges = base.filter(compte__code__startswith="6").aggregate(t=Sum("debit"))["t"] or Decimal("0.00")
-        produits = base.filter(compte__code__startswith="7").aggregate(t=Sum("credit"))["t"] or Decimal("0.00")
+        charges = (
+            base.filter(compte__code__startswith="6").aggregate(t=Sum("debit"))["t"]
+            or Decimal("0.00")
+        )
+        produits = (
+            base.filter(compte__code__startswith="7").aggregate(t=Sum("credit"))["t"]
+            or Decimal("0.00")
+        )
 
-        nb_ecritures = EcritureComptable.objects.filter(validee=True)
+        nb_ecritures = self._ecritures().filter(validee=True)
         if exercice:
             nb_ecritures = nb_ecritures.filter(exercice=exercice)
 
@@ -53,76 +78,80 @@ class DashboardService:
             "exercice": exercice,
         }
 
-    @staticmethod
-    def evolution_tresorerie(jours=30):
+    def evolution_tresorerie(self, jours=30):
         depuis = timezone.now().date() - timedelta(days=jours)
-        lignes = LigneEcritureComptable.objects.filter(
-            ecriture__validee=True,
-            ecriture__date_ecriture__gte=depuis,
-        ).filter(
-            Q(compte__code__startswith="57") |
-            Q(compte__code__startswith="52") |
-            Q(compte__code__startswith="581"),
-        ).values("ecriture__date_ecriture").annotate(
-            debit=Sum("debit"), credit=Sum("credit"),
-        ).order_by("ecriture__date_ecriture")
+        lignes = (
+            self._lignes()
+            .filter(ecriture__validee=True, ecriture__date_ecriture__gte=depuis)
+            .filter(
+                Q(compte__code__startswith="57")
+                | Q(compte__code__startswith="52")
+                | Q(compte__code__startswith="581")
+            )
+            .values("ecriture__date_ecriture")
+            .annotate(debit=Sum("debit"), credit=Sum("credit"))
+            .order_by("ecriture__date_ecriture")
+        )
 
         return [
             {
-                "date": d["ecriture__date_ecriture"],
-                "debit": d["debit"],
-                "credit": d["credit"],
+                "date": item["ecriture__date_ecriture"],
+                "debit": item["debit"],
+                "credit": item["credit"],
             }
-            for d in lignes
+            for item in lignes
         ]
 
-    @staticmethod
-    def alertes():
+    def alertes(self):
         alerts = []
-        config = None
         try:
             from ..models import ConfigurationComptable
-            config = ConfigurationComptable.get_config()
+
+            config_qs = ConfigurationComptable.objects.all()
+            if self.organisation is not None:
+                config_qs = config_qs.filter(organisation=self.organisation)
+            config = config_qs.first()
         except Exception:
             return alerts
 
         if config and not config.est_initialise:
-            alerts.append({
-                "niveau": "warning",
-                "message": "Le plan comptable n'est pas encore initialisé",
-            })
+            alerts.append(
+                {
+                    "niveau": "warning",
+                    "message": "Le plan comptable n'est pas encore initialisé",
+                }
+            )
 
-        nb_brouillon = EcritureComptable.objects.filter(validee=False).count()
+        nb_brouillon = self._ecritures().filter(validee=False).count()
         if nb_brouillon > 0:
-            alerts.append({
-                "niveau": "info",
-                "message": f"{nb_brouillon} écriture(s) en brouillon à valider",
-            })
+            alerts.append(
+                {
+                    "niveau": "info",
+                    "message": f"{nb_brouillon} écriture(s) en brouillon à valider",
+                }
+            )
 
         return alerts
 
-    @staticmethod
-    def compter_ecritures():
-        return EcritureComptable.objects.count()
+    def compter_ecritures(self):
+        return self._ecritures().count()
 
-    @staticmethod
-    def compter_ecritures_non_validees():
-        return EcritureComptable.objects.filter(validee=False).count()
+    def compter_ecritures_non_validees(self):
+        return self._ecritures().filter(validee=False).count()
 
-    @staticmethod
-    def dernieres_ecritures(limit=10):
-        return EcritureComptable.objects.select_related("journal", "exercice").order_by(
+    def dernieres_ecritures(self, limit=10):
+        return self._ecritures().select_related("journal", "exercice").order_by(
             "-date_ecriture", "-created_at"
         )[:limit]
 
-    @staticmethod
-    def exercice_courant():
-        exercice = ExerciceComptable.objects.filter(cloture=False).first()
+    def exercice_courant(self):
+        exercice = self._exercices().filter(cloture=False).first()
         return str(exercice) if exercice else None
 
-    @staticmethod
-    def totaux_par_journal():
-        from django.db.models import Sum
-        return EcritureComptable.objects.values("journal__code").annotate(
-            total=Sum("lignes__debit")
-        ).order_by("journal__code")
+    def totaux_par_journal(self):
+        return (
+            self._ecritures()
+            .values("journal__code")
+            .annotate(total=Sum("lignes__debit"))
+            .order_by("journal__code")
+        )

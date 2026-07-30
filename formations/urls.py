@@ -1,10 +1,10 @@
 from django.urls import path
 
 from .views import (
-    FormationCreateView,
-    FormationIndexView,
     CategorieCreateView,
     CategorieListView,
+    FormationCreateView,
+    FormationIndexView,
     SeanceCreateView,
     SeanceListView,
     SessionCreateView,

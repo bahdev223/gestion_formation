@@ -2,7 +2,7 @@
 {% block page_title %}Nouveau paiement salarial{% endblock %}
 {% block page_subtitle %}Enregistrez un paiement total, partiel, une avance ou une régularisation.{% endblock %}
 {% block breadcrumb %}Paie / Nouveau paiement{% endblock %}
-{% block page_actions %}<a href="{% url 'django_paie:paiement-list' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Retour aux paiements</a>{% endblock %}
+{% block page_actions %}<a href="{% tenant_url 'django_paie:paiement-list' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Retour aux paiements</a>{% endblock %}
 {% block dashboard_content %}
 <form method="post" class="paie-form baly-surface max-w-3xl rounded-lg">{% csrf_token %}<div class="border-b border-slate-200 px-6 py-5"><h2 class="font-bold text-slate-950">Informations du paiement</h2></div><div class="space-y-5 p-6">{{ form.as_p }}</div><div class="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-5"><button class="baly-btn-accent rounded-md px-6 py-3 text-sm font-semibold">Enregistrer le paiement</button></div></form>
 <style>.paie-form p{display:grid;gap:.5rem}.paie-form label{font-size:.875rem;font-weight:600;color:#344054}.paie-form input,.paie-form select,.paie-form textarea{width:100%;border:1px solid #d0d5dd;border-radius:.375rem;background:#fff;padding:.75rem .875rem;font-size:.875rem;outline:none}.paie-form input:focus,.paie-form select:focus,.paie-form textarea:focus{border-color:var(--baly-blue);box-shadow:0 0 0 3px rgba(21,81,154,.1)}</style>

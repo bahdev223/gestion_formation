@@ -1,5 +1,10 @@
 from .compte import Compte, TypeCompte, RoleCompte
-from .mouvement_compte import MouvementCompte, NatureMouvement, StatutMouvement
+from .mouvement_compte import (
+    MouvementCompte,
+    NatureMouvement,
+    SensMouvement,
+    StatutMouvement,
+)
 from .transfert_compte import TransfertCompte
 from .journal_compte import JournalCompte, LigneJournalCompte
 from .rapprochement import RapprochementBancaire, LigneRapprochement, StatutRapprochement
@@ -14,6 +19,7 @@ __all__ = [
     "RoleCompte",
     "MouvementCompte",
     "NatureMouvement",
+    "SensMouvement",
     "StatutMouvement",
     "TransfertCompte",
     "JournalCompte",

@@ -1,0 +1,11 @@
+{% extends "platform_admin/base.html" %}
+{% block page_title %}Audit global{% endblock %}
+{% block platform_content %}
+<form method="get" class="platform-card mb-4 grid gap-3 p-4 md:grid-cols-[1fr_220px_220px_auto]">
+  <input name="q" value="{{ request.GET.q }}" placeholder="Utilisateur, IP, description…" class="border border-slate-300 px-3 py-2 text-sm">
+  <select name="organisation" class="border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Toutes les entreprises</option>{% for item in organisations %}<option value="{{ item.pk }}">{{ item.nom }}</option>{% endfor %}</select>
+  <select name="type" class="border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Toutes les actions</option>{% for value,label in event_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+  <button class="platform-btn">Rechercher</button>
+</form>
+<section class="platform-card overflow-hidden"><table class="platform-table"><thead><tr><th>Date</th><th>Événement</th><th>Entreprise</th><th>Utilisateur</th><th>IP</th><th>Description</th></tr></thead><tbody>{% for event in events %}<tr><td class="whitespace-nowrap">{{ event.created_at|date:"d/m/Y H:i:s" }}</td><td><span class="platform-badge">{{ event.get_type_evenement_display }}</span><span class="ml-1 text-[10px] {% if event.severite == 'CRITICAL' or event.severite == 'ERROR' %}text-red-600{% else %}text-slate-400{% endif %}">{{ event.severite }}</span></td><td>{{ event.organisation.nom|default:"Plateforme" }}</td><td>{{ event.acteur.username|default:"Système" }}</td><td class="font-mono">{{ event.adresse_ip|default:"—" }}</td><td class="max-w-md text-slate-600">{{ event.description }}</td></tr>{% empty %}<tr><td colspan="6" class="py-12 text-center">Aucun événement.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

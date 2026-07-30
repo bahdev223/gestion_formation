@@ -1,2 +1,13 @@
-repos: []
-
+repos:
+  - repo: local
+    hooks:
+      - id: django-check
+        name: Django system check
+        entry: python manage.py check
+        language: system
+        pass_filenames: false
+      - id: ruff-check
+        name: Ruff
+        entry: ruff check
+        language: system
+        types: [python]

@@ -5,12 +5,14 @@
 {% block breadcrumb %}Paie salariale{% endblock %}
 {% block page_actions %}
 <div class="flex flex-wrap gap-3">
-  <a href="{% url 'django_paie:echeance-list' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Échéances</a>
-  <a href="{% url 'django_paie:paiement-create' %}" class="baly-btn-accent rounded-md px-5 py-3 text-sm font-semibold">Nouveau paiement</a>
+  <a href="{% tenant_url 'django_paie:echeance-list' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Échéances</a>
+  <a href="{% tenant_url 'django_paie:paiement-create' %}" class="baly-btn-accent rounded-md px-5 py-3 text-sm font-semibold">Nouveau paiement</a>
 </div>
 {% endblock %}
 
 {% block dashboard_content %}
+{% include "components/messages.html" %}
+
 {% if alertes %}
   <div class="space-y-2">
     {% for alerte in alertes %}
@@ -30,7 +32,7 @@
   <section class="baly-surface overflow-hidden rounded-lg">
     <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
       <div><h2 class="font-bold text-slate-950">Situation de la paie</h2><p class="mt-1 text-sm text-slate-500">Répartition des échéances salariales.</p></div>
-      <a href="{% url 'django_paie:echeance-list' %}" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Voir les échéances</a>
+      <a href="{% tenant_url 'django_paie:echeance-list' %}" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Voir les échéances</a>
     </div>
     <div class="grid gap-px bg-slate-200 sm:grid-cols-4">
       <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Payées</p><p class="mt-2 text-2xl font-bold text-emerald-600">{{ resume.paye|default:0 }}</p></div>
@@ -54,21 +56,21 @@
     <div class="baly-surface rounded-lg p-5">
       <h2 class="font-bold text-slate-950">Actions de paie</h2>
       <div class="mt-4 space-y-2">
-        <a href="{% url 'dashboard:payroll-employees' %}" class="block rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Employés et salaires</a>
-        <a href="{% url 'django_paie:echeance-list' %}" class="block rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Gérer les échéances</a>
-        <a href="{% url 'django_paie:paiement-list' %}" class="block rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Voir les paiements</a>
-        <a href="{% url 'django_paie:paiement-create' %}" class="baly-btn-accent block rounded-md px-4 py-3 text-center text-sm font-semibold">Enregistrer un paiement</a>
+        <a href="{% tenant_url 'dashboard:payroll-employees' %}" class="block rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Employés et salaires</a>
+        <a href="{% tenant_url 'django_paie:echeance-list' %}" class="block rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Gérer les échéances</a>
+        <a href="{% tenant_url 'django_paie:paiement-list' %}" class="block rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Voir les paiements</a>
+        <a href="{% tenant_url 'django_paie:paiement-create' %}" class="baly-btn-accent block rounded-md px-4 py-3 text-center text-sm font-semibold">Enregistrer un paiement</a>
       </div>
     </div>
     <div class="border border-blue-200 bg-blue-50 p-5">
       <p class="text-xs font-semibold uppercase tracking-wider text-blue-700">Mode actif</p>
       <p class="mt-2 text-xl font-bold text-blue-950">{{ mode }}</p>
       <p class="mt-2 text-sm leading-6 text-blue-800">Les salaires mensuels se configurent sur les fiches utilisateurs.</p>
-      <form method="post" action="{% url 'dashboard:payroll-generate' %}" class="mt-4">
+      <form method="post" action="{% tenant_url 'dashboard:payroll-generate' %}" class="mt-4">
         {% csrf_token %}
         <label for="periode-paie" class="mb-1.5 block text-xs font-semibold text-blue-900">Période à générer</label>
         <div class="flex gap-2">
-          <input id="periode-paie" name="periode" placeholder="MM/AAAA" required class="min-w-0 flex-1 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500">
+          <input id="periode-paie" name="periode" type="month" value="{{ periode_courante_input }}" min="2000-01" max="2100-12" required class="min-w-0 flex-1 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500">
           <button class="baly-btn-primary rounded-md px-3 py-2 text-sm font-semibold text-white">Générer</button>
         </div>
       </form>

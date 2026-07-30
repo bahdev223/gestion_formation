@@ -1,0 +1,28 @@
+{% load static %}
+<div
+  x-data="{ preview: '{% if form.instance.image %}{{ form.instance.image.url }}{% endif %}' }"
+  @change="if ($event.target.type === 'file' && $event.target.files.length) preview = URL.createObjectURL($event.target.files[0])"
+  class="grid gap-4 border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[180px_1fr] sm:items-center"
+>
+  <div class="relative aspect-[16/9] overflow-hidden border border-slate-200 bg-white">
+    <img
+      x-show="preview"
+      :src="preview"
+      alt="Aperçu de la couverture"
+      class="h-full w-full object-cover"
+    >
+    <img
+      x-show="!preview"
+      src="{% static 'images/formation-cover-default.svg' %}"
+      alt="Couverture de formation par défaut"
+      class="h-full w-full object-cover"
+    >
+  </div>
+  <div>
+    <p class="mb-2 text-sm font-semibold text-slate-800">Choisir la couverture</p>
+    {{ field }}
+    <p class="mt-2 text-xs leading-5 text-slate-500">
+      Une image horizontale au format 16:9 est recommandée.
+    </p>
+  </div>
+</div>

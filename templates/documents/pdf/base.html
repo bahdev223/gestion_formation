@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 18mm; }
+    body { font-family: Arial, sans-serif; color: #14213d; font-size: 11px; }
+    .header { border-bottom: 3px solid #17457a; padding-bottom: 12px; margin-bottom: 24px; }
+    .brand { font-size: 22px; font-weight: 800; color: #17457a; }
+    .orange { color: #ef7d00; }
+    .muted { color: #64748b; }
+    .title { font-size: 20px; text-align: center; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0; }
+    .meta { width: 100%; border-collapse: collapse; }
+    .meta td, .meta th { padding: 8px; border: 1px solid #dbe2ea; text-align: left; }
+    .meta th { background: #f3f6f9; }
+    .amount { font-size: 24px; font-weight: bold; color: #17457a; }
+    .footer { position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid #dbe2ea; padding-top: 8px; font-size: 9px; color: #64748b; text-align: center; }
+    .signature { margin-top: 50px; margin-left: auto; width: 230px; text-align: center; }
+    .line { border-top: 1px solid #14213d; margin-top: 50px; padding-top: 5px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">{{ organisation.nom|default:"BALY'S GROUP" }}</div>
+    <div class="muted">{{ organisation.adresse }}{% if organisation.telephone %} · {{ organisation.telephone }}{% endif %}{% if organisation.email %} · {{ organisation.email }}{% endif %}</div>
+  </div>
+  {% block pdf_content %}{% endblock %}
+  <div class="footer">Document genere par {{ organisation.nom|default:"BALY'S GROUP" }}</div>
+</body>
+</html>

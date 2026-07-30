@@ -5,8 +5,8 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from django_rh.models import Department, Employee, Position
 from django_paie.services import ModeSimpleService
+from django_rh.models import Department, Employee, Position
 
 
 class Command(BaseCommand):

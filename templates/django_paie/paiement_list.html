@@ -1,8 +1,46 @@
 {% extends "layouts/dashboard.html" %}
+
 {% block page_title %}Paiements salariaux{% endblock %}
-{% block page_subtitle %}Historique des paiements, avances et régularisations du personnel.{% endblock %}
+{% block page_subtitle %}Historique des paiements, avances et regularisations du personnel.{% endblock %}
 {% block breadcrumb %}Paie / Paiements{% endblock %}
-{% block page_actions %}<a href="{% url 'django_paie:paiement-create' %}" class="baly-btn-accent rounded-md px-5 py-3 text-sm font-semibold">Nouveau paiement</a>{% endblock %}
+{% block page_actions %}<a href="{% tenant_url 'django_paie:paiement-create' %}" class="baly-btn-accent rounded-md px-5 py-3 text-sm font-semibold">Nouveau paiement</a>{% endblock %}
+
 {% block dashboard_content %}
-<div class="baly-surface overflow-hidden rounded-lg"><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Employé</th><th class="px-6 py-4">Période</th><th class="px-6 py-4">Montant</th><th class="px-6 py-4">Date</th><th class="px-6 py-4">Type</th><th class="px-6 py-4">Statut</th></tr></thead><tbody class="divide-y divide-slate-100">{% for p in paiements %}<tr class="hover:bg-blue-50/40"><td class="px-6 py-4 font-semibold text-slate-900">{{ p.echeance.employe|default:p.echeance.employe_object_id }}</td><td class="px-6 py-4">{{ p.echeance.periode }}</td><td class="px-6 py-4 font-bold">{{ p.montant|floatformat:0 }} FCFA</td><td class="px-6 py-4">{{ p.date_paiement|date:"d/m/Y" }}</td><td class="px-6 py-4">{{ p.get_type_paiement_display }}</td><td class="px-6 py-4"><span class="baly-badge">{{ p.get_statut_display }}</span></td></tr>{% empty %}<tr><td colspan="6" class="px-6 py-14 text-center text-slate-500">Aucun paiement salarial enregistré.</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="baly-surface overflow-hidden rounded-lg">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+        <tr>
+          <th class="px-6 py-4">Employe</th>
+          <th class="px-6 py-4">Periode</th>
+          <th class="px-6 py-4">Montant</th>
+          <th class="px-6 py-4">Date</th>
+          <th class="px-6 py-4">Type</th>
+          <th class="px-6 py-4">Statut</th>
+          <th class="px-6 py-4 text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for p in paiements %}
+          <tr class="hover:bg-blue-50/40">
+            <td class="px-6 py-4 font-semibold text-slate-900">{{ p.echeance.employe|default:p.echeance.employe_object_id }}</td>
+            <td class="px-6 py-4">{{ p.echeance.periode }}</td>
+            <td class="px-6 py-4 font-bold">{{ p.montant|floatformat:0 }} FCFA</td>
+            <td class="px-6 py-4">{{ p.date_paiement|date:"d/m/Y" }}</td>
+            <td class="px-6 py-4">{{ p.get_type_paiement_display }}</td>
+            <td class="px-6 py-4"><span class="baly-badge">{{ p.get_statut_display }}</span></td>
+            <td class="px-6 py-4 text-right">
+              <a href="{% tenant_url 'django_paie:paiement-bulletin' p.pk %}" class="inline-flex items-center gap-2 border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16h16V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg>
+                <span>Bulletin PDF</span>
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="px-6 py-14 text-center text-slate-500">Aucun paiement salarial enregistre.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

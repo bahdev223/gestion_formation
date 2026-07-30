@@ -3,7 +3,7 @@
 {% block compta_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>&Eacute;critures comptables</h1>
-    <a href="{% url 'comptabilite:ecriture_create' %}" class="btn btn-primary">Nouvelle &eacute;criture</a>
+    <a href="{% tenant_url 'comptabilite:ecriture_create' %}" class="btn btn-primary">Nouvelle &eacute;criture</a>
 </div>
 
 <div class="stat-card">
@@ -32,7 +32,7 @@
             <tbody>
                 {% for ecriture in ecritures %}
                 <tr>
-                    <td><a href="{% url 'comptabilite:ecriture_detail' ecriture.pk %}">{{ ecriture.reference }}</a></td>
+                    <td><a href="{% tenant_url 'comptabilite:ecriture_detail' ecriture.pk %}">{{ ecriture.reference }}</a></td>
                     <td>{{ ecriture.libelle|truncatewords:10 }}</td>
                     <td>{{ ecriture.journal.code }}</td>
                     <td>{{ ecriture.date_ecriture|date:"d/m/Y" }}</td>
@@ -44,9 +44,9 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a href="{% url 'comptabilite:ecriture_detail' ecriture.pk %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                        <a href="{% tenant_url 'comptabilite:ecriture_detail' ecriture.pk %}" class="btn btn-sm btn-outline-primary">Voir</a>
                         {% if not ecriture.validee %}
-                        <a href="{% url 'comptabilite:ecriture_update' ecriture.pk %}" class="btn btn-sm btn-outline-secondary">Modifier</a>
+                        <a href="{% tenant_url 'comptabilite:ecriture_update' ecriture.pk %}" class="btn btn-sm btn-outline-secondary">Modifier</a>
                         {% endif %}
                     </td>
                 </tr>

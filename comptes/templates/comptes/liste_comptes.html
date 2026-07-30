@@ -4,7 +4,7 @@
 <div class="max-w-7xl mx-auto px-4 py-6">
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Comptes Financiers</h1>
-        <a href="{% url 'comptes:ajouter_compte' %}"
+        <a href="{% tenant_url 'comptes:ajouter_compte' %}"
            class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
             <span class="material-symbols-outlined mr-1">add</span>Nouveau compte
         </a>
@@ -43,7 +43,7 @@
                         {% endif %}
                     </td>
                     <td class="px-5 py-3 text-center">
-                        <a href="{% url 'comptes:detail_compte' c.id %}" class="text-blue-600 hover:text-blue-800 text-xs font-medium">Détail</a>
+                        <a href="{% tenant_url 'comptes:detail_compte' c.id %}" class="text-blue-600 hover:text-blue-800 text-xs font-medium">Détail</a>
                     </td>
                 </tr>
                 {% endfor %}

@@ -1,0 +1,8 @@
+{% extends "platform_admin/base.html" %}
+{% block page_title %}Feature flags{% endblock %}
+{% block platform_content %}
+<div class="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+  <section class="platform-card overflow-hidden"><table class="platform-table"><thead><tr><th>Fonctionnalité</th><th>Global</th><th>Déploiement</th><th>Entreprises ciblées</th></tr></thead><tbody>{% for flag in flags %}<tr><td><p class="font-bold">{{ flag.nom }}</p><p class="text-[10px] text-slate-400">{{ flag.code }} · {{ flag.description|truncatechars:70 }}</p></td><td><span class="platform-badge">{{ flag.is_enabled_globally|yesno:"Activée,Désactivée" }}</span></td><td>{{ flag.rollout_percentage }}%</td><td>{{ flag.organisations.count }}</td></tr>{% empty %}<tr><td colspan="4" class="py-12 text-center">Aucune feature flag.</td></tr>{% endfor %}</tbody></table></section>
+  <form method="post" class="platform-card p-4">{% csrf_token %}<h2 class="font-bold">Nouvelle fonctionnalité</h2><p class="mt-1 text-xs text-slate-500">Activation globale ou ciblée par entreprise.</p><div class="mt-4 space-y-3">{% for field in form %}<div><label class="mb-1 block text-xs font-bold">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="text-xs text-red-600">{{ error }}</p>{% endfor %}</div>{% endfor %}<button class="platform-btn w-full">Enregistrer</button></div></form>
+</div>
+{% endblock %}

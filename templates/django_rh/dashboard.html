@@ -4,7 +4,7 @@
 {% block page_subtitle %}Gestion des équipes, de l’organisation interne et de la masse salariale de BALY’S GROUP.{% endblock %}
 {% block breadcrumb %}Ressources humaines / Vue générale{% endblock %}
 {% block page_actions %}
-<a href="{% url 'dashboard:rh-employee-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'dashboard:rh-employee-create' %}" hx-target="#global-modal-content" class="baly-btn-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold">
+<a href="{% tenant_url 'dashboard:rh-employee-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'dashboard:rh-employee-create' %}" hx-target="#global-modal-content" class="baly-btn-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold">
   <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
   Nouvel employé
 </a>
@@ -25,9 +25,9 @@
     </div>
   </div>
   <div class="relative mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-3">
-    <a href="{% url 'dashboard:payroll-employees' %}" class="border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15">Registre du personnel</a>
-    <a href="{% url 'dashboard:rh-department-list' %}" class="border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15">Organisation interne</a>
-    <a href="{% url 'django_paie:dashboard' %}" class="border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15">Gestion de la paie</a>
+    <a href="{% tenant_url 'dashboard:payroll-employees' %}" class="border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15">Registre du personnel</a>
+    <a href="{% tenant_url 'dashboard:rh-department-list' %}" class="border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15">Organisation interne</a>
+    <a href="{% tenant_url 'django_paie:dashboard' %}" class="border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15">Gestion de la paie</a>
   </div>
 </section>
 
@@ -54,7 +54,7 @@
   <section class="baly-surface overflow-hidden">
     <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
       <div><h2 class="font-bold text-slate-950">Personnel récemment ajouté</h2><p class="mt-1 text-sm text-slate-500">Dernières fiches intégrées au registre des ressources humaines.</p></div>
-      <a href="{% url 'dashboard:payroll-employees' %}" class="text-sm font-semibold text-blue-700">Voir le registre →</a>
+      <a href="{% tenant_url 'dashboard:payroll-employees' %}" class="text-sm font-semibold text-blue-700">Voir le registre →</a>
     </div>
     <div class="divide-y divide-slate-100">
       {% for employee in recent_employees %}
@@ -67,7 +67,7 @@
       <div class="px-6 py-16 text-center">
         <div class="mx-auto grid h-12 w-12 place-items-center border border-blue-100 bg-blue-50 text-blue-700"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></div>
         <p class="mt-4 font-semibold text-slate-900">Aucun employé enregistré</p><p class="mt-2 text-sm text-slate-500">Créez la première fiche pour démarrer le registre RH.</p>
-        <a href="{% url 'dashboard:rh-employee-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'dashboard:rh-employee-create' %}" hx-target="#global-modal-content" class="baly-btn-primary mt-5 inline-flex px-4 py-2.5 text-sm font-semibold">Ajouter un employé</a>
+        <a href="{% tenant_url 'dashboard:rh-employee-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'dashboard:rh-employee-create' %}" hx-target="#global-modal-content" class="baly-btn-primary mt-5 inline-flex px-4 py-2.5 text-sm font-semibold">Ajouter un employé</a>
       </div>
       {% endfor %}
     </div>
@@ -77,16 +77,16 @@
     <section class="baly-surface">
       <div class="border-b border-slate-200 px-5 py-4"><p class="text-xs font-semibold uppercase tracking-[.16em] text-blue-700">Structure RH</p><h2 class="mt-1 font-bold text-slate-950">Organisation interne</h2></div>
       <div class="grid grid-cols-2 divide-x divide-slate-200">
-        <a href="{% url 'dashboard:rh-department-list' %}" class="p-5 hover:bg-slate-50"><p class="text-3xl font-bold text-slate-950">{{ departments_count }}</p><p class="mt-1 text-sm text-slate-500">Départements</p></a>
+        <a href="{% tenant_url 'dashboard:rh-department-list' %}" class="p-5 hover:bg-slate-50"><p class="text-3xl font-bold text-slate-950">{{ departments_count }}</p><p class="mt-1 text-sm text-slate-500">Départements</p></a>
         <div class="p-5"><p class="text-3xl font-bold text-slate-950">{{ positions_count }}</p><p class="mt-1 text-sm text-slate-500">Postes</p></div>
       </div>
     </section>
     <section class="border border-slate-200 bg-slate-50 p-5">
       <h2 class="font-bold text-slate-950">Actions de gestion</h2>
       <div class="mt-4 grid gap-2">
-        <a href="{% url 'dashboard:payroll-employees' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Employés et salaires</span><span>→</span></a>
-        <a href="{% url 'dashboard:rh-department-list' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Gérer les départements</span><span>→</span></a>
-        <a href="{% url 'django_paie:dashboard' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Tableau de bord paie</span><span>→</span></a>
+        <a href="{% tenant_url 'dashboard:payroll-employees' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Employés et salaires</span><span>→</span></a>
+        <a href="{% tenant_url 'dashboard:rh-department-list' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Gérer les départements</span><span>→</span></a>
+        <a href="{% tenant_url 'django_paie:dashboard' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Tableau de bord paie</span><span>→</span></a>
       </div>
     </section>
   </aside>

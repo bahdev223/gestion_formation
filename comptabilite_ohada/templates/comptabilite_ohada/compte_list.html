@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Plan comptable</h1>
     <div>
-        <a href="{% url 'comptabilite:ecriture_create' %}" class="btn btn-primary">Nouvelle &eacute;criture</a>
+        <a href="{% tenant_url 'comptabilite:ecriture_create' %}" class="btn btn-primary">Nouvelle &eacute;criture</a>
     </div>
 </div>
 
@@ -42,7 +42,7 @@
             <tbody>
                 {% for compte in comptes %}
                 <tr>
-                    <td><a href="{% url 'comptabilite:compte_detail' compte.pk %}">{{ compte.code }}</a></td>
+                    <td><a href="{% tenant_url 'comptabilite:compte_detail' compte.pk %}">{{ compte.code }}</a></td>
                     <td>{{ compte.libelle }}</td>
                     <td>{{ compte.classe }}</td>
                     <td>{{ compte.get_nature_display }}</td>

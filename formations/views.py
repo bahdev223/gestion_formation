@@ -1,9 +1,9 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView
 
-from core.mixins import HtmxModalFormMixin
+from core.mixins import HtmxModalFormMixin, OrganisationScopedMixin
+
 from .forms import (
     CategorieFormationForm,
     FormationForm,
@@ -13,21 +13,23 @@ from .forms import (
 from .models import CategorieFormation, Formation, Seance, SessionFormation
 
 
-class FormationIndexView(LoginRequiredMixin, ListView):
+class FormationIndexView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = "formations.view_formation"
     model = Formation
     template_name = "formations/index.html"
     context_object_name = "formations"
     paginate_by = 20
 
     def get_queryset(self):
-        return Formation.objects.select_related("categorie").order_by("-created_at")
+        return super().get_queryset().select_related("categorie").order_by("-created_at")
 
 
-class FormationCreateView(HtmxModalFormMixin, LoginRequiredMixin, SuccessMessageMixin, CreateView):
+class FormationCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+    permission_required = "formations.add_formation"
     model = Formation
     form_class = FormationForm
     template_name = "formations/form.html"
-    success_url = reverse_lazy("formations:index")
+    tenant_success_view_name = "formations:index"
     success_message = "La formation a été créée avec succès."
     modal_title = "Nouvelle formation"
     modal_eyebrow = "Catalogue"
@@ -35,20 +37,22 @@ class FormationCreateView(HtmxModalFormMixin, LoginRequiredMixin, SuccessMessage
     full_width_fields = "description objectifs programme image"
 
 
-class CategorieListView(LoginRequiredMixin, ListView):
+class CategorieListView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = "formations.view_categorieformation"
     model = CategorieFormation
     template_name = "formations/categorie_list.html"
     context_object_name = "categories"
 
     def get_queryset(self):
-        return CategorieFormation.objects.order_by("nom")
+        return super().get_queryset().order_by("nom")
 
 
-class CategorieCreateView(HtmxModalFormMixin, LoginRequiredMixin, SuccessMessageMixin, CreateView):
+class CategorieCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+    permission_required = "formations.add_categorieformation"
     model = CategorieFormation
     form_class = CategorieFormationForm
     template_name = "formations/categorie_form.html"
-    success_url = reverse_lazy("formations:categorie-list")
+    tenant_success_view_name = "formations:categorie-list"
     success_message = "La catégorie a été enregistrée avec succès."
     modal_title = "Nouvelle catégorie"
     modal_eyebrow = "Catalogue"
@@ -56,23 +60,25 @@ class CategorieCreateView(HtmxModalFormMixin, LoginRequiredMixin, SuccessMessage
     full_width_fields = "description"
 
 
-class SessionListView(LoginRequiredMixin, ListView):
+class SessionListView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = "formations.view_sessionformation"
     model = SessionFormation
     template_name = "formations/session_list.html"
     context_object_name = "sessions"
     paginate_by = 20
 
     def get_queryset(self):
-        return SessionFormation.objects.select_related(
+        return super().get_queryset().select_related(
             "formation", "formateur"
         ).order_by("-date_debut", "-created_at")
 
 
-class SessionCreateView(HtmxModalFormMixin, LoginRequiredMixin, SuccessMessageMixin, CreateView):
+class SessionCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+    permission_required = "formations.add_sessionformation"
     model = SessionFormation
     form_class = SessionFormationForm
     template_name = "formations/session_form.html"
-    success_url = reverse_lazy("formations:session-list")
+    tenant_success_view_name = "formations:session-list"
     success_message = "La session a été créée avec succès."
     modal_title = "Nouvelle session"
     modal_eyebrow = "Planification"
@@ -80,36 +86,39 @@ class SessionCreateView(HtmxModalFormMixin, LoginRequiredMixin, SuccessMessageMi
     full_width_fields = "notes paiement_requis_attestation"
 
 
-class SessionDetailView(LoginRequiredMixin, DetailView):
+class SessionDetailView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    permission_required = "formations.view_sessionformation"
     model = SessionFormation
     template_name = "formations/session_detail.html"
     context_object_name = "session"
 
     def get_queryset(self):
-        return SessionFormation.objects.select_related(
+        return super().get_queryset().select_related(
             "formation", "formateur"
         ).prefetch_related(
             "inscriptions__participant"
         )
 
 
-class SeanceListView(LoginRequiredMixin, ListView):
+class SeanceListView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = "formations.view_seance"
     model = Seance
     template_name = "formations/seance_list.html"
     context_object_name = "seances"
     paginate_by = 20
 
     def get_queryset(self):
-        return Seance.objects.select_related(
+        return super().get_queryset().select_related(
             "session", "session__formation"
         ).order_by("-date", "-heure_debut")
 
 
-class SeanceCreateView(HtmxModalFormMixin, LoginRequiredMixin, SuccessMessageMixin, CreateView):
+class SeanceCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+    permission_required = "formations.add_seance"
     model = Seance
     form_class = SeanceForm
     template_name = "formations/seance_form.html"
-    success_url = reverse_lazy("formations:seance-list")
+    tenant_success_view_name = "formations:seance-list"
     success_message = "La séance a été créée avec succès."
     modal_title = "Nouvelle séance"
     modal_eyebrow = "Planification"

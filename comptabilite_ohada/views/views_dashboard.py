@@ -1,5 +1,7 @@
-from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.views.generic import TemplateView
+
+from organisations.utils import get_request_organisation
 
 from ..services.dashboard_service import DashboardService
 
@@ -10,7 +12,7 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        service = DashboardService()
+        service = DashboardService(organisation=get_request_organisation(self.request))
         context["total_ecritures"] = service.compter_ecritures()
         context["ecritures_non_validees"] = service.compter_ecritures_non_validees()
         context["dernieres_ecritures"] = service.dernieres_ecritures()

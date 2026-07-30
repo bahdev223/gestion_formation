@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}SahelTech | Plateforme SaaS de gestion{% endblock %}
+
+{% block content %}
+<section class="mx-auto grid max-w-6xl gap-10 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+  <div>
+    <span class="baly-badge baly-badge-blue">SahelTech · Plateforme SaaS de gestion</span>
+    <h1 class="mt-5 text-4xl font-extrabold tracking-tight text-slate-950 lg:text-6xl">
+      Gérez vos formations, paiements, RH et documents dans un espace entreprise sécurisé.
+    </h1>
+    <p class="mt-5 max-w-2xl text-base leading-8 text-slate-600">
+      Chaque entreprise dispose de son propre espace avec son slug, ses utilisateurs,
+      ses abonnements, ses données métier et sa charte graphique.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href="{% url 'platform-create-organisation' %}" class="baly-btn-primary rounded-md px-5 py-3 text-sm font-bold">
+        Créer mon entreprise
+      </a>
+      <a href="{% url 'accounts:login' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700">
+        Se connecter
+      </a>
+    </div>
+  </div>
+
+  <div class="baly-surface rounded-lg p-5">
+    <div class="grid gap-3">
+      <div class="stat-card">
+        <p class="stat-label">Accès entreprise</p>
+        <p class="stat-value text-lg">/o/votre-entreprise/</p>
+        <p class="stat-hint">Toutes les pages métier utilisent le slug entreprise.</p>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="baly-surface rounded-md p-4">
+          <p class="font-bold text-slate-950">Email ou matricule</p>
+          <p class="mt-2 text-sm text-slate-500">Connexion avec email ou matricule + mot de passe.</p>
+        </div>
+        <div class="baly-surface rounded-md p-4">
+          <p class="font-bold text-slate-950">Abonnements</p>
+          <p class="mt-2 text-sm text-slate-500">Plans, quotas, essais, paiements et statuts suivis.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mx-auto max-w-6xl py-6">
+  <div class="mb-5 flex items-end justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-extrabold text-slate-950">Plans disponibles</h2>
+      <p class="mt-1 text-sm text-slate-500">L’administrateur plateforme peut modifier ces plans dans l’admin.</p>
+    </div>
+  </div>
+  <div class="grid gap-4 md:grid-cols-3">
+    {% for plan in plans %}
+      <article class="baly-surface rounded-lg p-5">
+        <p class="text-sm font-bold uppercase tracking-wide text-[var(--baly-blue)]">{{ plan.code }}</p>
+        <h3 class="mt-2 text-xl font-extrabold text-slate-950">{{ plan.nom }}</h3>
+        <p class="mt-3 text-sm leading-6 text-slate-500">{{ plan.description|default:"Plan de gestion entreprise." }}</p>
+        <p class="mt-5 text-3xl font-extrabold text-slate-950">{{ plan.prix_mensuel|floatformat:0 }} <span class="text-sm font-semibold text-slate-500">FCFA/mois</span></p>
+        <ul class="mt-5 space-y-2 text-sm text-slate-600">
+          <li>{{ plan.max_utilisateurs }} utilisateur(s)</li>
+          <li>{{ plan.max_participants }} participant(s)</li>
+          <li>{{ plan.max_formations_actives }} formation(s) active(s)</li>
+        </ul>
+      </article>
+    {% empty %}
+      <div class="baly-surface rounded-lg p-6 text-sm text-slate-500 md:col-span-3">
+        Aucun plan publié pour le moment. Lancez <code>python manage.py seed_saas</code>.
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

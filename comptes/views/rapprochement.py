@@ -1,16 +1,21 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
+
+from organisations.utils import tenant_reverse
 
 from ..models import Compte, RapprochementBancaire
 from ..services import RapprochementService
-from ..selectors import MouvementSelector
+from ..utils import scope_accounts
 
 
 @login_required
-def rapprochement_liste(request):
-    rapprochements = RapprochementBancaire.objects.select_related("compte").order_by("-date_fin")
-    comptes = Compte.objects.filter(type__in=["BANQUE", "MOBILE_MONEY"], actif=True)
+def rapprochement_liste(request, **kwargs):
+    scoped_accounts = scope_accounts(request, Compte.objects.all())
+    rapprochements = RapprochementBancaire.objects.select_related("compte").filter(
+        compte__in=scoped_accounts
+    ).order_by("-date_fin")
+    comptes = scoped_accounts.filter(type__in=["BANQUE", "MOBILE_MONEY"], actif=True)
     context = {
         "rapprochements": rapprochements,
         "comptes": comptes,
@@ -19,9 +24,10 @@ def rapprochement_liste(request):
 
 
 @login_required
-def rapprochement_detail(request, rapprochement_id):
+def rapprochement_detail(request, rapprochement_id, **kwargs):
     rapprochement = get_object_or_404(
         RapprochementBancaire.objects.select_related("compte"),
+        compte__in=scope_accounts(request, Compte.objects.all()),
         id=rapprochement_id,
     )
     lignes = rapprochement.lignes.all().order_by("date_operation")
@@ -34,10 +40,12 @@ def rapprochement_detail(request, rapprochement_id):
 
 @login_required
 @permission_required("comptes.add_rapprochementbancaire", raise_exception=True)
-def rapprochement_initialiser(request):
+def rapprochement_initialiser(request, **kwargs):
     if request.method == "POST":
         try:
-            compte = Compte.objects.get(id=request.POST.get("compte_id"), actif=True)
+            compte = scope_accounts(request, Compte.objects).get(
+                id=request.POST.get("compte_id"), actif=True
+            )
             date_debut = request.POST.get("date_debut")
             date_fin = request.POST.get("date_fin")
             solde_releve = request.POST.get("solde_releve")
@@ -51,7 +59,13 @@ def rapprochement_initialiser(request):
                 date_releve=date_releve,
             )
             messages.success(request, "Rapprochement initialisé")
-            return redirect("comptes:rapprochement_detail", rapprochement_id=rapprochement.id)
+            return redirect(
+                tenant_reverse(
+                    request,
+                    "comptes:rapprochement_detail",
+                    kwargs={"rapprochement_id": rapprochement.id},
+                )
+            )
         except Exception as e:
             messages.error(request, str(e))
-    return redirect("comptes:rapprochement_liste")
+    return redirect(tenant_reverse(request, "comptes:rapprochement_liste"))

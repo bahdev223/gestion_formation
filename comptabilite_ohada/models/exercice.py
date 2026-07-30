@@ -1,8 +1,10 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from core.models import OrganisationOwnedModel
 
-class ExerciceComptable(models.Model):
+
+class ExerciceComptable(OrganisationOwnedModel, models.Model):
     """Exercice comptable (période fiscale)."""
 
     code = models.CharField(_("Code"), max_length=20, unique=True)

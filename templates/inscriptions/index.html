@@ -6,7 +6,7 @@
 <div class="baly-surface overflow-hidden rounded-xl">
   <div class="flex flex-col gap-3 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
     <div><h2 class="text-lg font-bold text-slate-950">Registre des inscriptions</h2><p class="mt-1 text-sm text-slate-500">Participants inscrits aux différentes sessions.</p></div>
-    <a href="{% url 'inscriptions:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'inscriptions:create' %}" hx-target="#global-modal-content" class="baly-btn-accent rounded-md px-4 py-2.5 text-sm font-semibold">Nouvelle inscription</a>
+    <a href="{% tenant_url 'inscriptions:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'inscriptions:create' %}" hx-target="#global-modal-content" class="baly-btn-accent rounded-md px-4 py-2.5 text-sm font-semibold">Nouvelle inscription</a>
   </div>
   {% if inscriptions %}
   <div class="overflow-x-auto"><table class="w-full text-left text-sm">

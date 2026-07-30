@@ -35,16 +35,23 @@ class InscriptionForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
-        self.fields["participant"].queryset = Participant.objects.filter(
+        participants = Participant.objects.filter(
             statut=Participant.Statut.ACTIF
-        ).order_by("nom", "prenom")
-        self.fields["session"].queryset = SessionFormation.objects.exclude(
+        )
+        if organisation:
+            participants = participants.filter(organisation=organisation)
+        self.fields["participant"].queryset = participants.order_by("nom", "prenom")
+        sessions = SessionFormation.objects.exclude(
             statut__in=[
                 SessionFormation.Statut.ANNULEE,
                 SessionFormation.Statut.TERMINEE,
             ]
-        ).select_related("formation").order_by("-date_debut")
+        ).select_related("formation")
+        if organisation:
+            sessions = sessions.filter(organisation=organisation)
+        self.fields["session"].queryset = sessions.order_by("-date_debut")
 
         for field in self.fields.values():
             field.widget.attrs["class"] = (
@@ -144,13 +151,17 @@ class NouvelApprenantInscriptionForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
-        self.fields["session"].queryset = SessionFormation.objects.exclude(
+        sessions = SessionFormation.objects.exclude(
             statut__in=[
                 SessionFormation.Statut.ANNULEE,
                 SessionFormation.Statut.TERMINEE,
             ]
-        ).select_related("formation").order_by("-date_debut")
+        ).select_related("formation")
+        if organisation:
+            sessions = sessions.filter(organisation=organisation)
+        self.fields["session"].queryset = sessions.order_by("-date_debut")
         for field in self.fields.values():
             field.widget.attrs["class"] = (
                 "w-full rounded-md border border-slate-300 bg-white px-3.5 py-3 "

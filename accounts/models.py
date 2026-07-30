@@ -10,6 +10,9 @@ class User(AbstractUser, TimeStampedModel):
         ADMIN = "ADMIN", "Administrateur"
         RESPONSABLE = "RESPONSABLE", "Responsable formation"
         FORMATEUR = "FORMATEUR", "Formateur"
+        COMPTABLE = "COMPTABLE", "Comptable"
+        RH = "RH", "Responsable RH"
+        CAISSIER = "CAISSIER", "Caissier"
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.RESPONSABLE)
     telephone = models.CharField(max_length=30, blank=True)

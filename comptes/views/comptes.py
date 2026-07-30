@@ -1,16 +1,20 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
+
+from organisations.utils import tenant_reverse
 
 from ..models import Compte
-from ..services import CompteService
 from ..selectors import DashboardSelector
+from ..services import CompteService
+from ..utils import organisation_filter, scope_accounts
 
 
 @login_required
-def liste_comptes(request):
-    selector = DashboardSelector()
-    comptes = Compte.objects.filter(actif=True).order_by("code")
+def liste_comptes(request, **kwargs):
+    tenant_filter = organisation_filter(request)
+    selector = DashboardSelector(tenant_filter=tenant_filter)
+    comptes = scope_accounts(request, Compte.objects.filter(actif=True)).order_by("code")
     synthese = selector.synthese_globale()
     context = {
         "comptes": comptes,
@@ -20,8 +24,8 @@ def liste_comptes(request):
 
 
 @login_required
-def detail_compte(request, compte_id):
-    compte = get_object_or_404(Compte, id=compte_id)
+def detail_compte(request, compte_id, **kwargs):
+    compte = get_object_or_404(scope_accounts(request, Compte.objects.all()), id=compte_id)
     historiques = compte.historique.all()[:20]
     context = {
         "compte": compte,
@@ -32,7 +36,7 @@ def detail_compte(request, compte_id):
 
 @login_required
 @permission_required("comptes.add_compte", raise_exception=True)
-def ajouter_compte(request):
+def ajouter_compte(request, **kwargs):
     if request.method == "POST":
         try:
             code = request.POST.get("code")
@@ -43,6 +47,7 @@ def ajouter_compte(request):
                 code=code,
                 nom=nom,
                 type_compte=type_compte,
+                organisation=organisation_filter(request).get("organisation"),
                 solde_initial=solde_initial,
                 actif=request.POST.get("actif") == "on",
                 role=request.POST.get("role", ""),
@@ -50,7 +55,13 @@ def ajouter_compte(request):
                 compte_comptable_code=request.POST.get("compte_comptable_code", ""),
             )
             messages.success(request, f'Compte "{nom}" créé avec succès')
-            return redirect("comptes:detail_compte", compte_id=compte.id)
+            return redirect(
+                tenant_reverse(
+                    request,
+                    "comptes:detail_compte",
+                    kwargs={"compte_id": compte.id},
+                )
+            )
         except Exception as e:
             messages.error(request, str(e))
     return render(request, "comptes/form_compte.html", {"mode": "ajout"})
@@ -58,8 +69,8 @@ def ajouter_compte(request):
 
 @login_required
 @permission_required("comptes.change_compte", raise_exception=True)
-def modifier_compte(request, compte_id):
-    compte = get_object_or_404(Compte, id=compte_id)
+def modifier_compte(request, compte_id, **kwargs):
+    compte = get_object_or_404(scope_accounts(request, Compte.objects.all()), id=compte_id)
     if request.method == "POST":
         try:
             CompteService.modifier(
@@ -73,7 +84,13 @@ def modifier_compte(request, compte_id):
                 compte_comptable_code=request.POST.get("compte_comptable_code", ""),
             )
             messages.success(request, f'Compte "{compte.nom}" modifié')
-            return redirect("comptes:detail_compte", compte_id=compte.id)
+            return redirect(
+                tenant_reverse(
+                    request,
+                    "comptes:detail_compte",
+                    kwargs={"compte_id": compte.id},
+                )
+            )
         except Exception as e:
             messages.error(request, str(e))
     return render(request, "comptes/form_compte.html", {"mode": "modification", "compte": compte})

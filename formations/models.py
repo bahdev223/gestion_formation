@@ -1,14 +1,14 @@
+from uuid import uuid4
+
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
-from uuid import uuid4
 
-from core.models import TimeStampedModel
+from core.models import OrganisationOwnedModel, TimeStampedModel
 
 
-class CategorieFormation(TimeStampedModel):
+class CategorieFormation(OrganisationOwnedModel, TimeStampedModel):
     nom = models.CharField(max_length=150, unique=True)
     description = models.TextField(blank=True)
     couleur = models.CharField(max_length=20, default="#2563EB")
@@ -18,7 +18,7 @@ class CategorieFormation(TimeStampedModel):
         return self.nom
 
 
-class Formation(TimeStampedModel):
+class Formation(OrganisationOwnedModel, TimeStampedModel):
     class UniteDuree(models.TextChoices):
         HEURES = "HEURES", "Heures"
         JOURS = "JOURS", "Jours"
@@ -50,7 +50,7 @@ class Formation(TimeStampedModel):
         return f"{self.code} - {self.nom}" if self.code else self.nom
 
 
-class SessionFormation(TimeStampedModel):
+class SessionFormation(OrganisationOwnedModel, TimeStampedModel):
     class Statut(models.TextChoices):
         BROUILLON = "BROUILLON", "Brouillon"
         PLANIFIEE = "PLANIFIEE", "Planifiee"
@@ -76,11 +76,19 @@ class SessionFormation(TimeStampedModel):
     notes = models.TextField(blank=True)
     statut = models.CharField(max_length=30, choices=Statut.choices, default=Statut.BROUILLON)
 
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = (
+                f"SES-{timezone.localdate():%Y%m%d}-"
+                f"{uuid4().hex[:6].upper()}"
+            )
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.titre} — {self.formation.nom}"
 
 
-class Seance(TimeStampedModel):
+class Seance(OrganisationOwnedModel, TimeStampedModel):
     class Statut(models.TextChoices):
         PLANIFIEE = "PLANIFIEE", "Planifiee"
         EN_COURS = "EN_COURS", "En cours"

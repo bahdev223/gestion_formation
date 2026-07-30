@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}BALY'S FORMATION MANAGER{% endblock %}</title>
+    <title>{% block title %}{{ organisation.nom|default:"SahelTech" }}{% endblock %}</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
@@ -13,15 +13,16 @@
     {% block extra_head %}{% endblock %}
     <style>
       :root {
-        --baly-blue: #15519a;
-        --baly-blue-dark: #102f5d;
-        --baly-blue-deep: #0b2448;
-        --baly-orange: #f28b16;
+        --baly-blue: {{ organisation_theme.primary|default:"#15519a" }};
+        --baly-blue-dark: {{ organisation_theme.secondary|default:"#102f5d" }};
+        --baly-blue-deep: {{ organisation_theme.sidebar|default:"#0b2448" }};
+        --baly-header: {{ organisation_theme.header|default:"#ffffff" }};
+        --baly-orange: {{ organisation_theme.accent|default:"#f28b16" }};
         --baly-orange-soft: #fff2df;
         --baly-red: #e84f3c;
-        --baly-surface: #ffffff;
-        --baly-surface-strong: #ffffff;
-        --baly-bg: #f4f6f9;
+        --baly-surface: {{ organisation_theme.surface|default:"#ffffff" }};
+        --baly-surface-strong: {{ organisation_theme.surface|default:"#ffffff" }};
+        --baly-bg: {{ organisation_theme.background|default:"#f4f6f9" }};
         --baly-border: #e3e8ef;
         --baly-text: #182230;
         --baly-muted: #667085;
@@ -52,7 +53,7 @@
         color: #ffffff;
         box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
       }
-      .baly-btn-accent:hover { background: #d97706; }
+      .baly-btn-accent:hover { filter: brightness(0.92); }
       .baly-badge {
         display: inline-flex;
         align-items: center;
@@ -93,8 +94,8 @@
     <nav class="border-b border-slate-200 bg-white">
         <div class="container mx-auto flex items-center justify-between px-4 py-3">
             <a href="/" class="flex items-center gap-3 font-bold text-lg text-[var(--baly-blue-dark)]">
-                <img src="/static/images/balygroupe.jpg" alt="BALY'S Group" class="h-10 w-auto object-contain">
-                <span class="tracking-tight">BALY'S FORMATION MANAGER</span>
+                <span class="grid h-10 w-10 place-items-center bg-cyan-600 text-sm font-black text-white">ST</span>
+                <span class="tracking-tight">SahelTech</span>
             </a>
             <div class="flex items-center gap-3 text-sm">
                 {% if user.is_authenticated %}
@@ -107,6 +108,17 @@
         </div>
     </nav>
     {% endif %}
+    {% if platform_maintenance %}
+      <div class="border-b border-amber-300 bg-amber-50 px-4 py-2 text-center text-xs font-semibold text-amber-900">
+        {{ platform_maintenance.titre }} — {{ platform_maintenance.message }}
+        <span class="ml-2 font-normal">Du {{ platform_maintenance.starts_at|date:"d/m/Y H:i" }} au {{ platform_maintenance.ends_at|date:"d/m/Y H:i" }}</span>
+      </div>
+    {% endif %}
+    {% for announcement in platform_announcements %}
+      <div class="border-b border-cyan-200 bg-cyan-50 px-4 py-2 text-center text-xs font-semibold text-cyan-900">
+        {{ announcement.titre }} — {{ announcement.message }}
+      </div>
+    {% endfor %}
     <main class="{% if user.is_authenticated %}min-h-screen{% else %}container mx-auto px-4 py-8{% endif %}">
         {% block content %}{% endblock %}
     </main>

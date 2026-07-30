@@ -1,26 +1,20 @@
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from dashboard.payroll_views import payroll_payment_create
+from django.contrib import admin
+from django.urls import include, path
+
+from organisations.platform_views import create_organisation, landing_page
 
 urlpatterns = [
+    path("", landing_page, name="platform-landing"),
+    path("creer-entreprise/", create_organisation, name="platform-create-organisation"),
     path("admin/", admin.site.urls),
-    path("comptes/", include(("accounts.urls", "accounts"), namespace="comptes-utilisateurs")),
+    path(
+        "platform/",
+        include(("platform_admin.urls", "platform_admin"), namespace="platform_admin"),
+    ),
     path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
-    path("formations/", include(("formations.urls", "formations"), namespace="formations")),
-    path("participants/", include(("participants.urls", "participants"), namespace="participants")),
-    path("inscriptions/", include(("inscriptions.urls", "inscriptions"), namespace="inscriptions")),
-    path("paiements/", include(("paiements.urls", "paiements"), namespace="paiements")),
-    path("presences/", include(("presences.urls", "presences"), namespace="presences")),
-    path("documents/", include(("documents.urls", "documents"), namespace="documents")),
-    path("paie-salariale/paiements/creer/", payroll_payment_create),
-    path("paie-salariale/", include("django_paie.urls")),
-    path("ressources-humaines/", include("django_rh.urls")),
-    path("comptes-financiers/", include("comptes.urls")),
-    path("api/comptes-financiers/", include("comptes.urls_api")),
-    path("comptabilite/", include("comptabilite_ohada.urls")),
-    path("", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
+    path("o/<slug:organisation_slug>/", include(("organisations.urls", "organisations"), namespace="organisations")),
 ]
 
 if settings.DEBUG:

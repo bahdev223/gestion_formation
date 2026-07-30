@@ -3,8 +3,10 @@ from decimal import Decimal
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from core.models import OrganisationOwnedModel
 
-class ConfigurationComptable(models.Model):
+
+class ConfigurationComptable(OrganisationOwnedModel, models.Model):
     """Configuration générale de la comptabilité."""
 
     nom = models.CharField(_("Nom"), max_length=200, default="Mon Entreprise")

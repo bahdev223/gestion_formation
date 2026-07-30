@@ -7,7 +7,7 @@
     <form method="post">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger">Supprimer</button>
-        <a href="{% url 'comptabilite:ecriture_detail' object.pk %}" class="btn btn-outline-secondary">Annuler</a>
+        <a href="{% tenant_url 'comptabilite:ecriture_detail' object.pk %}" class="btn btn-outline-secondary">Annuler</a>
     </form>
 </div>
 {% endblock %}

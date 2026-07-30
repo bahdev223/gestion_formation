@@ -1,15 +1,15 @@
 from decimal import Decimal
+from uuid import uuid4
 
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
-from uuid import uuid4
 
-from core.models import TimeStampedModel
+from core.models import OrganisationOwnedModel, TimeStampedModel
 
 
-class Paiement(TimeStampedModel):
+class Paiement(OrganisationOwnedModel, TimeStampedModel):
     class ModePaiement(models.TextChoices):
         ESPECES = "ESPECES", "Especes"
         ORANGE_MONEY = "ORANGE_MONEY", "Orange Money"
@@ -48,7 +48,7 @@ class Paiement(TimeStampedModel):
         super().save(*args, **kwargs)
 
 
-class Remboursement(TimeStampedModel):
+class Remboursement(OrganisationOwnedModel, TimeStampedModel):
     paiement = models.ForeignKey(Paiement, on_delete=models.PROTECT, related_name="remboursements")
     montant = models.DecimalField(max_digits=12, decimal_places=2)
     date_remboursement = models.DateTimeField(default=timezone.now)

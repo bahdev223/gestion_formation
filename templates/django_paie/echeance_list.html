@@ -3,7 +3,7 @@
 {% block page_subtitle %}Consultez les salaires dus, payés et restant à régler par période.{% endblock %}
 {% block breadcrumb %}Paie / Échéances{% endblock %}
 {% block page_actions %}
-<div class="flex gap-2"><a href="{% url 'dashboard:payroll-employees' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Employés</a><a href="{% url 'django_paie:paiement-create' %}" class="baly-btn-accent rounded-md px-4 py-2.5 text-sm font-semibold">Nouveau paiement</a></div>
+<div class="flex gap-2"><a href="{% tenant_url 'dashboard:payroll-employees' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Employés</a><a href="{% tenant_url 'django_paie:paiement-create' %}" class="baly-btn-accent rounded-md px-4 py-2.5 text-sm font-semibold">Nouveau paiement</a></div>
 {% endblock %}
 {% block dashboard_content %}
 {% if messages %}{% for message in messages %}<div class="mb-3 border-l-3 border-emerald-500 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ message }}</div>{% endfor %}{% endif %}
@@ -14,6 +14,6 @@
     <button class="baly-btn-primary rounded-md px-4 py-2 text-sm font-semibold text-white">Filtrer</button>
   </form>
   <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Employé</th><th class="px-6 py-4">Période</th><th class="px-6 py-4">Net</th><th class="px-6 py-4">Payé</th><th class="px-6 py-4">Reste</th><th class="px-6 py-4">Statut</th></tr></thead>
-  <tbody class="divide-y divide-slate-100">{% for e in echeances %}<tr class="hover:bg-blue-50/40"><td class="px-6 py-4"><a class="font-semibold text-blue-700 hover:underline" href="{% url 'django_paie:echeance-detail' e.pk %}">{{ e.employe|default:e.employe_object_id }}</a></td><td class="px-6 py-4">{{ e.periode }}</td><td class="px-6 py-4 font-semibold">{{ e.montant_net|floatformat:0 }} FCFA</td><td class="px-6 py-4">{{ e.montant_paye|floatformat:0 }}</td><td class="px-6 py-4">{{ e.reste_a_payer|floatformat:0 }}</td><td class="px-6 py-4"><span class="baly-badge">{{ e.get_statut_display }}</span></td></tr>{% empty %}<tr><td colspan="6" class="px-6 py-14 text-center text-slate-500">Aucune échéance. Configurez les salaires puis générez une période.</td></tr>{% endfor %}</tbody></table></div>
+  <tbody class="divide-y divide-slate-100">{% for e in echeances %}<tr class="hover:bg-blue-50/40"><td class="px-6 py-4"><a class="font-semibold text-blue-700 hover:underline" href="{% tenant_url 'django_paie:echeance-detail' e.pk %}">{{ e.employe|default:e.employe_object_id }}</a></td><td class="px-6 py-4">{{ e.periode }}</td><td class="px-6 py-4 font-semibold">{{ e.montant_net|floatformat:0 }} FCFA</td><td class="px-6 py-4">{{ e.montant_paye|floatformat:0 }}</td><td class="px-6 py-4">{{ e.reste_a_payer|floatformat:0 }}</td><td class="px-6 py-4"><span class="baly-badge">{{ e.get_statut_display }}</span></td></tr>{% empty %}<tr><td colspan="6" class="px-6 py-14 text-center text-slate-500">Aucune échéance. Configurez les salaires puis générez une période.</td></tr>{% endfor %}</tbody></table></div>
 </div>
 {% endblock %}

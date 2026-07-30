@@ -1,5 +1,5 @@
-from django.views.generic import ListView, DetailView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.views.generic import DetailView, ListView
 
 from ..models import ReleveBancaire
 

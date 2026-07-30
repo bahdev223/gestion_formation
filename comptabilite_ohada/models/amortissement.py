@@ -1,11 +1,13 @@
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from core.models import OrganisationOwnedModel
 
-class Immobilisation(models.Model):
+
+class Immobilisation(OrganisationOwnedModel, models.Model):
     """Immobilisation (actif fixe amortissable)."""
 
     TYPE_CHOICES = [

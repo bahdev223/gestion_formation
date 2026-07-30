@@ -1,10 +1,9 @@
-from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
 
-from paiements.models import Paiement
 from inscriptions.services.inscription_service import recalculate_payment_status
+from paiements.models import Paiement
 
 
 @transaction.atomic

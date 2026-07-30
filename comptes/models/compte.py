@@ -3,6 +3,8 @@ from decimal import Decimal
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from core.models import OrganisationOwnedModel
+
 from .managers import ComptesManager
 
 
@@ -24,7 +26,7 @@ class RoleCompte(models.TextChoices):
     DECAISSEMENT = "DECAISSEMENT", _("Décaissement")
 
 
-class Compte(models.Model):
+class Compte(OrganisationOwnedModel, models.Model):
     code = models.CharField(_("Code"), max_length=20, unique=True)
     nom = models.CharField(_("Nom"), max_length=200)
     type = models.CharField(

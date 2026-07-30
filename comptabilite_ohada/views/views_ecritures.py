@@ -1,9 +1,12 @@
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.urls import reverse_lazy
-from django.shortcuts import redirect
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.generic import DeleteView, DetailView, ListView, View
 
+from organisations.utils import get_request_organisation, tenant_reverse
+
+from ..forms import EcritureForm, LigneEcritureFormSet
 from ..models import EcritureComptable
 from ..services.ecriture_service import EcritureService
 
@@ -16,8 +19,15 @@ class EcritureListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related("journal", "exercice")
-        qs = qs.prefetch_related("lignes__compte")
+        qs = (
+            super()
+            .get_queryset()
+            .select_related("journal", "exercice")
+            .prefetch_related("lignes__compte")
+        )
+        organisation = get_request_organisation(self.request)
+        if organisation is not None:
+            qs = qs.filter(organisation=organisation)
         status = self.request.GET.get("status")
         if status == "validee":
             qs = qs.filter(validee=True)
@@ -26,68 +36,137 @@ class EcritureListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return qs.order_by("-date_ecriture", "-created_at")
 
 
-class EcritureDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class EcritureDetailView(
+    LoginRequiredMixin, PermissionRequiredMixin, DetailView
+):
     model = EcritureComptable
     template_name = "comptabilite_ohada/ecriture_detail.html"
     context_object_name = "ecriture"
     permission_required = "comptabilite_ohada.view_ecriturecomptable"
 
+    def get_queryset(self):
+        qs = (
+            super()
+            .get_queryset()
+            .select_related("journal", "exercice")
+            .prefetch_related("lignes__compte")
+        )
+        organisation = get_request_organisation(self.request)
+        if organisation is not None:
+            qs = qs.filter(organisation=organisation)
+        return qs
 
-class EcritureCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
-    model = EcritureComptable
+
+class EcritureFormView(LoginRequiredMixin, PermissionRequiredMixin, View):
     template_name = "comptabilite_ohada/ecriture_form.html"
-    fields = ["journal", "exercice", "date_ecriture", "reference", "libelle", "piece"]
     permission_required = "comptabilite_ohada.add_ecriturecomptable"
+    object = None
 
-    def form_valid(self, form):
-        form.instance.created_by = self.request.user.get_username()
-        messages.success(self.request, "Écriture créée avec succès.")
-        return super().form_valid(form)
+    def get_object(self):
+        return None
 
-    def get_success_url(self):
-        return reverse_lazy("comptabilite:ecriture_detail", kwargs={"pk": self.object.pk})
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return self.render_forms(
+            EcritureForm(instance=self.object),
+            LigneEcritureFormSet(instance=self.object),
+        )
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = EcritureForm(request.POST, instance=self.object)
+        formset = LigneEcritureFormSet(
+            request.POST, instance=self.object
+        )
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                ecriture = form.save(commit=False)
+                ecriture.created_by = request.user.get_username()
+                ecriture.validee = False
+                ecriture.organisation = get_request_organisation(request)
+                ecriture.save()
+                formset.instance = ecriture
+                formset.save()
+            messages.success(
+                request,
+                "Écriture enregistrée en brouillon. Vérifiez-la avant validation.",
+            )
+            return redirect(
+                tenant_reverse(
+                    request,
+                    "comptabilite:ecriture_detail",
+                    kwargs={"pk": ecriture.pk},
+                )
+            )
+        return self.render_forms(form, formset)
+
+    def render_forms(self, form, formset):
+        return render(
+            self.request,
+            self.template_name,
+            {"form": form, "formset": formset, "object": self.object},
+        )
 
 
-class EcritureUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    model = EcritureComptable
-    template_name = "comptabilite_ohada/ecriture_form.html"
-    fields = ["journal", "date_ecriture", "libelle", "piece"]
+class EcritureCreateView(EcritureFormView):
+    pass
+
+
+class EcritureUpdateView(EcritureFormView):
     permission_required = "comptabilite_ohada.change_ecriturecomptable"
 
-    def get_queryset(self):
-        return super().get_queryset().filter(validee=False)
-
-    def form_valid(self, form):
-        messages.success(self.request, "Écriture modifiée avec succès.")
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse_lazy("comptabilite:ecriture_detail", kwargs={"pk": self.object.pk})
+    def get_object(self):
+        return get_object_or_404(
+            EcritureComptable,
+            pk=self.kwargs["pk"],
+            validee=False,
+            organisation=get_request_organisation(self.request),
+        )
 
 
-class EcritureDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class EcritureDeleteView(
+    LoginRequiredMixin, PermissionRequiredMixin, DeleteView
+):
     model = EcritureComptable
     template_name = "comptabilite_ohada/ecriture_confirm_delete.html"
-    success_url = reverse_lazy("comptabilite:ecriture_list")
     permission_required = "comptabilite_ohada.delete_ecriturecomptable"
 
+    def get_success_url(self):
+        return tenant_reverse(self.request, "comptabilite:ecriture_list")
+
     def get_queryset(self):
-        return super().get_queryset().filter(validee=False)
+        qs = super().get_queryset().filter(validee=False)
+        organisation = get_request_organisation(self.request)
+        if organisation is not None:
+            qs = qs.filter(organisation=organisation)
+        return qs
 
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, "Écriture supprimée avec succès.")
-        return super().delete(request, *args, **kwargs)
+    def form_valid(self, form):
+        messages.success(self.request, "Écriture brouillon supprimée.")
+        return super().form_valid(form)
 
 
-class EcritureValiderView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class EcritureValiderView(
+    LoginRequiredMixin, PermissionRequiredMixin, DetailView
+):
     model = EcritureComptable
     permission_required = "comptabilite_ohada.change_ecriturecomptable"
 
     def post(self, request, *args, **kwargs):
-        ecriture = self.get_object()
+        ecriture = get_object_or_404(
+            EcritureComptable,
+            pk=self.kwargs["pk"],
+            organisation=get_request_organisation(request),
+        )
         try:
             EcritureService.valider_ecriture(ecriture, request.user)
             messages.success(request, "Écriture validée avec succès.")
-        except Exception as e:
-            messages.error(request, str(e))
-        return redirect("comptabilite:ecriture_detail", pk=ecriture.pk)
+        except Exception as exc:
+            messages.error(request, str(exc))
+        return redirect(
+            tenant_reverse(
+                request,
+                "comptabilite:ecriture_detail",
+                kwargs={"pk": ecriture.pk},
+            )
+        )

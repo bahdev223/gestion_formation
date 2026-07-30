@@ -1,25 +1,25 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Sum
-from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView
 
+from core.mixins import HtmxModalFormMixin, OrganisationScopedMixin
 from inscriptions.services.inscription_service import recalculate_payment_status
-from core.mixins import HtmxModalFormMixin
 
 from .forms import PaiementForm
 from .models import Paiement
 
 
-class PaiementIndexView(LoginRequiredMixin, ListView):
+class PaiementIndexView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = "paiements.view_paiement"
     model = Paiement
     template_name = "paiements/index.html"
     context_object_name = "paiements"
     paginate_by = 25
 
     def get_queryset(self):
-        return Paiement.objects.select_related(
+        return super().get_queryset().select_related(
             "inscription",
             "inscription__participant",
             "inscription__session",
@@ -29,7 +29,7 @@ class PaiementIndexView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        valid_payments = Paiement.objects.filter(statut=Paiement.Statut.VALIDE)
+        valid_payments = self.get_queryset().filter(statut=Paiement.Statut.VALIDE)
         context["total_encaisse"] = (
             valid_payments.aggregate(total=Sum("montant"))["total"] or 0
         )
@@ -40,17 +40,18 @@ class PaiementIndexView(LoginRequiredMixin, ListView):
             or 0
         )
         context["paiements_valides"] = valid_payments.count()
-        context["paiements_annules"] = Paiement.objects.filter(
+        context["paiements_annules"] = self.get_queryset().filter(
             statut=Paiement.Statut.ANNULE
         ).count()
         return context
 
 
-class PaiementCreateView(HtmxModalFormMixin, LoginRequiredMixin, SuccessMessageMixin, CreateView):
+class PaiementCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+    permission_required = "paiements.add_paiement"
     model = Paiement
     form_class = PaiementForm
     template_name = "paiements/form.html"
-    success_url = reverse_lazy("paiements:index")
+    tenant_success_view_name = "paiements:index"
     success_message = "Le paiement a été enregistré et le reçu a été créé."
     modal_title = "Nouveau paiement"
     modal_eyebrow = "Encaissements formations"
@@ -64,13 +65,14 @@ class PaiementCreateView(HtmxModalFormMixin, LoginRequiredMixin, SuccessMessageM
         return response
 
 
-class PaiementDetailView(LoginRequiredMixin, DetailView):
+class PaiementDetailView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    permission_required = "paiements.view_paiement"
     model = Paiement
     template_name = "paiements/detail.html"
     context_object_name = "paiement"
 
     def get_queryset(self):
-        return Paiement.objects.select_related(
+        return super().get_queryset().select_related(
             "inscription",
             "inscription__participant",
             "inscription__session",

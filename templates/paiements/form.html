@@ -2,7 +2,7 @@
 {% block page_title %}Nouveau paiement{% endblock %}
 {% block page_subtitle %}Enregistrez un encaissement lié à une inscription de formation.{% endblock %}
 {% block breadcrumb %}Formations / Paiements / Nouveau{% endblock %}
-{% block page_actions %}<a href="{% url 'paiements:index' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Retour aux paiements</a>{% endblock %}
+{% block page_actions %}<a href="{% tenant_url 'paiements:index' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Retour aux paiements</a>{% endblock %}
 {% block dashboard_content %}
 <form method="post" class="baly-surface rounded-lg">{% csrf_token %}
   <div class="border-b border-slate-200 px-6 py-5"><h2 class="font-bold text-slate-950">Informations de l’encaissement</h2><p class="mt-1 text-sm text-slate-500">Le solde de l’inscription sera recalculé automatiquement.</p></div>

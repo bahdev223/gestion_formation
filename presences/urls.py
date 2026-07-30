@@ -1,9 +1,10 @@
 from django.urls import path
 
-from .views import PresenceIndexView
+from . import views
 
 app_name = "presences"
 
 urlpatterns = [
-    path("", PresenceIndexView.as_view(), name="index"),
+    path("", views.presence_index, name="index"),
+    path("seances/<int:seance_id>/", views.presence_sheet, name="sheet"),
 ]

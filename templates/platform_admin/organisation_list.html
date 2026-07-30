@@ -1,0 +1,24 @@
+{% extends "platform_admin/base.html" %}
+{% block page_title %}Organisations clientes{% endblock %}
+{% block platform_content %}
+<form method="get" class="platform-card mb-4 grid gap-3 p-4 md:grid-cols-[1fr_220px_auto]">
+  <input name="q" value="{{ request.GET.q }}" placeholder="Nom, email ou slug…" class="border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-cyan-600">
+  <select name="statut" class="border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Tous les statuts</option>{% for value,label in statuts %}<option value="{{ value }}" {% if request.GET.statut == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  <button class="platform-btn">Filtrer</button>
+</form>
+<section class="platform-card overflow-hidden">
+  <div class="overflow-x-auto"><table class="platform-table"><thead><tr><th>Entreprise</th><th>Propriétaire</th><th>Plan</th><th>Utilisateurs</th><th>Dernière connexion</th><th>Statut</th><th></th></tr></thead><tbody>
+    {% for item in organisations %}
+      <tr>
+        <td><p class="font-bold text-slate-900">{{ item.nom }}</p><p class="text-[10px] text-slate-400">/o/{{ item.slug }}/ · {{ item.email }}</p></td>
+        <td>{% with owner=item.membres.all|first %}{{ owner.user.get_full_name|default:owner.user.username|default:"—" }}{% endwith %}</td>
+        <td>{{ item.abonnement.plan.nom|default:"Sans plan" }}</td>
+        <td>{{ item.utilisateurs_count }}</td>
+        <td>{{ item.derniere_connexion|date:"d/m/Y H:i"|default:"Jamais" }}</td>
+        <td><span class="platform-badge">{{ item.get_statut_display }}</span></td>
+        <td class="text-right"><a href="{% url 'platform_admin:organisation-detail' item.pk %}" class="font-bold text-cyan-700">Gérer →</a></td>
+      </tr>
+    {% empty %}<tr><td colspan="7" class="py-12 text-center text-slate-500">Aucune entreprise trouvée.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

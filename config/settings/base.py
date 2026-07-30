@@ -10,6 +10,7 @@ DEBUG = False
 ALLOWED_HOSTS: list[str] = []
 
 INSTALLED_APPS = [
+    "unfold",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -19,6 +20,9 @@ INSTALLED_APPS = [
     # Apps
     "core",
     "accounts",
+    "organisations",
+    "subscriptions",
+    "platform_admin.apps.PlatformAdminConfig",
     "formations",
     "participants",
     "inscriptions",
@@ -39,6 +43,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "organisations.middleware.CurrentOrganisationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -51,12 +56,15 @@ TEMPLATES = [
         "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
+            "builtins": ["core.templatetags.tenant_urls"],
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "organisations.context_processors.current_organisation",
                 "dashboard.context_processors.organisation",
+                "platform_admin.context_processors.platform_status",
             ],
         },
     },
@@ -88,9 +96,34 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = [
+    "accounts.authentication.EmailOrMatriculeBackend",
+]
 LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "/accounts/login/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+UNFOLD = {
+    "SITE_TITLE": "SahelTech Platform Admin",
+    "SITE_HEADER": "SahelTech",
+    "SITE_SUBHEADER": "Administration et exploitation de la plateforme SaaS",
+    "SITE_URL": "/platform/",
+    "COLORS": {
+        "primary": {
+            "50": "239 246 255",
+            "100": "219 234 254",
+            "200": "191 219 254",
+            "300": "147 197 253",
+            "400": "96 165 250",
+            "500": "21 81 154",
+            "600": "16 47 93",
+            "700": "11 36 72",
+            "800": "8 27 54",
+            "900": "5 19 38",
+            "950": "3 10 22",
+        },
+    },
+}
 
 DJANGO_PAIE = {
     "MODE": "SIMPLE",

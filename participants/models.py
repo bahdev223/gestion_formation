@@ -1,14 +1,13 @@
-from django.core.exceptions import ValidationError
+from uuid import uuid4
+
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
-from uuid import uuid4
 
-from core.constants import GENRE_CHOICES
-from core.models import TimeStampedModel
+from core.models import OrganisationOwnedModel, TimeStampedModel
 
 
-class Participant(TimeStampedModel):
+class Participant(OrganisationOwnedModel, TimeStampedModel):
     class Genre(models.TextChoices):
         HOMME = "HOMME", "Homme"
         FEMME = "FEMME", "Femme"
@@ -58,7 +57,7 @@ class Participant(TimeStampedModel):
         return self.inscriptions.aggregate(total=Sum("paiements__montant"))["total"] or 0
 
 
-class DocumentParticipant(TimeStampedModel):
+class DocumentParticipant(OrganisationOwnedModel, TimeStampedModel):
     class TypeDocument(models.TextChoices):
         CNI = "CNI", "Carte nationale d'identite"
         PASSEPORT = "PASSEPORT", "Passeport"

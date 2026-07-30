@@ -6,23 +6,23 @@
 
 {% block page_actions %}
 <div class="flex flex-wrap gap-2">
-  <a href="{% url 'comptabilite:ecriture_create' %}" class="baly-btn-accent px-4 py-2.5 text-sm font-semibold">Nouvelle écriture</a>
-  <a href="{% url 'comptabilite:exercice_list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Exercices</a>
+  <a href="{% tenant_url 'comptabilite:ecriture_create' %}" class="baly-btn-accent px-4 py-2.5 text-sm font-semibold">Nouvelle écriture</a>
+  <a href="{% tenant_url 'comptabilite:exercice_list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Exercices</a>
 </div>
 {% endblock %}
 
 {% block dashboard_content %}
 <nav class="flex flex-wrap gap-2 border-b border-slate-200 pb-4 text-sm">
-  <a class="baly-badge" href="{% url 'comptabilite:dashboard' %}">Vue générale</a>
-  <a class="baly-badge" href="{% url 'comptabilite:ecriture_list' %}">Écritures</a>
-  <a class="baly-badge" href="{% url 'comptabilite:compte_list' %}">Plan comptable</a>
-  <a class="baly-badge" href="{% url 'comptabilite:journal_list' %}">Journaux</a>
-  <a class="baly-badge" href="{% url 'comptabilite:balance' %}">Balance</a>
-  <a class="baly-badge" href="{% url 'comptabilite:grand_livre' %}">Grand livre</a>
-  <a class="baly-badge" href="{% url 'comptabilite:bilan' %}">Bilan</a>
-  <a class="baly-badge" href="{% url 'comptabilite:compte_resultat' %}">Résultat</a>
-  <a class="baly-badge" href="{% url 'comptabilite:immobilisation_list' %}">Immobilisations</a>
-  <a class="baly-badge" href="{% url 'comptabilite:rapprochement_list' %}">Rapprochement</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:dashboard' %}">Vue générale</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:ecriture_list' %}">Écritures</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:compte_list' %}">Plan comptable</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:journal_list' %}">Journaux</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:balance' %}">Balance</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:grand_livre' %}">Grand livre</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:bilan' %}">Bilan</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:compte_resultat' %}">Résultat</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:immobilisation_list' %}">Immobilisations</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:rapprochement_list' %}">Rapprochement</a>
 </nav>
 <div class="compta-native mt-5">{% block compta_content %}{% endblock %}</div>
 <style>

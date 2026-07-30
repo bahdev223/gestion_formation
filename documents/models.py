@@ -2,10 +2,10 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from core.models import TimeStampedModel
+from core.models import OrganisationOwnedModel, TimeStampedModel
 
 
-class Attestation(TimeStampedModel):
+class Attestation(OrganisationOwnedModel, TimeStampedModel):
     class Statut(models.TextChoices):
         BROUILLON = "BROUILLON", "Brouillon"
         GENEREE = "GENEREE", "Generee"
@@ -27,8 +27,14 @@ class Attestation(TimeStampedModel):
     generee_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     motif_annulation = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ["-date_delivrance", "-created_at"]
 
-class DocumentGenere(TimeStampedModel):
+    def __str__(self):
+        return f"{self.numero} — {self.nom_participant}"
+
+
+class DocumentGenere(OrganisationOwnedModel, TimeStampedModel):
     class TypeDocument(models.TextChoices):
         RECU = "RECU", "Recu de paiement"
         ATTESTATION = "ATTESTATION", "Attestation"
@@ -42,3 +48,14 @@ class DocumentGenere(TimeStampedModel):
     genere_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     metadata = models.JSONField(default=dict, blank=True)
 
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["type_document", "reference"],
+                name="unique_document_type_reference",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.get_type_document_display()} — {self.reference}"

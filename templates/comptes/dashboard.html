@@ -4,14 +4,19 @@
 <div class="flex gap-2">
   <button type="button" @click="$dispatch('open-money-modal', {type: 'encaisser'})" class="border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">Encaisser</button>
   <button type="button" @click="$dispatch('open-money-modal', {type: 'decaisser'})" class="border border-red-300 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">Décaisser</button>
-  <a href="{% url 'comptes:transfert_effectuer' %}" class="border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">Transférer</a>
-  <a href="{% url 'comptes:ajouter_compte' %}" class="baly-btn-accent px-4 py-2 text-xs font-semibold">Nouveau compte</a>
+  <a href="{% tenant_url 'comptes:transfert_effectuer' %}" class="border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">Transférer</a>
+  <a href="{% tenant_url 'comptes:ajouter_compte' %}" class="baly-btn-accent px-4 py-2 text-xs font-semibold">Nouveau compte</a>
 </div>
 {% endblock %}
 {% block compte_content %}
-<div class="mt-3 space-y-3" x-data="{ moneyModal: null }" @open-money-modal.window="moneyModal = $event.detail.type">
+<div class="mt-3 space-y-3" x-data="{ moneyModal: null, alertDialog: false }" @open-money-modal.window="moneyModal = $event.detail.type">
   {% if alertes %}
-  <div class="grid gap-2">{% for alerte in alertes %}<div class="border-l-4 border-amber-400 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">{{ alerte.message|default:alerte }}</div>{% endfor %}</div>
+  <div class="flex justify-end">
+    <button type="button" @click="alertDialog = true" class="inline-flex items-center gap-2 border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100">
+      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+      <span>{{ alertes|length }} alerte{{ alertes|length|pluralize }} de tresorerie</span>
+    </button>
+  </div>
   {% endif %}
 
   <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -23,15 +28,15 @@
 
   <div class="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,.7fr)]">
     <section class="baly-surface overflow-hidden">
-      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3"><div><h2 class="text-sm font-bold text-slate-950">Comptes de trésorerie</h2><p class="mt-0.5 text-xs text-slate-500">Soldes disponibles par canal financier.</p></div><a href="{% url 'comptes:liste_comptes' %}" class="text-xs font-semibold text-blue-700">Gérer →</a></div>
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3"><div><h2 class="text-sm font-bold text-slate-950">Comptes de trésorerie</h2><p class="mt-0.5 text-xs text-slate-500">Soldes disponibles par canal financier.</p></div><a href="{% tenant_url 'comptes:liste_comptes' %}" class="text-xs font-semibold text-blue-700">Gérer →</a></div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead class="bg-slate-50 uppercase tracking-wider text-slate-500"><tr><th class="px-4 py-2">Compte</th><th class="px-4 py-2">Type</th><th class="px-4 py-2 text-right">Solde</th><th class="px-4 py-2">Statut</th></tr></thead>
           <tbody class="divide-y divide-slate-100">
             {% for compte in comptes %}
-            <tr class="hover:bg-blue-50/30"><td class="px-4 py-3"><a href="{% url 'comptes:detail_compte' compte.pk %}" class="font-semibold text-slate-900">{{ compte.nom }}</a><p class="mt-0.5 font-mono text-[10px] text-slate-400">{{ compte.code }}</p></td><td class="px-4 py-3 text-slate-600">{{ compte.get_type_display }}</td><td class="px-4 py-3 text-right font-bold {% if compte.solde_actuel < 0 %}text-red-700{% else %}text-slate-950{% endif %}">{{ compte.solde_actuel|floatformat:0 }} {{ compte.devise }}</td><td class="px-4 py-3"><span class="baly-badge {% if compte.actif %}baly-badge-blue{% else %}baly-badge-red{% endif %}">{% if compte.actif %}Actif{% else %}Fermé{% endif %}</span></td></tr>
+            <tr class="hover:bg-blue-50/30"><td class="px-4 py-3"><a href="{% tenant_url 'comptes:detail_compte' compte.pk %}" class="font-semibold text-slate-900">{{ compte.nom }}</a><p class="mt-0.5 font-mono text-[10px] text-slate-400">{{ compte.code }}</p></td><td class="px-4 py-3 text-slate-600">{{ compte.get_type_display }}</td><td class="px-4 py-3 text-right font-bold {% if compte.solde_actuel < 0 %}text-red-700{% else %}text-slate-950{% endif %}">{{ compte.solde_actuel|floatformat:0 }} {{ compte.devise }}</td><td class="px-4 py-3"><span class="baly-badge {% if compte.actif %}baly-badge-blue{% else %}baly-badge-red{% endif %}">{% if compte.actif %}Actif{% else %}Fermé{% endif %}</span></td></tr>
             {% empty %}
-            <tr><td colspan="4" class="px-4 py-12 text-center"><p class="font-semibold text-slate-900">Aucun compte financier</p><p class="mt-1 text-xs text-slate-500">Ajoutez une caisse, une banque ou un compte Mobile Money.</p><a href="{% url 'comptes:ajouter_compte' %}" class="baly-btn-primary mt-3 inline-flex px-4 py-2 text-xs font-semibold">Créer le premier compte</a></td></tr>
+            <tr><td colspan="4" class="px-4 py-12 text-center"><p class="font-semibold text-slate-900">Aucun compte financier</p><p class="mt-1 text-xs text-slate-500">Ajoutez une caisse, une banque ou un compte Mobile Money.</p><a href="{% tenant_url 'comptes:ajouter_compte' %}" class="baly-btn-primary mt-3 inline-flex px-4 py-2 text-xs font-semibold">Créer le premier compte</a></td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -57,7 +62,7 @@
         </div>
         <button type="button" @click="moneyModal = null" class="grid h-8 w-8 place-items-center border border-slate-200 text-lg text-slate-500 hover:bg-slate-50">×</button>
       </header>
-      <form method="post" :action="moneyModal === 'encaisser' ? '{% url 'comptes:mouvement_encaisser' %}' : '{% url 'comptes:mouvement_decaisser' %}'" class="space-y-3 p-5">
+      <form method="post" :action="moneyModal === 'encaisser' ? '{% tenant_url 'comptes:mouvement_encaisser' %}' : '{% tenant_url 'comptes:mouvement_decaisser' %}'" class="space-y-3 p-5">
         {% csrf_token %}
         <div><label class="mb-1 block text-xs font-bold text-slate-700">Compte financier *</label><select name="compte_id" required class="w-full border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600">{% for compte in comptes %}<option value="{{ compte.id }}">{{ compte.code }} — {{ compte.nom }} ({{ compte.solde_actuel|floatformat:0 }} {{ compte.devise }})</option>{% endfor %}</select></div>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -72,5 +77,38 @@
       </form>
     </section>
   </div>
+
+  {% if alertes %}
+  <div x-cloak x-show="alertDialog" @keydown.escape.window="alertDialog = false" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-4">
+    <button type="button" class="absolute inset-0 cursor-default" @click="alertDialog = false" aria-label="Fermer les alertes"></button>
+    <section class="relative w-full max-w-2xl border border-slate-200 bg-white shadow-2xl" @click.stop role="dialog" aria-modal="true" aria-labelledby="treasury-alert-title">
+      <header class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Surveillance de tresorerie</p>
+          <h2 id="treasury-alert-title" class="mt-1 text-base font-bold text-slate-950">Alertes de solde</h2>
+          <p class="mt-1 text-xs text-slate-500">{{ alertes|length }} compte{{ alertes|length|pluralize }} necessite{{ alertes|length|pluralize }} une verification.</p>
+        </div>
+        <button type="button" @click="alertDialog = false" class="grid h-8 w-8 place-items-center border border-slate-200 text-lg text-slate-500 hover:bg-slate-50" aria-label="Fermer">×</button>
+      </header>
+      <div class="max-h-[60vh] overflow-y-auto divide-y divide-slate-100">
+        {% for alerte in alertes %}
+          <div class="flex items-start gap-3 px-5 py-4">
+            <span class="mt-0.5 grid h-8 w-8 shrink-0 place-items-center border {% if alerte.niveau == 'danger' %}border-red-200 bg-red-50 text-red-700{% else %}border-amber-200 bg-amber-50 text-amber-700{% endif %}">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-bold text-slate-950">{{ alerte.compte.nom|default:"Compte financier" }}</p>
+              <p class="mt-1 text-xs text-slate-600">{{ alerte.message|default:alerte }}</p>
+            </div>
+            <span class="baly-badge {% if alerte.niveau == 'danger' %}baly-badge-red{% else %}baly-badge-orange{% endif %}">{{ alerte.niveau|default:"alerte" }}</span>
+          </div>
+        {% endfor %}
+      </div>
+      <footer class="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-3">
+        <button type="button" @click="alertDialog = false" class="baly-btn-primary px-4 py-2 text-xs font-bold">J'ai compris</button>
+      </footer>
+    </section>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

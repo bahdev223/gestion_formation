@@ -1,5 +1,5 @@
-from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.views.generic import TemplateView
 
 from ..services.bilan_service import BilanService
 

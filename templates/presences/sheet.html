@@ -1,0 +1,16 @@
+{% extends "layouts/dashboard.html" %}
+{% block page_title %}Feuille de présence{% endblock %}
+{% block page_subtitle %}{{ seance.titre }} — {{ seance.session.formation.nom }}{% endblock %}
+{% block breadcrumb %}Présences / {{ seance.date|date:"d/m/Y" }}{% endblock %}
+{% block page_actions %}<a href="{% tenant_url 'presences:index' %}" class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700">Retour</a>{% endblock %}
+{% block dashboard_content %}
+{% if messages %}{% include "components/messages.html" %}{% endif %}
+<form method="post" class="baly-surface overflow-hidden">{% csrf_token %}
+  <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3"><div><h2 class="text-sm font-bold text-slate-950">{{ seance.session.titre }}</h2><p class="mt-0.5 text-xs text-slate-500">{{ seance.date|date:"l d F Y" }} · {{ seance.heure_debut|time:"H:i" }}–{{ seance.heure_fin|time:"H:i" }} · {{ seance.lieu|default:seance.session.lieu }}</p></div><span class="baly-badge baly-badge-blue">{{ completed }}/{{ rows|length }} renseignés</span></header>
+  <div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="bg-slate-50 uppercase tracking-wider text-slate-500"><tr><th class="px-4 py-2">Apprenant</th><th class="px-4 py-2">Statut *</th><th class="px-4 py-2">Heure d’arrivée</th><th class="px-4 py-2">Motif</th><th class="px-4 py-2">Observations</th></tr></thead><tbody class="divide-y divide-slate-100">
+  {% for row in rows %}<tr><td class="px-4 py-3"><p class="font-bold text-slate-900">{{ row.inscription.participant.nom_complet }}</p><p class="font-mono text-[10px] text-slate-400">{{ row.inscription.numero }}</p></td><td class="px-4 py-3"><select name="statut_{{ row.inscription.id }}" required class="min-w-36 border border-slate-300 bg-white px-2 py-2 text-xs"><option value="">Choisir</option>{% for value,label in statuts %}<option value="{{ value }}" {% if row.presence.statut == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></td><td class="px-4 py-3"><input type="time" name="heure_arrivee_{{ row.inscription.id }}" value="{{ row.presence.heure_arrivee|time:'H:i' }}" class="border border-slate-300 px-2 py-2 text-xs"></td><td class="px-4 py-3"><input name="motif_{{ row.inscription.id }}" value="{{ row.presence.motif }}" placeholder="Si absent/justifié" class="w-full min-w-40 border border-slate-300 px-2 py-2 text-xs"></td><td class="px-4 py-3"><input name="observations_{{ row.inscription.id }}" value="{{ row.presence.observations }}" class="w-full min-w-40 border border-slate-300 px-2 py-2 text-xs"></td></tr>
+  {% empty %}<tr><td colspan="5" class="px-4 py-12 text-center text-slate-500">Aucun apprenant actif n’est inscrit à cette session.</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% if rows %}<footer class="flex justify-end border-t border-slate-200 bg-slate-50 px-4 py-3"><button class="baly-btn-primary px-5 py-2 text-xs font-bold">Enregistrer la feuille</button></footer>{% endif %}
+</form>
+{% endblock %}

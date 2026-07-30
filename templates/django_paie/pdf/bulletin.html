@@ -1,0 +1,131 @@
+{% extends "documents/pdf/base.html" %}
+
+{% block pdf_content %}
+<h1 class="title">Bulletin de paie</h1>
+
+<table class="meta">
+  <tr>
+    <th>Employe</th>
+    <td>{{ employe|default:echeance.employe_object_id }}</td>
+    <th>Periode</th>
+    <td>{{ echeance.periode }}</td>
+  </tr>
+  <tr>
+    <th>Date debut</th>
+    <td>{{ echeance.date_debut|date:"d/m/Y" }}</td>
+    <th>Date fin</th>
+    <td>{{ echeance.date_fin|date:"d/m/Y" }}</td>
+  </tr>
+  <tr>
+    <th>Echeance</th>
+    <td>{{ echeance.date_echeance|date:"d/m/Y" }}</td>
+    <th>Statut</th>
+    <td>{{ echeance.get_statut_display }}</td>
+  </tr>
+</table>
+
+<table class="meta" style="margin-top:20px">
+  <thead>
+    <tr>
+      <th>Libelle</th>
+      <th style="text-align:right">Montant</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Salaire brut</td>
+      <td style="text-align:right">{{ echeance.montant_brut|floatformat:0 }} {{ organisation.devise|default:"FCFA" }}</td>
+    </tr>
+    <tr>
+      <td>Total retenues</td>
+      <td style="text-align:right">{{ total_retenues|floatformat:0 }} {{ organisation.devise|default:"FCFA" }}</td>
+    </tr>
+    <tr>
+      <td><strong>Net a payer</strong></td>
+      <td style="text-align:right"><strong>{{ echeance.montant_net|floatformat:0 }} {{ organisation.devise|default:"FCFA" }}</strong></td>
+    </tr>
+    <tr>
+      <td>Deja paye</td>
+      <td style="text-align:right">{{ echeance.montant_paye|floatformat:0 }} {{ organisation.devise|default:"FCFA" }}</td>
+    </tr>
+    <tr>
+      <td>Reste a payer</td>
+      <td style="text-align:right">{{ echeance.reste_a_payer|floatformat:0 }} {{ organisation.devise|default:"FCFA" }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="font-size:14px;margin-top:22px">Paiement courant</h2>
+<table class="meta">
+  <tr>
+    <th>Date</th>
+    <td>{{ paiement.date_paiement|date:"d/m/Y" }}</td>
+    <th>Type</th>
+    <td>{{ paiement.get_type_paiement_display }}</td>
+  </tr>
+  <tr>
+    <th>Reference</th>
+    <td>{{ paiement.reference|default:"-" }}</td>
+    <th>Montant regle</th>
+    <td><strong>{{ paiement.montant|floatformat:0 }} {{ organisation.devise|default:"FCFA" }}</strong></td>
+  </tr>
+  {% if paiement.notes %}
+  <tr>
+    <th>Notes</th>
+    <td colspan="3">{{ paiement.notes }}</td>
+  </tr>
+  {% endif %}
+</table>
+
+<h2 style="font-size:14px;margin-top:22px">Historique des paiements de la periode</h2>
+<table class="meta">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Type</th>
+      <th>Statut</th>
+      <th style="text-align:right">Montant</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ligne in paiements %}
+    <tr>
+      <td>{{ ligne.date_paiement|date:"d/m/Y" }}</td>
+      <td>{{ ligne.get_type_paiement_display }}</td>
+      <td>{{ ligne.get_statut_display }}</td>
+      <td style="text-align:right">{{ ligne.montant|floatformat:0 }} {{ organisation.devise|default:"FCFA" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">Aucun paiement enregistre.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if bulletin and bulletin.lignes.exists %}
+<h2 style="font-size:14px;margin-top:22px">Details du bulletin</h2>
+<table class="meta">
+  <thead>
+    <tr>
+      <th>Rubrique</th>
+      <th style="text-align:right">Base</th>
+      <th style="text-align:right">Taux</th>
+      <th style="text-align:right">Montant</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ligne in bulletin.lignes.all %}
+    <tr>
+      <td>{{ ligne.rubrique.code }} - {{ ligne.rubrique.libelle }}</td>
+      <td style="text-align:right">{{ ligne.base|floatformat:0 }}</td>
+      <td style="text-align:right">{{ ligne.taux|floatformat:2 }}</td>
+      <td style="text-align:right">{{ ligne.montant|floatformat:0 }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<div class="signature">
+  <div class="line">{{ organisation.signature_nom|default:"La Direction" }}<br><span class="muted">{{ organisation.signature_fonction }}</span></div>
+</div>
+{% endblock %}

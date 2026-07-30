@@ -1,5 +1,5 @@
+from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.contrib.auth.models import User
 
 from ..models import (
     CompteComptable, JournalComptable, ExerciceComptable,
@@ -10,7 +10,9 @@ from ..services.journal_service import BalanceService
 
 class BalanceServiceTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="compta", password="test1234")
+        self.user = get_user_model().objects.create_user(
+            username="compta", password="test1234"
+        )
         self.journal = JournalComptable.objects.create(
             code="VN", libelle="Ventes", type_journal="VN"
         )
@@ -37,7 +39,7 @@ class BalanceServiceTest(TestCase):
         ecriture_v = EcritureComptable.objects.create(
             journal=self.journal, exercice=self.exercice,
             date_ecriture="2025-06-01", reference="VN-001",
-            libelle="Vente", validee=True, created_by=self.user,
+            libelle="Vente", validee=True, created_by=self.user.username,
         )
         LigneEcritureComptable.objects.create(
             ecriture=ecriture_v, compte=self.compte_caisse, debit=100000,

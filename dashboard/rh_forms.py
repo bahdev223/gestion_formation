@@ -42,11 +42,17 @@ class EmployeeCreateForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        self.organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
-        self.fields["department"].queryset = Department.objects.order_by("name")
-        self.fields["position"].queryset = Position.objects.select_related(
+        departments = Department.objects.order_by("name")
+        positions = Position.objects.select_related(
             "department"
         ).order_by("title")
+        if self.organisation is not None:
+            departments = departments.filter(organisation=self.organisation)
+            positions = positions.filter(organisation=self.organisation)
+        self.fields["department"].queryset = departments
+        self.fields["position"].queryset = positions
         for field in self.fields.values():
             field.widget.attrs["class"] = (
                 "w-full rounded-md border border-slate-300 bg-white px-3.5 py-3 "
@@ -73,10 +79,14 @@ class DepartmentForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
-        self.fields["manager"].queryset = Employee.objects.filter(
+        managers = Employee.objects.filter(
             status=Employee.Status.ACTIVE
         ).order_by("last_name", "first_name")
+        if self.organisation is not None:
+            managers = managers.filter(organisation=self.organisation)
+        self.fields["manager"].queryset = managers
         for field in self.fields.values():
             field.widget.attrs["class"] = (
                 "w-full rounded-md border border-slate-300 bg-white px-3.5 py-3 "

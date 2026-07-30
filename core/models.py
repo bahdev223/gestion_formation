@@ -10,6 +10,19 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
+class OrganisationOwnedModel(models.Model):
+    organisation = models.ForeignKey(
+        "organisations.Organisation",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    class Meta:
+        abstract = True
+
+
 class SoftDeleteModel(models.Model):
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -18,7 +31,7 @@ class SoftDeleteModel(models.Model):
         abstract = True
 
 
-class AuditLog(TimeStampedModel):
+class AuditLog(OrganisationOwnedModel, TimeStampedModel):
     class Action(models.TextChoices):
         CREATE = "CREATE", "Creation"
         UPDATE = "UPDATE", "Modification"
@@ -41,4 +54,3 @@ class AuditLog(TimeStampedModel):
     description = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
-

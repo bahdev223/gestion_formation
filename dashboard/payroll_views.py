@@ -1,15 +1,17 @@
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django import forms
 from django.db.models import F
 from django.shortcuts import redirect, render
 
 from django_paie.models import EcheanceSalariale, PaiementSalarial
 from django_paie.services import ModeSimpleService
+from django_paie.utils import extraire_mois_annee
 from django_rh.models import Employee
+from organisations.utils import get_request_organisation, tenant_reverse
 
 
 class SalaryDueChoiceField(forms.ModelChoiceField):
@@ -54,12 +56,16 @@ class SalaryPaymentForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        self.organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
-        self.fields["echeance"].queryset = (
+        dues = (
             EcheanceSalariale.objects.filter(montant_net__gt=F("montant_paye"))
             .select_related("employe_content_type")
             .order_by("-annee", "-mois", "employe_object_id")
         )
+        if self.organisation is not None:
+            dues = dues.filter(entreprise_id=self.organisation.slug)
+        self.fields["echeance"].queryset = dues
 
     def clean(self):
         cleaned = super().clean()
@@ -75,10 +81,13 @@ class SalaryPaymentForm(forms.Form):
 
 @login_required
 @permission_required("django_paie.add_paiementsalarial", raise_exception=True)
-def payroll_payment_create(request):
-    form = SalaryPaymentForm(request.POST or None)
+def payroll_payment_create(request, **kwargs):
+    organisation = get_request_organisation(request)
+    form = SalaryPaymentForm(request.POST or None, organisation=organisation)
     if request.method == "POST" and form.is_valid():
-        ModeSimpleService().enregistrer_paiement(
+        paiement = ModeSimpleService(
+            entreprise_id=organisation.slug if organisation is not None else ""
+        ).enregistrer_paiement(
             echeance_id=form.cleaned_data["echeance"].pk,
             montant=form.cleaned_data["montant"],
             date_paiement=form.cleaned_data["date_paiement"],
@@ -86,16 +95,25 @@ def payroll_payment_create(request):
             notes=form.cleaned_data.get("notes", ""),
         )
         messages.success(request, "Le paiement salarial a été enregistré.")
-        return redirect("django_paie:paiement-list")
+        return redirect(
+            tenant_reverse(
+                request,
+                "django_paie:paiement-bulletin",
+                kwargs={"pk": paiement.pk},
+            )
+        )
     return render(request, "django_paie/paiement_form.html", {"form": form})
 
 
 @login_required
 @permission_required("rh.change_employee", raise_exception=True)
-def payroll_employees(request):
+def payroll_employees(request, **kwargs):
     users = Employee.objects.exclude(status=Employee.Status.ARCHIVED).order_by(
         "last_name", "first_name"
     )
+    organisation = get_request_organisation(request)
+    if organisation is not None:
+        users = users.filter(organisation=organisation)
     return render(
         request,
         "django_paie/employees.html",
@@ -105,11 +123,15 @@ def payroll_employees(request):
 
 @login_required
 @permission_required("rh.change_employee", raise_exception=True)
-def payroll_employee_salary_update(request, user_id):
+def payroll_employee_salary_update(request, user_id, **kwargs):
     if request.method != "POST":
-        return redirect("dashboard:payroll-employees")
+        return redirect(tenant_reverse(request, "dashboard:payroll-employees"))
 
-    employee = Employee.objects.get(pk=user_id)
+    employees = Employee.objects.all()
+    organisation = get_request_organisation(request)
+    if organisation is not None:
+        employees = employees.filter(organisation=organisation)
+    employee = employees.get(pk=user_id)
     raw_salary = request.POST.get("salaire_mensuel", "").strip()
     try:
         salary = Decimal(raw_salary) if raw_salary else None
@@ -117,27 +139,47 @@ def payroll_employee_salary_update(request, user_id):
             raise InvalidOperation
     except (InvalidOperation, ValueError):
         messages.error(request, "Le salaire mensuel saisi est invalide.")
-        return redirect("dashboard:payroll-employees")
+        return redirect(tenant_reverse(request, "dashboard:payroll-employees"))
 
     employee.salaire_mensuel = salary
     employee.save(update_fields=["salaire_mensuel"])
     messages.success(request, f"Salaire de {employee} enregistré.")
-    return redirect("dashboard:payroll-employees")
+    return redirect(tenant_reverse(request, "dashboard:payroll-employees"))
 
 
 @login_required
 @permission_required("django_paie.add_echeancesalariale", raise_exception=True)
-def payroll_generate(request):
+def payroll_generate(request, **kwargs):
     if request.method != "POST":
-        return redirect("django_paie:dashboard")
+        return redirect(tenant_reverse(request, "django_paie:dashboard"))
 
-    period = request.POST.get("periode") or f"{date.today().month:02d}/{date.today().year}"
+    raw_period = (request.POST.get("periode") or "").strip()
+    if not raw_period:
+        period = f"{date.today().month:02d}/{date.today().year}"
+    elif len(raw_period) == 7 and raw_period[4] == "-":
+        year, month = raw_period.split("-", maxsplit=1)
+        period = f"{month}/{year}"
+    else:
+        period = raw_period
+
+    try:
+        month, year = extraire_mois_annee(period)
+        period = f"{month:02d}/{year}"
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect(tenant_reverse(request, "django_paie:dashboard"))
+
     employees = Employee.objects.filter(
         status=Employee.Status.ACTIVE,
         salaire_mensuel__isnull=False,
         salaire_mensuel__gt=0,
     )
-    service = ModeSimpleService()
+    organisation = get_request_organisation(request)
+    if organisation is not None:
+        employees = employees.filter(organisation=organisation)
+    service = ModeSimpleService(
+        entreprise_id=organisation.slug if organisation is not None else ""
+    )
     generated = 0
     errors = []
 
@@ -164,4 +206,4 @@ def payroll_generate(request):
         )
     for error in errors[:5]:
         messages.error(request, error)
-    return redirect("django_paie:echeance-list")
+    return redirect(tenant_reverse(request, "django_paie:echeance-list"))

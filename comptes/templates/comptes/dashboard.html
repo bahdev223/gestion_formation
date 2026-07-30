@@ -10,11 +10,11 @@
             <p class="text-sm text-gray-500">Vue d'ensemble de votre trésorerie</p>
         </div>
         <div class="flex gap-2">
-            <a href="{% url 'comptes:ajouter_compte' %}"
+            <a href="{% tenant_url 'comptes:ajouter_compte' %}"
                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
                 <span class="material-symbols-outlined mr-1">add</span>Nouveau compte
             </a>
-            <a href="{% url 'comptes:transfert_effectuer' %}"
+            <a href="{% tenant_url 'comptes:transfert_effectuer' %}"
                class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
                 <span class="material-symbols-outlined mr-1">swap_horiz</span>Transfert
             </a>
@@ -79,13 +79,13 @@
                     </td>
                     <td class="px-5 py-3 text-center">
                         <div class="flex items-center justify-center gap-2">
-                            <a href="{% url 'comptes:detail_compte' c.id %}" class="text-gray-400 hover:text-blue-600">
+                            <a href="{% tenant_url 'comptes:detail_compte' c.id %}" class="text-gray-400 hover:text-blue-600">
                                 <span class="material-symbols-outlined">visibility</span>
                             </a>
-                            <a href="{% url 'comptes:modifier_compte' c.id %}" class="text-gray-400 hover:text-amber-600">
+                            <a href="{% tenant_url 'comptes:modifier_compte' c.id %}" class="text-gray-400 hover:text-amber-600">
                                 <span class="material-symbols-outlined">edit</span>
                             </a>
-                            <a href="{% url 'comptes:cloturer_compte' c.id %}" class="text-gray-400 hover:text-purple-600">
+                            <a href="{% tenant_url 'comptes:cloturer_compte' c.id %}" class="text-gray-400 hover:text-purple-600">
                                 <span class="material-symbols-outlined">lock</span>
                             </a>
                         </div>

@@ -55,7 +55,7 @@
   <section class="baly-surface overflow-hidden">
     <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
       <div><h3 class="font-bold text-slate-950">Dernières écritures</h3><p class="mt-1 text-xs text-slate-500">Activité comptable la plus récente</p></div>
-      <a href="{% url 'comptabilite:ecriture_list' %}" class="text-sm font-semibold text-[var(--baly-blue)]">Voir tout →</a>
+      <a href="{% tenant_url 'comptabilite:ecriture_list' %}" class="text-sm font-semibold text-[var(--baly-blue)]">Voir tout →</a>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-left text-sm">
@@ -63,14 +63,14 @@
         <tbody class="divide-y divide-slate-100">
           {% for ecriture in dernieres_ecritures|slice:":8" %}
           <tr class="hover:bg-blue-50/40">
-            <td class="px-5 py-4"><a class="font-mono text-xs font-semibold text-blue-700" href="{% url 'comptabilite:ecriture_detail' ecriture.pk %}">{{ ecriture.reference }}</a></td>
+            <td class="px-5 py-4"><a class="font-mono text-xs font-semibold text-blue-700" href="{% tenant_url 'comptabilite:ecriture_detail' ecriture.pk %}">{{ ecriture.reference }}</a></td>
             <td class="px-5 py-4"><p class="font-medium text-slate-900">{{ ecriture.journal.code }}</p><p class="mt-1 max-w-xs truncate text-xs text-slate-500">{{ ecriture.libelle }}</p></td>
             <td class="whitespace-nowrap px-5 py-4 text-slate-600">{{ ecriture.date_ecriture|date:"d/m/Y" }}</td>
             <td class="whitespace-nowrap px-5 py-4 font-semibold text-slate-900">{{ ecriture.total_debit|floatformat:0 }} FCFA</td>
             <td class="px-5 py-4">{% if ecriture.validee %}<span class="baly-badge baly-badge-blue">Validée</span>{% else %}<span class="baly-badge baly-badge-orange">Brouillon</span>{% endif %}</td>
           </tr>
           {% empty %}
-          <tr><td colspan="5" class="px-6 py-14 text-center"><p class="font-semibold text-slate-900">Aucune écriture comptable</p><p class="mt-2 text-sm text-slate-500">Enregistrez votre première opération pour alimenter le tableau de bord.</p><a href="{% url 'comptabilite:ecriture_create' %}" class="baly-btn-primary mt-4 inline-flex px-4 py-2.5 text-sm font-semibold">Créer une écriture</a></td></tr>
+          <tr><td colspan="5" class="px-6 py-14 text-center"><p class="font-semibold text-slate-900">Aucune écriture comptable</p><p class="mt-2 text-sm text-slate-500">Enregistrez votre première opération pour alimenter le tableau de bord.</p><a href="{% tenant_url 'comptabilite:ecriture_create' %}" class="baly-btn-primary mt-4 inline-flex px-4 py-2.5 text-sm font-semibold">Créer une écriture</a></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -90,9 +90,9 @@
     <section class="border border-slate-200 bg-slate-50 p-5">
       <h3 class="font-bold text-slate-950">Accès rapides</h3>
       <div class="mt-4 grid gap-2">
-        <a href="{% url 'comptabilite:balance' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Consulter la balance</span><span>→</span></a>
-        <a href="{% url 'comptabilite:grand_livre' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Ouvrir le grand livre</span><span>→</span></a>
-        <a href="{% url 'comptabilite:bilan' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Voir le bilan</span><span>→</span></a>
+        <a href="{% tenant_url 'comptabilite:balance' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Consulter la balance</span><span>→</span></a>
+        <a href="{% tenant_url 'comptabilite:grand_livre' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Ouvrir le grand livre</span><span>→</span></a>
+        <a href="{% tenant_url 'comptabilite:bilan' %}" class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><span>Voir le bilan</span><span>→</span></a>
       </div>
     </section>
   </aside>

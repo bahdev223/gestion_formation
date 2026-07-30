@@ -24,12 +24,23 @@ class StatutMouvement(models.TextChoices):
     RAPPROCHE = "RAPPROCHE", _("Rapproché")
 
 
+class SensMouvement(models.TextChoices):
+    ENTREE = "ENTREE", _("Entrée")
+    SORTIE = "SORTIE", _("Sortie")
+
+
 class MouvementCompte(models.Model):
     compte = models.ForeignKey(
         Compte, on_delete=models.CASCADE, related_name="mouvements", verbose_name=_("Compte")
     )
     nature = models.CharField(
         _("Nature"), max_length=20, choices=NatureMouvement.choices, default=NatureMouvement.ENCAISSEMENT
+    )
+    sens = models.CharField(
+        _("Sens"),
+        max_length=10,
+        choices=SensMouvement.choices,
+        default=SensMouvement.ENTREE,
     )
     statut = models.CharField(
         _("Statut"), max_length=20, choices=StatutMouvement.choices, default=StatutMouvement.VALIDE
@@ -80,17 +91,8 @@ class MouvementCompte(models.Model):
 
     @property
     def est_entree(self):
-        return self.nature in (
-            NatureMouvement.ENCAISSEMENT,
-            NatureMouvement.TRANSFERT,
-            NatureMouvement.AJUSTEMENT,
-            NatureMouvement.OUVERTURE,
-        )
+        return self.sens == SensMouvement.ENTREE
 
     @property
     def est_sortie(self):
-        return self.nature in (
-            NatureMouvement.DECAISSEMENT,
-            NatureMouvement.ANNULATION,
-            NatureMouvement.CLOTURE,
-        )
+        return self.sens == SensMouvement.SORTIE

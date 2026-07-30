@@ -1,0 +1,8 @@
+{% extends "platform_admin/base.html" %}
+{% block page_title %}{{ ticket.numero }} — {{ ticket.titre }}{% endblock %}
+{% block platform_content %}
+<div class="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+  <section class="platform-card"><header class="border-b border-slate-200 p-4"><p class="text-sm text-slate-600">{{ ticket.description }}</p></header><div class="divide-y divide-slate-100">{% for item in ticket.messages.all %}<div class="p-4 {% if item.is_internal %}bg-amber-50{% endif %}"><div class="flex justify-between"><p class="text-xs font-bold">{{ item.auteur.username|default:"Système" }} {% if item.is_internal %}· Note interne{% endif %}</p><span class="text-[10px] text-slate-400">{{ item.created_at|date:"d/m/Y H:i" }}</span></div><p class="mt-2 text-sm text-slate-600">{{ item.message|linebreaksbr }}</p></div>{% empty %}<p class="p-8 text-center text-sm text-slate-500">Aucun échange.</p>{% endfor %}</div></section>
+  <form method="post" class="platform-card p-4">{% csrf_token %}<h2 class="font-bold">Traiter le ticket</h2><div class="mt-4 space-y-4">{% for field in form %}<div><label class="mb-1 block text-xs font-bold">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}<div><label class="mb-1 block text-xs font-bold">Réponse ou note</label><textarea name="message" rows="5" class="w-full border border-slate-300 p-3 text-sm"></textarea></div><label class="flex items-center gap-2 text-xs"><input type="checkbox" name="is_internal"> Note interne SahelTech</label><button class="platform-btn w-full">Enregistrer la mise à jour</button></div></form>
+</div>
+{% endblock %}

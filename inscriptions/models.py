@@ -1,15 +1,15 @@
 from decimal import Decimal
+from uuid import uuid4
 
 from django.conf import settings
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
-from uuid import uuid4
 
-from core.models import TimeStampedModel
+from core.models import OrganisationOwnedModel, TimeStampedModel
 
 
-class Inscription(TimeStampedModel):
+class Inscription(OrganisationOwnedModel, TimeStampedModel):
     class Statut(models.TextChoices):
         PREINSCRIT = "PREINSCRIT", "Preinscrit"
         CONFIRME = "CONFIRME", "Confirme"
@@ -63,7 +63,7 @@ class Inscription(TimeStampedModel):
         return max(self.montant_final - self.total_paye, Decimal("0"))
 
 
-class HistoriqueStatutInscription(TimeStampedModel):
+class HistoriqueStatutInscription(OrganisationOwnedModel, TimeStampedModel):
     inscription = models.ForeignKey(Inscription, on_delete=models.CASCADE, related_name="historique_statuts")
     ancien_statut = models.CharField(max_length=20)
     nouveau_statut = models.CharField(max_length=20)

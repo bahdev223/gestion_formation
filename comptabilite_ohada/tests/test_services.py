@@ -1,5 +1,6 @@
+from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.contrib.auth.models import User
+from django.utils import timezone
 
 from ..models import (
     CompteComptable, JournalComptable, ExerciceComptable,
@@ -10,13 +11,17 @@ from ..services.ecriture_service import EcritureService
 
 class EcritureServiceTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="compta", password="test1234")
+        self.user = get_user_model().objects.create_user(
+            username="compta", password="test1234"
+        )
         self.journal = JournalComptable.objects.create(
             code="VN", libelle="Ventes", type_journal="VN"
         )
+        year = timezone.localdate().year
         self.exercice = ExerciceComptable.objects.create(
-            code="2025",
-            date_debut="2025-01-01", date_fin="2025-12-31",
+            code=str(year),
+            date_debut=f"{year}-01-01",
+            date_fin=f"{year}-12-31",
         )
         self.compte_caisse = CompteComptable.objects.create(
             code="571", libelle="Caisse", nature="DEBIT", type_compte="compte",
@@ -42,8 +47,8 @@ class EcritureServiceTest(TestCase):
     def test_valider_ecriture(self):
         ecriture = EcritureComptable.objects.create(
             journal=self.journal, exercice=self.exercice,
-            date_ecriture="2025-06-01", reference="VN-001",
-            libelle="Vente test", validee=False, created_by=self.user,
+            date_ecriture=timezone.localdate(), reference="VN-001",
+            libelle="Vente test", validee=False, created_by=self.user.username,
         )
         LigneEcritureComptable.objects.create(
             ecriture=ecriture, compte=self.compte_caisse, debit=50000,

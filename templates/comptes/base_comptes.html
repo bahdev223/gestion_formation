@@ -7,12 +7,12 @@
 {% block dashboard_content %}
 {% if messages %}{% include "components/messages.html" %}{% endif %}
 <nav class="flex flex-wrap gap-1 border-b border-slate-200 pb-2 text-xs">
-  <a href="{% url 'comptes:dashboard' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Vue générale</a>
-  <a href="{% url 'comptes:liste_comptes' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Comptes</a>
-  <a href="{% url 'comptes:liste_mouvements' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Mouvements</a>
-  <a href="{% url 'comptes:transfert_effectuer' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Transfert</a>
-  <a href="{% url 'comptes:liste_transferts' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Historique des transferts</a>
-  <a href="{% url 'comptes:rapprochement_liste' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Rapprochements</a>
+  <a href="{% tenant_url 'comptes:dashboard' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Vue générale</a>
+  <a href="{% tenant_url 'comptes:liste_comptes' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Comptes</a>
+  <a href="{% tenant_url 'comptes:liste_mouvements' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Mouvements</a>
+  <a href="{% tenant_url 'comptes:transfert_effectuer' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Transfert</a>
+  <a href="{% tenant_url 'comptes:liste_transferts' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Historique des transferts</a>
+  <a href="{% tenant_url 'comptes:rapprochement_liste' %}" class="border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">Rapprochements</a>
 </nav>
 <div class="comptes-workspace">{% block compte_content %}{% endblock %}</div>
 {% endblock %}

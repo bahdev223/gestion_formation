@@ -4,8 +4,8 @@
 {% block breadcrumb %}Ressources humaines / Employés{% endblock %}
 {% block page_actions %}
 <div class="flex flex-wrap gap-2">
-  <a href="{% url 'django_paie:dashboard' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Voir la paie</a>
-  <a href="{% url 'dashboard:rh-employee-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% url 'dashboard:rh-employee-create' %}" hx-target="#global-modal-content" class="baly-btn-primary rounded-md px-5 py-3 text-sm font-semibold text-white">Nouvel employé</a>
+  <a href="{% tenant_url 'django_paie:dashboard' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Voir la paie</a>
+  <a href="{% tenant_url 'dashboard:rh-employee-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'dashboard:rh-employee-create' %}" hx-target="#global-modal-content" class="baly-btn-primary rounded-md px-5 py-3 text-sm font-semibold text-white">Nouvel employé</a>
 </div>
 {% endblock %}
 {% block dashboard_content %}
@@ -14,7 +14,7 @@
   <div class="border-b border-slate-200 px-6 py-5"><h2 class="font-bold text-slate-950">Personnel BALY’S GROUP</h2><p class="mt-1 text-sm text-slate-500">Un salaire doit être défini avant la génération mensuelle.</p></div>
   <div class="divide-y divide-slate-100">
     {% for employee in payroll_users %}
-    <form method="post" action="{% url 'dashboard:payroll-employee-salary-update' employee.pk %}" class="grid items-center gap-4 px-6 py-4 md:grid-cols-[1fr_180px_120px]">
+    <form method="post" action="{% tenant_url 'dashboard:payroll-employee-salary-update' employee.pk %}" class="grid items-center gap-4 px-6 py-4 md:grid-cols-[1fr_180px_120px]">
       {% csrf_token %}
       <div><p class="font-semibold text-slate-900">{{ employee.first_name }} {{ employee.last_name }}</p><p class="mt-1 text-xs text-slate-500">{{ employee.matricule }} · {{ employee.get_status_display }}{% if employee.position %} · {{ employee.position.title }}{% endif %}</p></div>
       <div><label class="mb-1 block text-xs font-semibold text-slate-500">Salaire mensuel</label><input name="salaire_mensuel" type="number" min="0" step="1000" value="{{ employee.salaire_mensuel|default_if_none:'' }}" placeholder="Montant FCFA" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"></div>

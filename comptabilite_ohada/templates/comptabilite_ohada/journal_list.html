@@ -18,7 +18,7 @@
             <tbody>
                 {% for journal in journaux %}
                 <tr>
-                    <td><a href="{% url 'comptabilite:journal_detail' journal.pk %}">{{ journal.code }}</a></td>
+                    <td><a href="{% tenant_url 'comptabilite:journal_detail' journal.pk %}">{{ journal.code }}</a></td>
                     <td>{{ journal.libelle }}</td>
                     <td>{{ journal.get_type_journal_display }}</td>
                     <td>{% if journal.actif %}&#10003;{% else %}&#10007;{% endif %}</td>

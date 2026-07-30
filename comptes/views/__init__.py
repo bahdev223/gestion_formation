@@ -1,20 +1,20 @@
-from .dashboard import dashboard
+from .cloture import cloturer_compte
 from .comptes import (
-    liste_comptes,
-    detail_compte,
     ajouter_compte,
+    detail_compte,
+    liste_comptes,
     modifier_compte,
 )
+from .dashboard import dashboard
+from .journal import journal_consulter
 from .mouvements import (
     liste_mouvements,
-    mouvement_encaisser,
     mouvement_decaisser,
+    mouvement_encaisser,
 )
-from .transferts import transfert_effectuer, liste_transferts
-from .journal import journal_consulter
-from .cloture import cloturer_compte
 from .rapprochement import (
-    rapprochement_liste,
     rapprochement_detail,
     rapprochement_initialiser,
+    rapprochement_liste,
 )
+from .transferts import liste_transferts, transfert_effectuer

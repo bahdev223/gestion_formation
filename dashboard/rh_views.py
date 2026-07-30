@@ -1,23 +1,29 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.views.generic import CreateView, ListView
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.contrib.messages.views import SuccessMessageMixin
-from django.urls import reverse_lazy
-from django.http import HttpResponse
 
 from django_rh.models import Department, Employee, Position
 from django_rh.services import EmployeeService
+from organisations.utils import get_request_organisation, tenant_reverse
 
 from .rh_forms import DepartmentForm, EmployeeCreateForm
 
 
 @login_required
 @permission_required("rh.view_employee", raise_exception=True)
-def rh_dashboard(request):
+def rh_dashboard(request, **kwargs):
+    organisation = get_request_organisation(request)
     employees = Employee.objects.select_related("department", "position")
+    departments = Department.objects.all()
+    positions = Position.objects.all()
+    if organisation is not None:
+        employees = employees.filter(organisation=organisation)
+        departments = departments.filter(organisation=organisation)
+        positions = positions.filter(organisation=organisation)
     active_employees = employees.filter(status=Employee.Status.ACTIVE)
     salary_mass = (
         active_employees.aggregate(total=Sum("salaire_mensuel"))["total"] or 0
@@ -31,8 +37,8 @@ def rh_dashboard(request):
         "suspended_count": employees.filter(
             status=Employee.Status.SUSPENDED
         ).count(),
-        "departments_count": Department.objects.count(),
-        "positions_count": Position.objects.count(),
+        "departments_count": departments.count(),
+        "positions_count": positions.count(),
         "salary_mass": salary_mass,
         "recent_employees": employees.order_by("-created_at")[:6],
     }
@@ -41,8 +47,9 @@ def rh_dashboard(request):
 
 @login_required
 @permission_required("rh.add_employee", raise_exception=True)
-def rh_employee_create(request):
-    form = EmployeeCreateForm(request.POST or None)
+def rh_employee_create(request, **kwargs):
+    organisation = get_request_organisation(request)
+    form = EmployeeCreateForm(request.POST or None, organisation=organisation)
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
         service = EmployeeService()
@@ -57,6 +64,7 @@ def rh_employee_create(request):
             position_id=data["position"].pk if data["position"] else None,
             contract_type=data["contract_type"],
             created_by_id=request.user.pk,
+            organisation=organisation,
         )
         employee.salaire_mensuel = data["salaire_mensuel"]
         employee.save(update_fields=["salaire_mensuel"])
@@ -66,12 +74,11 @@ def rh_employee_create(request):
             request,
             f"L’employé {employee.first_name} {employee.last_name} a été créé.",
         )
-        response = redirect("dashboard:payroll-employees")
+        destination = tenant_reverse(request, "dashboard:payroll-employees")
+        response = redirect(destination)
         if request.headers.get("HX-Request") == "true":
             response.status_code = 204
-            response["HX-Redirect"] = str(
-                reverse_lazy("dashboard:payroll-employees")
-            )
+            response["HX-Redirect"] = destination
         return response
     if request.headers.get("HX-Request") == "true":
         return render(
@@ -95,7 +102,11 @@ class DepartmentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = "rh.view_department"
 
     def get_queryset(self):
-        return Department.objects.select_related("manager").order_by("name")
+        qs = Department.objects.select_related("manager").order_by("name")
+        organisation = get_request_organisation(self.request)
+        if organisation is not None:
+            qs = qs.filter(organisation=organisation)
+        return qs
 
 
 class DepartmentCreateView(
@@ -108,7 +119,8 @@ class DepartmentCreateView(
     form_class = DepartmentForm
     template_name = "django_rh/department_form.html"
     permission_required = "rh.add_department"
-    success_url = reverse_lazy("dashboard:rh-department-list")
+    def get_success_url(self):
+        return tenant_reverse(self.request, "dashboard:rh-department-list")
     success_message = "Le département a été créé avec succès."
 
     def get_template_names(self):
@@ -116,7 +128,15 @@ class DepartmentCreateView(
             return ["django_rh/partials/department_form.html"]
         return ["django_rh/department_form.html"]
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["organisation"] = get_request_organisation(self.request)
+        return kwargs
+
     def form_valid(self, form):
+        organisation = get_request_organisation(self.request)
+        if organisation is not None:
+            form.instance.organisation = organisation
         self.object = form.save()
         if self.request.headers.get("HX-Request") == "true":
             response = render(

@@ -1,9 +1,18 @@
 {% extends "layouts/dashboard.html" %}
-{% block page_title %}Presences{% endblock %}
-{% block page_subtitle %}Saisie et suivi des presences par seance et par inscription.{% endblock %}
+{% block page_title %}Présences{% endblock %}
+{% block page_subtitle %}Saisie et suivi des présences par séance et par apprenant.{% endblock %}
+{% block breadcrumb %}Activités métier / Présences{% endblock %}
 {% block dashboard_content %}
-<div class="rounded-3xl baly-surface p-6">
-  <p class="text-slate-600">Page de depart du module presences.</p>
+{% if messages %}{% include "components/messages.html" %}{% endif %}
+<div class="grid gap-3 sm:grid-cols-2">
+  <article class="stat-card"><p class="stat-label">Séances</p><p class="stat-value">{{ total_seances }}</p><p class="stat-hint">Séances planifiées dans le système</p></article>
+  <article class="stat-card"><p class="stat-label">Feuilles à compléter</p><p class="stat-value {% if seances_a_saisir %}text-amber-700{% else %}text-emerald-700{% endif %}">{{ seances_a_saisir }}</p><p class="stat-hint">Saisies incomplètes</p></article>
 </div>
+<section class="baly-surface mt-3 overflow-hidden">
+  <header class="border-b border-slate-200 px-4 py-3"><h2 class="text-sm font-bold text-slate-950">Feuilles de présence</h2><p class="mt-0.5 text-xs text-slate-500">Ouvrez une séance pour pointer les apprenants inscrits.</p></header>
+  <div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="bg-slate-50 uppercase tracking-wider text-slate-500"><tr><th class="px-4 py-2">Date</th><th class="px-4 py-2">Séance</th><th class="px-4 py-2">Formation</th><th class="px-4 py-2">Progression</th><th class="px-4 py-2 text-right">Action</th></tr></thead><tbody class="divide-y divide-slate-100">
+  {% for seance in seances %}<tr class="hover:bg-blue-50/30"><td class="whitespace-nowrap px-4 py-3"><span class="font-bold text-slate-900">{{ seance.date|date:"d/m/Y" }}</span><span class="block text-[10px] text-slate-400">{{ seance.heure_debut|time:"H:i" }} – {{ seance.heure_fin|time:"H:i" }}</span></td><td class="px-4 py-3 font-semibold text-slate-900">{{ seance.titre }}</td><td class="px-4 py-3 text-slate-600">{{ seance.session.formation.nom }}<span class="block text-[10px] text-slate-400">{{ seance.session.titre }}</span></td><td class="px-4 py-3"><span class="baly-badge {% if seance.nb_saisis >= seance.nb_inscrits %}baly-badge-blue{% else %}baly-badge-red{% endif %}">{{ seance.nb_saisis }}/{{ seance.nb_inscrits }} saisis</span></td><td class="px-4 py-3 text-right"><a href="{% tenant_url 'presences:sheet' seance.id %}" class="font-bold text-blue-700">Ouvrir la feuille →</a></td></tr>
+  {% empty %}<tr><td colspan="5" class="px-4 py-12 text-center text-slate-500">Aucune séance disponible. Créez d’abord une séance de formation.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
 {% endblock %}
-

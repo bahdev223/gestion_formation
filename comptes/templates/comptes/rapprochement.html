@@ -59,7 +59,7 @@
 <div id="modalInit" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
         <h2 class="text-lg font-bold mb-4">Initialiser un rapprochement</h2>
-        <form method="post" action="{% url 'comptes:rapprochement_initialiser' %}">
+        <form method="post" action="{% tenant_url 'comptes:rapprochement_initialiser' %}">
             {% csrf_token %}
             <div class="space-y-4">
                 <div>

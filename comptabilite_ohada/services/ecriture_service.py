@@ -1,6 +1,7 @@
 from decimal import Decimal
 from datetime import date, datetime
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -23,8 +24,6 @@ class EcritureService:
             date_fin__gte=date_operation,
             cloture=False,
         ).first()
-        if not exercice:
-            exercice = ExerciceComptable.objects.filter(cloture=False).first()
         return exercice
 
     @classmethod
@@ -63,11 +62,56 @@ class EcritureService:
         return f"{prefix}-{dt.strftime('%Y%m%d%H%M%S%f')}"
 
     @classmethod
+    def _validate_payload(cls, date_ecriture, journal, exercice, lignes):
+        if exercice is None:
+            raise ValidationError(
+                "Aucun exercice comptable ouvert ne couvre cette date."
+            )
+        if exercice.cloture:
+            raise ValidationError("L'exercice comptable est clôturé.")
+        if not exercice.date_debut <= date_ecriture <= exercice.date_fin:
+            raise ValidationError(
+                "La date de l'écriture est hors de l'exercice sélectionné."
+            )
+        if not journal or not journal.actif:
+            raise ValidationError("Le journal comptable est inactif ou absent.")
+        if len(lignes) < 2:
+            raise ValidationError(
+                "Une écriture doit contenir au moins deux lignes."
+            )
+        total_debit = Decimal("0")
+        total_credit = Decimal("0")
+        for ligne in lignes:
+            compte = ligne.get("compte")
+            if compte is None or not compte.actif or not compte.est_mouvement:
+                raise ValidationError(
+                    "Chaque ligne doit utiliser un compte actif mouvementable."
+                )
+            debit = Decimal(str(ligne.get("debit") or 0))
+            credit = Decimal(str(ligne.get("credit") or 0))
+            if debit < 0 or credit < 0:
+                raise ValidationError("Les montants doivent être positifs.")
+            if (debit > 0) == (credit > 0):
+                raise ValidationError(
+                    "Chaque ligne doit avoir soit un débit, soit un crédit."
+                )
+            total_debit += debit
+            total_credit += credit
+        if total_debit <= 0 or total_debit != total_credit:
+            raise ValidationError(
+                f"Écriture déséquilibrée : débit {total_debit} / "
+                f"crédit {total_credit}."
+            )
+
+    @classmethod
     @transaction.atomic
     def creer_ecriture(cls, reference, date_ecriture, libelle, journal, lignes,
                        exercice=None, piece=None, validee=True, user=None):
         if exercice is None:
             exercice = cls.get_exercice(date_ecriture)
+        cls._validate_payload(
+            date_ecriture, journal, exercice, lignes
+        )
 
         ecriture = EcritureComptable.objects.create(
             reference=reference,
@@ -97,6 +141,43 @@ class EcritureService:
                 user=user,
             )
 
+        return ecriture
+
+    @classmethod
+    @transaction.atomic
+    def valider_ecriture(cls, ecriture, user=None):
+        ecriture = (
+            EcritureComptable.objects.select_for_update()
+            .select_related("journal", "exercice")
+            .get(pk=ecriture.pk)
+        )
+        if ecriture.validee:
+            raise ValidationError("Cette écriture est déjà validée.")
+        lignes_obj = list(ecriture.lignes.select_related("compte"))
+        lignes = [
+            {
+                "compte": ligne.compte,
+                "debit": ligne.debit,
+                "credit": ligne.credit,
+                "libelle": ligne.libelle,
+            }
+            for ligne in lignes_obj
+        ]
+        cls._validate_payload(
+            ecriture.date_ecriture,
+            ecriture.journal,
+            ecriture.exercice,
+            lignes,
+        )
+        ecriture.validee = True
+        ecriture.date_validation = timezone.now()
+        ecriture.save(update_fields=["validee", "date_validation"])
+        ecriture_validee.send(
+            sender=cls,
+            instance=ecriture,
+            lignes=lignes,
+            user=user,
+        )
         return ecriture
 
     # ─── Ventes ───────────────────────────────────────────────

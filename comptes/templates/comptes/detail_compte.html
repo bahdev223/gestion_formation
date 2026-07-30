@@ -8,9 +8,9 @@
             <p class="text-sm text-gray-500">{{ compte.code }} · {{ compte.get_type_display }} · {{ compte.devise }}</p>
         </div>
         <div class="flex gap-2">
-            <a href="{% url 'comptes:modifier_compte' compte.id %}"
+            <a href="{% tenant_url 'comptes:modifier_compte' compte.id %}"
                class="px-4 py-2 text-sm font-medium bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100">Modifier</a>
-            <a href="{% url 'comptes:cloturer_compte' compte.id %}"
+            <a href="{% tenant_url 'comptes:cloturer_compte' compte.id %}"
                class="px-4 py-2 text-sm font-medium bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100">Clôturer</a>
         </div>
     </div>

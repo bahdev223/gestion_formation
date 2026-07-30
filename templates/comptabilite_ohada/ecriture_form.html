@@ -1,0 +1,18 @@
+{% extends "comptabilite_ohada/base.html" %}
+{% block compta_title %}{% if object %}Modifier l’écriture{% else %}Nouvelle écriture{% endif %}{% endblock %}
+{% block compta_content %}
+<form method="post" class="space-y-3">{% csrf_token %}
+  <section class="baly-surface overflow-hidden">
+    <header class="border-b border-slate-200 px-4 py-3"><h2 class="text-sm font-bold text-slate-950">En-tête de l’écriture</h2><p class="mt-0.5 text-xs text-slate-500">L’écriture sera enregistrée en brouillon avant validation définitive.</p></header>
+    {% if form.non_field_errors %}<div class="border-b border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">{% for field in form %}<div class="{% if field.name == 'libelle' %}md:col-span-2 xl:col-span-3{% endif %}"><label class="mb-1 block text-xs font-bold text-slate-700">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.errors %}<p class="mt-1 text-xs text-red-700">{{ field.errors|striptags }}</p>{% endif %}</div>{% endfor %}</div>
+  </section>
+  <section class="baly-surface overflow-hidden">
+    <header class="border-b border-slate-200 px-4 py-3"><h2 class="text-sm font-bold text-slate-950">Lignes comptables</h2><p class="mt-0.5 text-xs text-slate-500">Au minimum une ligne au débit et une ligne au crédit, avec des totaux identiques.</p></header>
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}<div class="border-b border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">{{ formset.non_form_errors }}</div>{% endif %}
+    <div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="bg-slate-50 uppercase tracking-wider text-slate-500"><tr><th class="px-3 py-2">Compte</th><th class="px-3 py-2">Libellé</th><th class="px-3 py-2">Débit</th><th class="px-3 py-2">Crédit</th><th class="px-3 py-2">Supprimer</th></tr></thead><tbody class="divide-y divide-slate-100">{% for line_form in formset %}<tr><td class="min-w-64 px-3 py-2">{{ line_form.id }}{{ line_form.compte }}{% if line_form.compte.errors %}<p class="text-red-700">{{ line_form.compte.errors|striptags }}</p>{% endif %}</td><td class="min-w-48 px-3 py-2">{{ line_form.libelle }}</td><td class="min-w-32 px-3 py-2">{{ line_form.debit }}</td><td class="min-w-32 px-3 py-2">{{ line_form.credit }}</td><td class="px-3 py-2 text-center">{{ line_form.DELETE }}{% if line_form.non_field_errors %}<p class="text-red-700">{{ line_form.non_field_errors|striptags }}</p>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+    <footer class="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3"><a href="{% tenant_url 'comptabilite:ecriture_list' %}" class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700">Annuler</a><button class="baly-btn-primary px-4 py-2 text-xs font-bold">Enregistrer le brouillon</button></footer>
+  </section>
+</form>
+{% endblock %}

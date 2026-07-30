@@ -1,5 +1,5 @@
 <form method="post"
-      hx-post="{% url 'dashboard:rh-department-create' %}"
+      hx-post="{% tenant_url 'dashboard:rh-department-create' %}"
       hx-target="#department-modal-content"
       hx-swap="innerHTML">
   {% csrf_token %}

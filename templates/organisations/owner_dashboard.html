@@ -1,0 +1,78 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block page_title %}Espace entreprise{% endblock %}
+{% block page_subtitle %}Suivi de l'abonnement, des limites et de l'acces SaaS de {{ organisation.nom }}.{% endblock %}
+{% block breadcrumb %}Organisation / Tableau de bord{% endblock %}
+
+{% block dashboard_content %}
+<div class="grid gap-3 lg:grid-cols-3">
+  <article class="stat-card">
+    <p class="stat-label">Plan actuel</p>
+    <p class="stat-value">{{ abonnement.plan.nom|default:"Aucun" }}</p>
+    <p class="stat-hint">{{ abonnement.get_statut_display|default:organisation.get_statut_display }}</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-label">Expiration</p>
+    <p class="stat-value text-base">{{ abonnement.date_fin|date:"d/m/Y"|default:"-" }}</p>
+    <p class="stat-hint">{% if abonnement.is_in_grace_period %}Periode de grace active{% elif abonnement.is_read_only %}Lecture seule{% else %}Acces actif{% endif %}</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-label">Organisation</p>
+    <p class="stat-value text-base">{{ organisation.nom }}</p>
+    <p class="stat-hint">/{{ organisation.slug }}</p>
+  </article>
+</div>
+
+<section class="baly-surface mt-3 overflow-hidden">
+  <header class="border-b border-slate-200 px-4 py-3">
+    <h2 class="text-sm font-bold text-slate-950">Utilisation des quotas</h2>
+    <p class="mt-0.5 text-xs text-slate-500">Surveillez les limites du plan avant blocage.</p>
+  </header>
+  <div class="divide-y divide-slate-100">
+    {% for key, item in quota_usage.items %}
+      <div class="grid gap-3 px-4 py-3 text-sm sm:grid-cols-[180px_minmax(0,1fr)_120px] sm:items-center">
+        <p class="font-semibold text-slate-800">{{ key|title }}</p>
+        <div class="h-2 bg-slate-100">
+          <div class="h-2 bg-[var(--baly-blue)]" style="width: {% widthratio item.used item.limit 100 %}%"></div>
+        </div>
+        <p class="text-right text-xs font-bold text-slate-600">{{ item.used }} / {{ item.limit }}</p>
+      </div>
+    {% empty %}
+      <p class="px-4 py-10 text-center text-sm text-slate-500">Aucun abonnement configure.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="baly-surface mt-3 overflow-hidden">
+  <header class="border-b border-slate-200 px-4 py-3">
+    <h2 class="text-sm font-bold text-slate-950">Paiements d'abonnement</h2>
+    <p class="mt-0.5 text-xs text-slate-500">Historique de facturation SaaS.</p>
+  </header>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-xs">
+      <thead class="bg-slate-50 text-slate-500">
+        <tr>
+          <th class="px-4 py-2">Reference</th>
+          <th class="px-4 py-2">Mode</th>
+          <th class="px-4 py-2">Date</th>
+          <th class="px-4 py-2 text-right">Montant</th>
+          <th class="px-4 py-2">Statut</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for paiement in abonnement.paiements.all %}
+          <tr>
+            <td class="px-4 py-3 font-mono text-[10px]">{{ paiement.reference }}</td>
+            <td class="px-4 py-3">{{ paiement.mode_paiement }}</td>
+            <td class="px-4 py-3">{{ paiement.date_paiement|date:"d/m/Y"|default:"-" }}</td>
+            <td class="px-4 py-3 text-right font-bold">{{ paiement.montant|floatformat:0 }} {{ organisation.devise }}</td>
+            <td class="px-4 py-3"><span class="baly-badge">{{ paiement.get_statut_display }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-10 text-center text-slate-500">Aucun paiement d'abonnement enregistre.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

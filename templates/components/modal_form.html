@@ -4,6 +4,7 @@
 </header>
 <form method="post"
       enctype="multipart/form-data"
+      hx-encoding="multipart/form-data"
       hx-post="{{ request.get_full_path }}"
       hx-target="#global-modal-content"
       hx-swap="innerHTML">

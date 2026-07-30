@@ -2,7 +2,7 @@
 {% block page_title %}Nouvel apprenant et inscription{% endblock %}
 {% block page_subtitle %}Créez la fiche du participant et inscrivez-le immédiatement à une session.{% endblock %}
 {% block breadcrumb %}Inscriptions / Nouvel apprenant{% endblock %}
-{% block page_actions %}<a href="{% url 'inscriptions:create' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Choisir un participant existant</a>{% endblock %}
+{% block page_actions %}<a href="{% tenant_url 'inscriptions:create' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Choisir un participant existant</a>{% endblock %}
 {% block dashboard_content %}
 <form method="post" class="baly-surface rounded-lg">{% csrf_token %}
   <div class="border-b border-slate-200 px-6 py-5"><div class="flex items-center gap-3"><span class="grid h-9 w-9 place-items-center rounded-md bg-blue-50 text-sm font-bold text-blue-700">1</span><div><h2 class="font-bold text-slate-950">Apprenant et inscription</h2><p class="mt-1 text-sm text-slate-500">Les deux enregistrements seront créés en une seule fois.</p></div></div></div>

@@ -1,6 +1,13 @@
 {% extends "base.html" %}
+{% load tenant_urls %}
 
 {% block content %}
+{% if is_platform_impersonating %}
+  <div class="fixed inset-x-0 top-0 z-[70] flex items-center justify-center gap-3 bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 shadow-lg">
+    Mode support SahelTech : vous consultez actuellement cette entreprise.
+    <form method="post" action="{% url 'platform_admin:stop-impersonation' %}">{% csrf_token %}<button class="border border-slate-900 bg-white px-3 py-1">Revenir à la console</button></form>
+  </div>
+{% endif %}
 <div x-data="{
        globalModalOpen: false,
        sidebarOpen: false,
@@ -15,14 +22,13 @@
   <div x-cloak x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-slate-950/40 lg:hidden"></div>
   <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
          class="app-sidebar fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-slate-800 p-2 text-slate-100 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 lg:overflow-y-auto"
-         style="background: var(--baly-blue-deep);">
+         style="background: var(--baly-blue-deep); border-color: color-mix(in srgb, var(--baly-blue-deep) 78%, #ffffff);">
     <div class="brand-block mb-2 flex h-14 items-center gap-2 border-b border-white/10 px-2">
       <div class="brand-logo flex h-9 w-11 shrink-0 items-center justify-center bg-white p-1">
         <img src="/static/images/balygroupe.jpg" alt="BALY'S Group" class="max-h-full max-w-full object-contain">
       </div>
       <div class="sidebar-label min-w-0">
         <p class="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-slate-400">{{ organisation.nom|default:"BALY'S GROUP" }}</p>
-        <p class="truncate text-sm font-semibold text-white">Formation Manager</p>
       </div>
       <button type="button" @click="sidebarOpen = false" class="ml-auto p-1 text-slate-400 hover:text-white lg:hidden" aria-label="Fermer le menu">
         <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12"></path><path d="m18 6-12 12"></path></svg>
@@ -30,42 +36,42 @@
     </div>
 
     <div class="sidebar-nav flex-1 space-y-0.5 text-[13px]">
-      <a class="menu-item border-l-2 border-[var(--baly-orange)] bg-white/10 font-medium text-white" href="/" title="Tableau de bord">
+      <a class="menu-item border-l-2 border-[var(--baly-orange)] bg-white/10 font-medium text-white" href="{% tenant_path 'dashboard' %}" title="Tableau de bord">
         <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5 10.5V20h14v-9.5"></path><path d="M9 20v-6h6v6"></path></svg>
         <span>Tableau de bord</span>
       </a>
       <div class="pt-2">
         <p class="px-3 pb-2 text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-slate-500">Activités métier</p>
         <div class="space-y-0.5">
-          <a class="menu-item" href="/formations/">
+          <a class="menu-item" href="{% tenant_path 'formations' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H6.5A2.5 2.5 0 0 1 4 17.5z"></path><path d="M8 4v16"></path></svg>
             <span>Formations</span>
           </a>
-          <a class="menu-item" href="{% url 'formations:session-list' %}">
+          <a class="menu-item" href="{% tenant_path 'formations/sessions' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v4"></path><path d="M17 3v4"></path><path d="M4 9h16"></path><rect x="4" y="5" width="16" height="16" rx="2"></rect></svg>
             <span>Sessions</span>
           </a>
-          <a class="menu-item" href="{% url 'formations:seance-list' %}">
+          <a class="menu-item" href="{% tenant_path 'formations/seances' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 7v5l3 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
             <span>Seances</span>
           </a>
-          <a class="menu-item" href="/participants/">
+          <a class="menu-item" href="{% tenant_path 'participants' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
             <span>Apprenants</span>
           </a>
-          <a class="menu-item" href="/inscriptions/">
+          <a class="menu-item" href="{% tenant_path 'inscriptions' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
             <span>Inscriptions</span>
           </a>
-          <a class="menu-item" href="/paiements/">
+          <a class="menu-item" href="{% tenant_path 'paiements' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h18v10H3z"></path><path d="M7 11h0"></path><path d="M12 11h0"></path></svg>
             <span>Paiements</span>
           </a>
-          <a class="menu-item" href="/presences/">
+          <a class="menu-item" href="{% tenant_path 'presences' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11"></path></svg>
             <span>Presences</span>
           </a>
-          <a class="menu-item" href="/documents/">
+          <a class="menu-item" href="{% tenant_path 'documents' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H7a2 2 0 0 0-2 2v16h14V8z"></path><path d="M14 2v6h6"></path></svg>
             <span>Documents</span>
           </a>
@@ -75,19 +81,19 @@
       <div class="pt-3">
         <p class="px-3 pb-2 text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-slate-500">Gestion de l’entreprise</p>
         <div class="space-y-0.5">
-          <a class="menu-item" href="{% url 'django_paie:dashboard' %}">
+          <a class="menu-item" href="{% tenant_path 'paie-salariale/dashboard' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v14H4z"></path><path d="M8 9h8"></path><path d="M8 13h3"></path><path d="M15 13h1"></path></svg>
             <span>Paie salariale</span>
           </a>
-          <a class="menu-item" href="{% url 'dashboard:rh-dashboard' %}">
+          <a class="menu-item" href="{% tenant_path 'ressources-humaines/dashboard' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 12a4 4 0 1 0-4-4"></path><path d="M5 21a7 7 0 0 1 14 0"></path></svg>
             <span>Ressources humaines</span>
           </a>
-          <a class="menu-item" href="{% url 'comptabilite:dashboard' %}">
+          <a class="menu-item" href="{% tenant_path 'comptabilite' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"></path><path d="M8 8h8"></path><path d="M8 12h2"></path><path d="M14 12h2"></path><path d="M8 16h2"></path><path d="M14 16h2"></path></svg>
             <span>Comptabilité OHADA</span>
           </a>
-          <a class="menu-item" href="{% url 'comptes:dashboard' %}" title="Comptes financiers">
+          <a class="menu-item" href="{% tenant_path 'comptes-financiers' %}" title="Comptes financiers">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14"></rect><path d="M3 9h18"></path><path d="M7 14h3"></path></svg>
             <span>Comptes financiers</span>
           </a>
@@ -97,7 +103,7 @@
       <div class="pt-2">
         <p class="px-3 pb-2 text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-slate-500">Paramètres</p>
         <div class="space-y-0.5">
-          <a class="menu-item" href="{% url 'dashboard:organisation-settings' %}">
+          <a class="menu-item" href="{% tenant_path 'parametres-entreprise' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h16"></path><path d="M6 20V10l6-4 6 4v10"></path><path d="M9 12h.01"></path><path d="M15 12h.01"></path><path d="M9 16h6"></path></svg>
             <span>Paramètres de l’entreprise</span>
           </a>
@@ -114,7 +120,7 @@
   </aside>
 
   <section class="min-w-0">
-    <div class="topbar flex h-12 items-center justify-between border-b border-slate-200 bg-white px-3 lg:px-4">
+    <div class="topbar flex h-12 items-center justify-between border-b border-slate-200 px-3 lg:px-4" style="background: var(--baly-header);">
       <div class="flex shrink-0 items-center gap-1.5">
         <button type="button" @click="sidebarOpen = true" class="grid h-8 w-8 place-items-center border border-slate-200 text-slate-600 lg:hidden" aria-label="Ouvrir le menu"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg></button>
         <button type="button" @click="toggleSidebar()" class="hidden h-8 w-8 place-items-center border border-slate-200 text-slate-500 hover:bg-slate-50 lg:grid" :aria-label="sidebarCollapsed ? 'Déployer le menu' : 'Réduire le menu'"><svg class="ui-icon transition-transform" :class="{ 'rotate-180': sidebarCollapsed }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"></path></svg></button>

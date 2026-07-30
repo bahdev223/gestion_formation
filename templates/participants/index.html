@@ -3,9 +3,9 @@
 {% block page_subtitle %}Chaque nouvel apprenant est créé avec son inscription à une session de formation.{% endblock %}
 {% block breadcrumb %}Inscriptions / Apprenants{% endblock %}
 {% block page_actions %}
-<a href="{% url 'inscriptions:create-learner' %}"
+<a href="{% tenant_url 'inscriptions:create-learner' %}"
    @click.prevent="globalModalOpen = true"
-   hx-get="{% url 'inscriptions:create-learner' %}"
+   hx-get="{% tenant_url 'inscriptions:create-learner' %}"
    hx-target="#global-modal-content"
    class="baly-btn-primary rounded-md px-5 py-3 text-sm font-semibold text-white">
   Inscrire un nouvel apprenant

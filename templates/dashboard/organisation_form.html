@@ -1,7 +1,7 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block page_title %}Paramètres de l’entreprise{% endblock %}
-{% block page_subtitle %}Configurez l’identité de l’entreprise et les informations utilisées sur les documents officiels.{% endblock %}
+{% block page_title %}Parametres de l'entreprise{% endblock %}
+{% block page_subtitle %}Configurez l'identite, les documents officiels et la charte graphique de l'application.{% endblock %}
 
 {% block dashboard_content %}
 {% if messages %}
@@ -10,38 +10,153 @@
   {% endfor %}
 {% endif %}
 
-<form method="post" enctype="multipart/form-data" class="baly-surface rounded-xl">
+<form method="post" enctype="multipart/form-data" class="baly-surface overflow-hidden rounded-md">
   {% csrf_token %}
 
-  <div class="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center">
-    <div class="flex h-20 w-28 shrink-0 items-center justify-center border border-slate-200 bg-white p-2">
+  <div class="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center">
+    <div class="flex h-16 w-24 shrink-0 items-center justify-center border border-slate-200 bg-white p-2">
       <img src="{% if object.logo %}{{ object.logo.url }}{% else %}/static/images/balygroupe.jpg{% endif %}" alt="Logo actuel" class="max-h-full max-w-full object-contain">
     </div>
-    <div>
-      <h2 class="text-lg font-bold text-slate-950">Identité et coordonnées</h2>
-      <p class="mt-1 text-sm text-slate-500">Ces informations apparaîtront sur les reçus, attestations et autres documents.</p>
+    <div class="min-w-0">
+      <h2 class="text-base font-bold text-slate-950">Configuration entreprise</h2>
+      <p class="mt-1 text-sm text-slate-500">Ces reglages personnalisent les ecrans, les documents et l'identite visible par les utilisateurs.</p>
     </div>
   </div>
 
   {% if form.non_field_errors %}
-    <div class="mx-6 mt-6 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
+    <div class="mx-5 mt-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
   {% endif %}
 
-  <div class="grid gap-5 p-6 md:grid-cols-2">
-    {% for field in form %}
-      <div class="{% if field.name == 'adresse' or field.name == 'logo' or field.name == 'signature_image' or field.name == 'cachet_image' %}md:col-span-2{% endif %}">
-        <label for="{{ field.id_for_label }}" class="mb-2 block text-sm font-semibold text-slate-800">
-          {{ field.label }}{% if field.field.required %} <span class="text-red-600">*</span>{% endif %}
-        </label>
-        {{ field }}
-        {% if field.help_text %}<p class="mt-1.5 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
-        {% for error in field.errors %}<p class="mt-1.5 text-sm font-medium text-red-600">{{ error }}</p>{% endfor %}
-      </div>
-    {% endfor %}
-  </div>
+  <section class="border-b border-slate-200 p-5">
+    <h3 class="text-sm font-bold uppercase tracking-wide text-slate-600">Identite</h3>
+    <div class="mt-4 grid gap-4 md:grid-cols-2">
+      {% for field in identity_fields %}
+        <div class="{% if field.name == 'adresse' or field.name == 'logo' %}md:col-span-2{% endif %}">
+          <label for="{{ field.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-700">
+            {{ field.label }}{% if field.field.required %} <span class="text-red-600">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-red-600">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
 
-  <div class="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-5">
-    <button type="submit" class="baly-btn-primary rounded-lg px-6 py-3 text-sm font-semibold text-white">Enregistrer les paramètres</button>
+  <section class="border-b border-slate-200 p-5">
+    <h3 class="text-sm font-bold uppercase tracking-wide text-slate-600">Documents officiels</h3>
+    <div class="mt-4 grid gap-4 md:grid-cols-2">
+      {% for field in document_fields %}
+        <div class="{% if field.name == 'signature_image' or field.name == 'cachet_image' %}md:col-span-2{% endif %}">
+          <label for="{{ field.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-700">
+            {{ field.label }}{% if field.field.required %} <span class="text-red-600">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-red-600">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section
+    class="p-5"
+    x-data="{
+      applyPalette(palette) {
+        document.getElementById('id_palette').value = palette.code;
+        document.getElementById('id_couleur_sidebar').value = palette.sidebar;
+        document.getElementById('id_couleur_header').value = palette.header;
+        document.getElementById('id_couleur_primaire').value = palette.primary;
+        document.getElementById('id_couleur_secondaire').value = palette.secondary;
+        document.getElementById('id_couleur_accent').value = palette.accent;
+        document.getElementById('id_couleur_fond').value = palette.background;
+        document.getElementById('id_couleur_surface').value = palette.surface;
+        document.documentElement.style.setProperty('--baly-blue-deep', palette.sidebar);
+        document.documentElement.style.setProperty('--baly-header', palette.header);
+        document.documentElement.style.setProperty('--baly-blue', palette.primary);
+        document.documentElement.style.setProperty('--baly-blue-dark', palette.secondary);
+        document.documentElement.style.setProperty('--baly-orange', palette.accent);
+        document.documentElement.style.setProperty('--baly-bg', palette.background);
+        document.documentElement.style.setProperty('--baly-surface', palette.surface);
+      }
+    }"
+  >
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-wide text-slate-600">Charte graphique</h3>
+        <p class="mt-1 text-sm text-slate-500">Selectionnez une base puis adaptez les couleurs au branding de l'entreprise.</p>
+      </div>
+      <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {% for palette in theme_palettes %}
+          <button
+            type="button"
+            class="flex items-center gap-2 border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-slate-700 hover:border-slate-400"
+            @click='applyPalette({
+              code: "{{ palette.code }}",
+              sidebar: "{{ palette.sidebar }}",
+              header: "{{ palette.header }}",
+              primary: "{{ palette.primary }}",
+              secondary: "{{ palette.secondary }}",
+              accent: "{{ palette.accent }}",
+              background: "{{ palette.background }}",
+              surface: "{{ palette.surface }}"
+            })'
+          >
+            <span class="flex overflow-hidden border border-slate-200">
+              <span class="h-5 w-5" style="background: {{ palette.sidebar }}"></span>
+              <span class="h-5 w-5" style="background: {{ palette.primary }}"></span>
+              <span class="h-5 w-5" style="background: {{ palette.accent }}"></span>
+            </span>
+            <span>{{ palette.label }}</span>
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div>
+        <label for="{{ form.palette.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-700">{{ form.palette.label }}</label>
+        {{ form.palette }}
+        {% if form.palette.help_text %}<p class="mt-1 text-xs text-slate-500">{{ form.palette.help_text }}</p>{% endif %}
+        {% for error in form.palette.errors %}<p class="mt-1 text-xs font-semibold text-red-600">{{ error }}</p>{% endfor %}
+      </div>
+      {% for field in theme_fields %}
+        <div>
+          <label for="{{ field.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-700">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-red-600">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="mt-5 grid overflow-hidden border border-slate-200 md:grid-cols-[180px_minmax(0,1fr)]">
+      <div class="p-3 text-white" style="background: var(--baly-blue-deep);">
+        <div class="mb-3 h-8 w-20 bg-white"></div>
+        <div class="space-y-1 text-xs">
+          <div class="bg-white/15 px-2 py-2">Tableau de bord</div>
+          <div class="px-2 py-2 text-white/75">Formations</div>
+          <div class="px-2 py-2 text-white/75">Paiements</div>
+        </div>
+      </div>
+      <div style="background: var(--baly-bg);">
+        <div class="border-b border-slate-200 px-4 py-3" style="background: var(--baly-header);">
+          <span class="text-xs font-bold text-slate-700">Apercu du header</span>
+        </div>
+        <div class="p-4">
+          <div class="border border-slate-200 p-4" style="background: var(--baly-surface);">
+            <p class="text-sm font-bold text-slate-900">Surface de travail</p>
+            <p class="mt-1 text-xs text-slate-500">Boutons, badges et fonds suivront cette charte.</p>
+            <button type="button" class="baly-btn-primary mt-3 px-4 py-2 text-xs font-bold">Action principale</button>
+            <button type="button" class="baly-btn-accent mt-3 px-4 py-2 text-xs font-bold">Action accent</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-4">
+    <button type="submit" class="baly-btn-primary rounded-md px-5 py-2.5 text-sm font-semibold text-white">Enregistrer les parametres</button>
   </div>
 </form>
 {% endblock %}

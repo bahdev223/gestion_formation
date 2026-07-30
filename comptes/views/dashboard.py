@@ -1,13 +1,15 @@
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
 from ..models import Compte
 from ..selectors import DashboardSelector
+from ..utils import organisation_filter
 
 
 @login_required
-def dashboard(request):
-    selector = DashboardSelector()
+def dashboard(request, **kwargs):
+    tenant_filter = organisation_filter(request)
+    selector = DashboardSelector(tenant_filter=tenant_filter)
     comptes = selector._filter_queryset(Compte.objects.filter(actif=True).order_by("code"))
     synthese = selector.synthese_globale()
     flux = selector.flux_24h()

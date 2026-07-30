@@ -39,6 +39,7 @@ class ParticipantForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = (
@@ -46,4 +47,3 @@ class ParticipantForm(forms.ModelForm):
                 "text-sm outline-none focus:border-blue-600 focus:ring-2 "
                 "focus:ring-blue-100"
             )
-

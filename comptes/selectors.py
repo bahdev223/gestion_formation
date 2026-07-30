@@ -6,14 +6,21 @@ Separation Query / Business Logic :
     Les selectors s'occupent des requetes de lecture (lire).
 """
 
+from datetime import timedelta
 from decimal import Decimal
-from datetime import date, timedelta
 
-from django.db.models import Sum, Q, Count
+from django.db.models import Count, Sum
 from django.utils import timezone
 
-from .models import Compte, MouvementCompte, TransfertCompte, JournalCompte
-from .models import NatureMouvement, StatutMouvement, TypeCompte
+from .models import (
+    Compte,
+    JournalCompte,
+    MouvementCompte,
+    NatureMouvement,
+    StatutMouvement,
+    TransfertCompte,
+    TypeCompte,
+)
 
 
 class DashboardSelector:
@@ -23,7 +30,19 @@ class DashboardSelector:
         self.tenant_filter = tenant_filter or {}
 
     def _filter_queryset(self, qs):
-        return qs.filter(**self.tenant_filter)
+        if not self.tenant_filter:
+            return qs
+        organisation = self.tenant_filter.get("organisation")
+        if organisation is None:
+            return qs
+        model = qs.model
+        if hasattr(model, "organisation"):
+            return qs.filter(organisation=organisation)
+        if hasattr(model, "compte"):
+            return qs.filter(compte__organisation=organisation)
+        if hasattr(model, "source"):
+            return qs.filter(source__organisation=organisation)
+        return qs
 
     def synthese_globale(self):
         """Solde total, repartition par type, nombre de comptes."""
@@ -122,7 +141,17 @@ class MouvementSelector:
         self.tenant_filter = tenant_filter or {}
 
     def _filter_queryset(self, qs):
-        return qs.filter(**self.tenant_filter)
+        if not self.tenant_filter:
+            return qs
+        organisation = self.tenant_filter.get("organisation")
+        if organisation is None:
+            return qs
+        model = qs.model
+        if hasattr(model, "organisation"):
+            return qs.filter(organisation=organisation)
+        if hasattr(model, "compte"):
+            return qs.filter(compte__organisation=organisation)
+        return qs
 
     def historique_compte(self, compte_id, jours=90, limite=100):
         qs = self._filter_queryset(

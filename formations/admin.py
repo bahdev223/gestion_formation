@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CategorieFormation, Formation, SessionFormation, Seance
+from .models import CategorieFormation, Formation, Seance, SessionFormation
 
 admin.site.register(CategorieFormation)
 admin.site.register(Formation)

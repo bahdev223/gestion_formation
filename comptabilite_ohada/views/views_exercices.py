@@ -1,21 +1,41 @@
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.urls import reverse_lazy
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.shortcuts import redirect
+from django.views.generic import CreateView, DetailView, ListView
+
+from organisations.utils import get_request_organisation, tenant_reverse
 
 from ..models import ExerciceComptable
 from ..services.exercice_service import ExerciceService
 
 
-class ExerciceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class OrganisationFilteredQuerysetMixin:
+    def get_queryset(self):
+        qs = super().get_queryset()
+        organisation = get_request_organisation(self.request)
+        if organisation is not None:
+            qs = qs.filter(organisation=organisation)
+        return qs
+
+
+class ExerciceListView(
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    OrganisationFilteredQuerysetMixin,
+    ListView,
+):
     model = ExerciceComptable
     template_name = "comptabilite_ohada/exercice_list.html"
     context_object_name = "exercices"
     permission_required = "comptabilite_ohada.view_exercicecomptable"
 
 
-class ExerciceDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class ExerciceDetailView(
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    OrganisationFilteredQuerysetMixin,
+    DetailView,
+):
     model = ExerciceComptable
     template_name = "comptabilite_ohada/exercice_detail.html"
     context_object_name = "exercice"
@@ -25,15 +45,28 @@ class ExerciceDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
 class ExerciceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = ExerciceComptable
     template_name = "comptabilite_ohada/exercice_form.html"
-    fields = ["code", "libelle", "date_debut", "date_fin", "societe"]
+    fields = ["code", "date_debut", "date_fin"]
     permission_required = "comptabilite_ohada.add_exercicecomptable"
 
+    def get_success_url(self):
+        return tenant_reverse(
+            self.request,
+            "comptabilite:exercice_detail",
+            kwargs={"pk": self.object.pk},
+        )
+
     def form_valid(self, form):
+        form.instance.organisation = get_request_organisation(self.request)
         messages.success(self.request, "Exercice créé avec succès.")
         return super().form_valid(form)
 
 
-class ExerciceCloturerView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class ExerciceCloturerView(
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    OrganisationFilteredQuerysetMixin,
+    DetailView,
+):
     model = ExerciceComptable
     permission_required = "comptabilite_ohada.change_exercicecomptable"
 
@@ -42,12 +75,23 @@ class ExerciceCloturerView(LoginRequiredMixin, PermissionRequiredMixin, DetailVi
         try:
             ExerciceService.cloturer(exercice, request.user)
             messages.success(request, "Exercice clôturé avec succès.")
-        except Exception as e:
-            messages.error(request, str(e))
-        return redirect("comptabilite:exercice_detail", pk=exercice.pk)
+        except Exception as exc:
+            messages.error(request, str(exc))
+        return redirect(
+            tenant_reverse(
+                request,
+                "comptabilite:exercice_detail",
+                kwargs={"pk": exercice.pk},
+            )
+        )
 
 
-class ExerciceRouvrirView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class ExerciceRouvrirView(
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    OrganisationFilteredQuerysetMixin,
+    DetailView,
+):
     model = ExerciceComptable
     permission_required = "comptabilite_ohada.change_exercicecomptable"
 
@@ -56,6 +100,12 @@ class ExerciceRouvrirView(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
         try:
             ExerciceService.rouvrir(exercice)
             messages.success(request, "Exercice rouvert avec succès.")
-        except Exception as e:
-            messages.error(request, str(e))
-        return redirect("comptabilite:exercice_detail", pk=exercice.pk)
+        except Exception as exc:
+            messages.error(request, str(exc))
+        return redirect(
+            tenant_reverse(
+                request,
+                "comptabilite:exercice_detail",
+                kwargs={"pk": exercice.pk},
+            )
+        )

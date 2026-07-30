@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from ..models import Compte, TransfertCompte
+from ..models import Compte, SensMouvement, TransfertCompte
 from ..signals.mouvement import transfert_effectue
 from .mouvement_service import MouvementCompteService
 
@@ -38,6 +38,7 @@ class TransfertCompteService:
             libelle=f"Transfert vers {destination.nom}",
             user=user,
             reference=ref,
+            sens=SensMouvement.SORTIE,
         )
 
         entree = MouvementCompteService.transfert(
@@ -46,6 +47,7 @@ class TransfertCompteService:
             libelle=f"Transfert depuis {source.nom}",
             user=user,
             reference=ref,
+            sens=SensMouvement.ENTREE,
         )
 
         transfert = TransfertCompte.objects.create(

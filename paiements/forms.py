@@ -37,17 +37,19 @@ class PaiementForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
         self.fields["date_paiement"].input_formats = ["%Y-%m-%dT%H:%M"]
-        self.fields["inscription"].queryset = Inscription.objects.exclude(
+        inscriptions = Inscription.objects.exclude(
             statut=Inscription.Statut.ANNULE
         ).exclude(
             statut_paiement=Inscription.StatutPaiement.PAYE
         ).select_related(
             "participant", "session", "session__formation"
-        ).order_by(
-            "-date_inscription"
         )
+        if organisation:
+            inscriptions = inscriptions.filter(organisation=organisation)
+        self.fields["inscription"].queryset = inscriptions.order_by("-date_inscription")
         for field in self.fields.values():
             field.widget.attrs["class"] = (
                 "w-full rounded-md border border-slate-300 bg-white px-3.5 py-3 "
@@ -66,4 +68,3 @@ class PaiementForm(forms.ModelForm):
                 f"({inscription.reste_a_payer:,.0f} FCFA).",
             )
         return cleaned_data
-

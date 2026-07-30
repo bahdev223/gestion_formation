@@ -2,7 +2,7 @@
 {% block page_title %}Nouveau participant{% endblock %}
 {% block page_subtitle %}Créez la fiche de l’apprenant avant son inscription à une session.{% endblock %}
 {% block breadcrumb %}Participants / Nouveau{% endblock %}
-{% block page_actions %}<a href="{% url 'participants:index' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Retour aux participants</a>{% endblock %}
+{% block page_actions %}<a href="{% tenant_url 'participants:index' %}" class="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Retour aux participants</a>{% endblock %}
 {% block dashboard_content %}
 <form method="post" enctype="multipart/form-data" class="baly-surface rounded-lg">{% csrf_token %}<input type="hidden" name="session_id" value="{{ session_id }}">
   <div class="border-b border-slate-200 px-6 py-5"><h2 class="font-bold text-slate-950">Informations de l’apprenant</h2>{% if session_id %}<p class="mt-1 text-sm text-blue-700">Après création, vous reviendrez automatiquement à l’inscription dans la session.</p>{% endif %}</div>
