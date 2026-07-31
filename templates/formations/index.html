@@ -63,17 +63,37 @@
                   {% if perms.formations.change_formation %}
                     <a
                       href="{% tenant_url 'formations:update' formation.pk %}"
-                      class="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
                       @click.prevent="globalModalOpen = true"
                       hx-get="{% tenant_url 'formations:update' formation.pk %}"
                       hx-target="#global-modal-content"
-                    >Modifier</a>
+                      title="Modifier"
+                      aria-label="Modifier la formation {{ formation.nom }}"
+                    >
+                      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m14.06 4.94 5 5L8 21H3v-5L14.06 4.94z"></path>
+                        <path d="m12.5 6.5 5 5"></path>
+                      </svg>
+                      <span class="sr-only">Modifier</span>
+                    </a>
                   {% endif %}
                   {% if perms.formations.delete_formation %}
                     <a
                       href="{% tenant_url 'formations:delete' formation.pk %}"
-                      class="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
-                    >Supprimer</a>
+                      class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-rose-300 bg-rose-50 text-rose-700 transition hover:bg-rose-100"
+                      title="Supprimer"
+                      aria-label="Supprimer la formation {{ formation.nom }}"
+                    >
+                      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 6h18"></path>
+                        <path d="M8 6v12a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6"></path>
+                        <path d="M10 11v6"></path>
+                        <path d="M14 11v6"></path>
+                        <path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path>
+                        <path d="M7 6h10"></path>
+                      </svg>
+                      <span class="sr-only">Supprimer</span>
+                    </a>
                   {% endif %}
                 </div>
               </td>
