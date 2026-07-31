@@ -80,10 +80,8 @@
       <h3 class="font-semibold text-[var(--fx-text)]">Actions rapides</h3>
     </div>
     <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
-      <a class="fx-btn fx-btn-ghost" href="{% tenant_url 'formations:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'formations:create' %}" hx-target="#global-modal-content">Nouvelle formation</a>
-      <a class="fx-btn fx-btn-ghost" href="{% tenant_url 'sessions:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'sessions:create' %}" hx-target="#global-modal-content">Nouvelle session</a>
-      <a class="fx-btn fx-btn-ghost" href="{% tenant_url 'participants:create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'participants:create' %}" hx-target="#global-modal-content">Nouveau participant</a>
-      <a class="fx-btn fx-btn-ghost" href="{% tenant_url 'presences:search' %}" class="px-4 py-2">Pointage</a>
+      <a class="fx-btn fx-btn-ghost" href="{% tenant_path 'dashboard:organisation-settings' %}">Paramètres entreprise</a>
+      <a class="fx-btn fx-btn-ghost" href="{% tenant_path 'dashboard:rh-dashboard' %}">Dashboard RH</a>
     </div>
   </section>
 {% else %}
