@@ -21,6 +21,7 @@ DB_PORT=5432
 
 APP_MEDIA_ROOT=/app/media
 APP_STATIC_ROOT=/app/static/dist
+SERVE_MEDIA=true
 ```
 
 ## Paramètres applicatifs

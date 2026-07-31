@@ -93,7 +93,7 @@ TIME_ZONE = os.environ.get("TIME_ZONE", "Africa/Bamako")
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     ("images", BASE_DIR / "static" / "images"),
     BASE_DIR / "static" / "src",
@@ -104,7 +104,7 @@ if static_root:
 else:
     STATIC_ROOT = BASE_DIR / "static" / "dist"
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 media_root = os.environ.get("APP_MEDIA_ROOT")
 if media_root:
     MEDIA_ROOT = Path(media_root)
