@@ -54,12 +54,25 @@ class AmortissementService:
 
     @staticmethod
     @transaction.atomic
-    def generer_ecritures_amortissement(periode=None, user=None):
+    def generer_ecritures_amortissement(*, organisation, periode=None, user=None):
+        """Comptabilise les amortissements d'une seule organisation.
+
+        organisation est obligatoire : sans filtre, ce traitement parcourait
+        les plans d'amortissement de toutes les entreprises et generait leurs
+        ecritures indistinctement.
+        """
+        if organisation is None:
+            raise ValueError(
+                "Une organisation est obligatoire pour generer les "
+                "ecritures d'amortissement."
+            )
         if periode is None:
             periode = date.today().replace(day=1)
 
         plans = PlanAmortissement.objects.filter(
-            periode=periode, ecriture_generee=False,
+            periode=periode,
+            ecriture_generee=False,
+            immobilisation__organisation=organisation,
         ).select_related("immobilisation")
 
         ecritures = []

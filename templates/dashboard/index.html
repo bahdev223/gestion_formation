@@ -1,197 +1,542 @@
 {% extends "layouts/dashboard.html" %}
+{% load i18n %}
 
-{% block page_title %}Vue d’ensemble{% endblock %}
-{% block page_subtitle %}Suivez l’activité des formations, les inscriptions et les encaissements en temps réel.{% endblock %}
-{% block breadcrumb %}Tableau de bord{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{{ subtitle }}{% endblock %}
+{% block breadcrumb %}Tableau de bord / {{ active_tab|capfirst }}{% endblock %}
+
 {% block page_actions %}
 <div class="flex flex-wrap gap-2">
-  <a href="{% tenant_url 'inscriptions:create' %}"
-     @click.prevent="globalModalOpen = true"
-     hx-get="{% tenant_url 'inscriptions:create' %}" hx-target="#global-modal-content"
-     class="fx-btn fx-btn-ghost">Nouvelle inscription</a>
-  <a href="{% tenant_url 'paiements:create' %}"
-     @click.prevent="globalModalOpen = true"
-     hx-get="{% tenant_url 'paiements:create' %}" hx-target="#global-modal-content"
-     class="fx-btn fx-btn-primary">Encaisser un paiement</a>
+  <a
+    href="{% tenant_url 'inscriptions:create' %}"
+    @click.prevent="globalModalOpen = true"
+    hx-get="{% tenant_url 'inscriptions:create' %}"
+    hx-target="#global-modal-content"
+    class="fx-btn fx-btn-ghost">
+    Nouvelle inscription
+  </a>
+  <a
+    href="{% tenant_url 'paiements:create' %}"
+    @click.prevent="globalModalOpen = true"
+    hx-get="{% tenant_url 'paiements:create' %}"
+    hx-target="#global-modal-content"
+    class="fx-btn fx-btn-primary">
+    Nouveau paiement
+  </a>
 </div>
 {% endblock %}
 
 {% block dashboard_content %}
-{# Indicateurs. La tonalite est portee par le conteneur : elle pilote la barre
-   d'accent et la tuile d'icone, sans couleur codee en dur. #}
+<div class="mb-4 flex flex-wrap gap-2">
+  {% for tab in dashboard_tabs %}
+    <a href="?tab={{ tab.key }}" class="fx-btn px-3 py-2 text-sm {% if tab.key == active_tab %}fx-btn-primary{% else %}fx-btn-ghost{% endif %}">
+      {{ tab.label }}
+    </a>
+  {% empty %}
+    <a href="?tab=vision" class="fx-btn fx-btn-primary">Vue générale</a>
+  {% endfor %}
+</div>
+
+{% if active_tab == "vision" %}
 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-  <a href="{% tenant_url 'formations:index' %}" class="fx-card fx-card-hover fx-stat fx-tone-primary">
-    <span class="fx-icon-tile">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M8 4v16"/></svg>
-    </span>
-    <span class="min-w-0">
-      <span class="fx-stat-label block">Formations actives</span>
-      <span class="fx-stat-value block">{{ formations_actives }}</span>
-      <span class="fx-stat-hint block">Catalogue disponible</span>
-    </span>
-  </a>
-
-  <a href="{% tenant_url 'formations:session-list' %}" class="fx-card fx-card-hover fx-stat fx-tone-info">
-    <span class="fx-icon-tile">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v4"/><path d="M17 3v4"/><path d="M4 9h16"/><rect x="4" y="5" width="16" height="16" rx="2"/></svg>
-    </span>
-    <span class="min-w-0">
-      <span class="fx-stat-label block">Sessions à venir</span>
-      <span class="fx-stat-value block">{{ sessions_planifiees }}</span>
-      <span class="fx-stat-hint block">Planifiées ou en cours</span>
-    </span>
-  </a>
-
-  <a href="{% tenant_url 'inscriptions:index' %}" class="fx-card fx-card-hover fx-stat fx-tone-warning">
-    <span class="fx-icon-tile">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
-    </span>
-    <span class="min-w-0">
-      <span class="fx-stat-label block">Inscriptions</span>
-      <span class="fx-stat-value block">{{ inscriptions_count }}</span>
-      <span class="fx-stat-hint block">{{ participants_count }} participant{{ participants_count|pluralize }}</span>
-    </span>
-  </a>
-
-  <a href="{% tenant_url 'paiements:index' %}" class="fx-card fx-card-hover fx-stat fx-tone-success">
-    <span class="fx-icon-tile">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3z"/><path d="M7 12h.01"/><path d="M17 12h.01"/></svg>
-    </span>
-    <span class="min-w-0">
-      <span class="fx-stat-label block">Encaissements du mois</span>
-      <span class="fx-stat-value block">{{ encaissements_mois|floatformat:0 }}</span>
-      <span class="fx-stat-hint block">FCFA · {{ encaissements_jour|floatformat:0 }} aujourd’hui</span>
-    </span>
-  </a>
+  <article class="fx-card fx-stat fx-tone-primary">
+    <span class="fx-icon-tile">🏷️</span>
+    <div>
+      <p class="fx-stat-label">Chiffre d'affaires du mois</p>
+      <p class="fx-stat-value">{{ general.ca_mois|default:0|floatformat:0 }} FCFA</p>
+      <p class="fx-stat-hint">Total encaissé ce mois</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-success">
+    <span class="fx-icon-tile">💹</span>
+    <div>
+      <p class="fx-stat-label">Bénéfice estimé</p>
+      <p class="fx-stat-value">{{ general.benefice|default:0|floatformat:0 }} FCFA</p>
+      <p class="fx-stat-hint">Encaissements - décaissements</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-info">
+    <span class="fx-icon-tile">🏦</span>
+    <div>
+      <p class="fx-stat-label">Trésorerie disponible</p>
+      <p class="fx-stat-value">{{ general.treasury|default:0|floatformat:0 }} FCFA</p>
+      <p class="fx-stat-hint">Toutes caisses et comptes</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-warning">
+    <span class="fx-icon-tile">📚</span>
+    <div>
+      <p class="fx-stat-label">Formations en cours</p>
+      <p class="fx-stat-value">{{ general.formations_en_cours|default:0 }}</p>
+      <p class="fx-stat-hint">Sessions actives/plannifiées</p>
+    </div>
+  </article>
 </div>
 
-<div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,.75fr)]">
-  <section class="fx-card overflow-hidden">
-    <div class="flex items-center justify-between border-b border-[var(--fx-border)] px-6 py-5">
-      <div>
-        <h2 class="font-bold text-[var(--fx-text)]">Sessions à venir</h2>
-        <p class="mt-1 text-sm text-[var(--fx-muted)]">Planning opérationnel des prochaines formations.</p>
-      </div>
-      <a href="{% tenant_url 'formations:session-list' %}" class="fx-link text-sm">Voir tout</a>
+<div class="mt-4 grid gap-4 xl:grid-cols-2">
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">Indicateurs de pilotage</h3>
+      <p class="mt-1 text-sm text-[var(--fx-muted)]">Vue opérationnelle du mois en cours.</p>
     </div>
-    {% if upcoming_sessions %}
-    <div class="divide-y divide-[var(--fx-border)]">
-      {% for session in upcoming_sessions %}
-      <div class="grid items-center gap-4 px-6 py-4 sm:grid-cols-[64px_1fr_auto]">
-        <div class="rounded-lg border border-[var(--fx-border)] bg-[var(--fx-accent-soft)] py-2 text-center">
-          <p class="text-lg font-bold text-[var(--fx-primary)]">{{ session.date_debut|date:"d" }}</p>
-          <p class="text-[.65rem] font-semibold uppercase tracking-wider text-[var(--fx-muted)]">{{ session.date_debut|date:"M" }}</p>
-        </div>
-        <div class="min-w-0">
-          <p class="truncate font-semibold text-[var(--fx-text)]">{{ session.titre }}</p>
-          <p class="mt-1 truncate text-sm text-[var(--fx-muted)]">{{ session.formation.nom }} · {{ session.lieu }}</p>
-        </div>
-        <div class="text-right">
-          <p class="font-semibold text-[var(--fx-text)]">{{ session.inscrits_count }}/{{ session.capacite_max }}</p>
-          <p class="mt-1 text-xs text-[var(--fx-muted)]">inscrits</p>
-        </div>
+    <div class="grid gap-3 p-4 sm:grid-cols-3">
+      <div class="rounded-[var(--fx-radius)] border border-[var(--fx-border)] p-3">
+        <p class="text-xs uppercase tracking-[0.08em] text-[var(--fx-muted)]">Taux de remplissage</p>
+        <p class="mt-1 text-2xl font-bold text-[var(--fx-text)]">{{ general.taux_remplissage|default:0|floatformat:1 }} %</p>
       </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="fx-empty">
-      <p class="font-semibold text-[var(--fx-text)]">Aucune session programmée</p>
-      <p class="mt-2">Planifiez une session pour alimenter le calendrier.</p>
-      <a href="{% tenant_url 'formations:session-create' %}" class="fx-link mt-4 inline-block text-sm">Créer une session</a>
-    </div>
-    {% endif %}
-  </section>
-
-  {# Panneau financier : fond profond du theme, plus aucune nuance de bleu figee. #}
-  <aside class="overflow-hidden rounded-[var(--fx-radius)] bg-[var(--baly-blue-deep)] text-white">
-    <div class="border-b border-white/10 px-6 py-5">
-      <p class="text-xs font-semibold uppercase tracking-[.16em] text-[var(--fx-accent)]">Situation financière</p>
-      <h2 class="mt-2 text-lg font-bold">Encaissements formations</h2>
-    </div>
-    <div class="space-y-5 p-6">
-      <div>
-        <p class="text-sm text-white/60">Total facturé</p>
-        <p class="mt-1 text-2xl font-bold">
-          {{ total_facture|floatformat:0 }}
-          <span class="text-sm font-medium text-white/60">FCFA</span>
-        </p>
+      <div class="rounded-[var(--fx-radius)] border border-[var(--fx-border)] p-3">
+        <p class="text-xs uppercase tracking-[0.08em] text-[var(--fx-muted)]">Taux de paiement</p>
+        <p class="mt-1 text-2xl font-bold text-[var(--fx-text)]">{{ general.taux_paiement|default:0|floatformat:1 }} %</p>
       </div>
-      <div class="h-px bg-white/10"></div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <p class="text-xs text-white/60">Encaissé</p>
-          <p class="mt-1 text-lg font-bold text-[#6ee7a0]">{{ total_encaisse|floatformat:0 }}</p>
-        </div>
-        <div>
-          <p class="text-xs text-white/60">Reste à recevoir</p>
-          <p class="mt-1 text-lg font-bold text-[var(--fx-accent)]">{{ reste_global|floatformat:0 }}</p>
-        </div>
+      <div class="rounded-[var(--fx-radius)] border border-[var(--fx-border)] p-3">
+        <p class="text-xs uppercase tracking-[0.08em] text-[var(--fx-muted)]">Alertes critiques</p>
+        <p class="mt-1 text-2xl font-bold text-[var(--fx-text)]">{{ general.alertes|default:0 }}</p>
       </div>
-      <a href="{% tenant_url 'paiements:index' %}"
-         class="block rounded-lg bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--baly-blue-deep)] transition hover:bg-white/90">
-        Consulter les paiements
-      </a>
-    </div>
-  </aside>
-</div>
-
-<div class="mt-5 grid gap-5 xl:grid-cols-2">
-  <section class="fx-card overflow-hidden">
-    <div class="flex items-center justify-between border-b border-[var(--fx-border)] px-6 py-5">
-      <div>
-        <h2 class="font-bold text-[var(--fx-text)]">Inscriptions récentes</h2>
-        <p class="mt-1 text-sm text-[var(--fx-muted)]">Derniers participants inscrits.</p>
-      </div>
-      <a href="{% tenant_url 'inscriptions:index' %}" class="fx-link text-sm">Voir tout</a>
-    </div>
-    <div class="divide-y divide-[var(--fx-border)]">
-      {% for inscription in recent_inscriptions %}
-      <div class="flex items-center gap-4 px-6 py-4">
-        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--fx-accent-soft)] text-xs font-bold text-[var(--fx-primary)]">
-          {{ inscription.participant.prenom|slice:":1" }}{{ inscription.participant.nom|slice:":1" }}
-        </div>
-        <div class="min-w-0 flex-1">
-          <p class="truncate font-semibold text-[var(--fx-text)]">{{ inscription.participant.nom_complet }}</p>
-          <p class="mt-1 truncate text-xs text-[var(--fx-muted)]">{{ inscription.session.formation.nom }}</p>
-        </div>
-        <div class="text-right">
-          <span class="fx-badge fx-badge-primary">{{ inscription.get_statut_display }}</span>
-          <p class="mt-1 text-xs text-[var(--fx-muted)]">{{ inscription.date_inscription|date:"d/m/Y" }}</p>
-        </div>
-      </div>
-      {% empty %}
-      <p class="fx-empty">Aucune inscription enregistrée.</p>
-      {% endfor %}
     </div>
   </section>
 
-  <section class="fx-card overflow-hidden">
-    <div class="flex items-center justify-between border-b border-[var(--fx-border)] px-6 py-5">
-      <div>
-        <h2 class="font-bold text-[var(--fx-text)]">Derniers encaissements</h2>
-        <p class="mt-1 text-sm text-[var(--fx-muted)]">Paiements de formations validés.</p>
-      </div>
-      <a href="{% tenant_url 'paiements:index' %}" class="fx-link text-sm">Voir tout</a>
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">Direction</h3>
+      <p class="mt-1 text-sm text-[var(--fx-muted)]">Compare avec la période précédente.</p>
     </div>
-    <div class="divide-y divide-[var(--fx-border)]">
-      {% for paiement in recent_payments %}
-      <div class="flex items-center gap-4 px-6 py-4 fx-tone-success">
-        <span class="fx-icon-tile">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3z"/><path d="M7 12h.01"/></svg>
+    <ul class="divide-y divide-[var(--fx-border)]">
+      {% for row in analysis.direction %}
+      <li class="flex items-center justify-between px-5 py-3">
+        <span class="text-sm text-[var(--fx-muted)]">{{ row.label }}</span>
+        <span class="font-semibold">
+          {% if row.label == "Taux paiement" %}{{ row.value|floatformat:1 }} %{% else %}{{ row.value|default:0|floatformat:0 }}{% if row.label != "Satisfaction" %} FCFA{% endif %}{% endif %}
         </span>
-        <div class="min-w-0 flex-1">
-          <p class="truncate font-semibold text-[var(--fx-text)]">{{ paiement.inscription.participant.nom_complet }}</p>
-          <p class="mt-1 font-mono text-xs text-[var(--fx-muted)]">{{ paiement.numero_recu }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+
+{% elif active_tab == "finance" %}
+<div class="grid gap-4 xl:grid-cols-2">
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">Finances</h3>
+      <p class="mt-1 text-sm text-[var(--fx-muted)]">Recettes, encaissements et trésorerie.</p>
+    </div>
+    <div class="grid gap-3 p-4 sm:grid-cols-2">
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <p class="text-xs uppercase text-[var(--fx-muted)]">Aujourd'hui</p>
+        <p class="mt-1 text-xl font-bold">{{ finance.ca_jour|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <p class="text-xs uppercase text-[var(--fx-muted)]">Cette semaine</p>
+        <p class="mt-1 text-xl font-bold">{{ finance.ca_semaine|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <p class="text-xs uppercase text-[var(--fx-muted)]">Ce mois</p>
+        <p class="mt-1 text-xl font-bold">{{ finance.ca_mois|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <p class="text-xs uppercase text-[var(--fx-muted)]">Cette année</p>
+        <p class="mt-1 text-xl font-bold">{{ finance.ca_annee|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <p class="text-xs uppercase text-[var(--fx-muted)]">Encaissements</p>
+        <p class="mt-1 text-xl font-bold text-[var(--fx-success)]">{{ finance.encaissements|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <p class="text-xs uppercase text-[var(--fx-muted)]">Décaissements</p>
+        <p class="mt-1 text-xl font-bold text-[var(--fx-danger)]">{{ finance.decaissements|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3 sm:col-span-2">
+        <p class="text-xs uppercase text-[var(--fx-muted)]">Reste à encaisser</p>
+        <p class="mt-1 text-2xl font-bold">{{ finance.reste_a_encaisser|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3 sm:col-span-2">
+        <p class="text-xs uppercase text-[var(--fx-muted)]">Factures impayées</p>
+        <p class="mt-1 text-xl font-bold">{{ finance.factures_impayees|default:0 }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">Répartition des modes de paiement</h3>
+      <p class="mt-1 text-sm text-[var(--fx-muted)]">Mélange des encaissements.</p>
+    </div>
+    <div class="p-4">
+      {% for mode in finance.modes %}
+      <div class="mb-3 last:mb-0">
+        <div class="mb-1 flex items-center justify-between text-sm">
+          <span>{{ mode.label }}</span>
+          <strong>{{ mode.value|default:0|floatformat:0 }} FCFA</strong>
         </div>
-        <div class="text-right">
-          <p class="font-bold text-[var(--fx-success)]">{{ paiement.montant|floatformat:0 }} FCFA</p>
-          <p class="mt-1 text-xs text-[var(--fx-muted)]">{{ paiement.date_paiement|date:"d/m/Y" }}</p>
+        <div class="h-2 w-full rounded-full bg-slate-200">
+          {% widthratio mode.value|default:0 finance.reste_a_encaisser|default:1 100 as mode_pct %}
+          {% if mode.value %}
+            <div class="h-full rounded-full bg-[var(--fx-primary)]" style="width: {{ mode_pct }}%;"></div>
+          {% else %}
+            <div class="h-full rounded-full bg-slate-300" style="width: 2%;"></div>
+          {% endif %}
         </div>
       </div>
       {% empty %}
-      <p class="fx-empty">Aucun encaissement enregistré.</p>
+      <p class="fx-empty">Aucun paiement validé pour construire la répartition.</p>
       {% endfor %}
     </div>
   </section>
 </div>
+
+<div class="mt-4 grid gap-4 xl:grid-cols-2">
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4"><h3 class="font-semibold text-[var(--fx-text)]">Courbe CA (6 mois)</h3></div>
+    <div class="p-4">
+      <div class="grid gap-2" style="grid-template-columns: repeat(6, minmax(0, 1fr));">
+        {% for item in analysis.ca_series %}
+        <div class="flex flex-col items-center">
+          <div class="h-28 w-full self-stretch">
+            <div class="h-full flex items-end">
+              <div class="mx-auto w-8 rounded-t bg-[var(--fx-primary)]" style="height: {{ item.height|default:5 }}%;"></div>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-[var(--fx-muted)]">{{ item.label }}</p>
+          <p class="text-sm font-semibold">{{ item.value|default:0|floatformat:0 }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">Flux des trésoreries</h3>
+    </div>
+    <div class="grid gap-3 p-4">
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <span class="text-sm text-[var(--fx-muted)]">Banque</span>
+        <p class="mt-1 text-lg font-bold">{{ finance.bank|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <span class="text-sm text-[var(--fx-muted)]">Caisse</span>
+        <p class="mt-1 text-lg font-bold">{{ finance.cash|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <span class="text-sm text-[var(--fx-muted)]">Orange Money</span>
+        <p class="mt-1 text-lg font-bold">{{ finance.orange_money|default:0|floatformat:0 }} FCFA</p>
+      </div>
+      <div class="rounded border border-[var(--fx-border)] p-3">
+        <span class="text-sm text-[var(--fx-muted)]">Wave / Moov</span>
+        <p class="mt-1 text-lg font-bold">{{ finance.wave|default:0|floatformat:0 }} / {{ finance.moov_money|default:0|floatformat:0 }} FCFA</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% elif active_tab == "formations" %}
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="fx-card fx-stat fx-tone-primary">
+    <span class="fx-icon-tile">🎓</span>
+    <div>
+      <p class="fx-stat-label">Nb. formations</p>
+      <p class="fx-stat-value">{{ formations.total|default:0 }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-info">
+    <span class="fx-icon-tile">✅</span>
+    <div>
+      <p class="fx-stat-label">Sessions ouvertes</p>
+      <p class="fx-stat-value">{{ formations.sessions_ouvertes|default:0 }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-warning">
+    <span class="fx-icon-tile">📆</span>
+    <div>
+      <p class="fx-stat-label">Sessions complètes</p>
+      <p class="fx-stat-value">{{ formations.sessions_complete|default:0 }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-success">
+    <span class="fx-icon-tile">🧭</span>
+    <div>
+      <p class="fx-stat-label">Sessions à venir</p>
+      <p class="fx-stat-value">{{ formations.sessions_a_venir|default:0 }}</p>
+    </div>
+  </article>
+</div>
+
+<div class="mt-4 grid gap-4 xl:grid-cols-2">
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">Top formations</h3>
+    </div>
+    <div class="divide-y divide-[var(--fx-border)]">
+      <div class="px-5 py-3">
+        <p>La plus rentable : <strong>{{ formations.formation_plus_rentable }}</strong></p>
+      </div>
+      <div class="px-5 py-3">
+        <p>La moins rentable : <strong>{{ formations.formation_moins_rentable }}</strong></p>
+      </div>
+      <div class="px-5 py-3">
+        <p>La plus demandée : <strong>{{ formations.formation_plus_demandee }}</strong></p>
+      </div>
+      <div class="px-5 py-3">
+        <p>Heures réalisées : <strong>{{ formations.heures_formation|default:0 }}</strong></p>
+      </div>
+    </div>
+  </section>
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4"><h3 class="font-semibold">Répartition des revenus</h3></div>
+    <div class="p-4">
+      {% for item in analysis.top_formation_revenus %}
+      <div class="mb-3">
+        <div class="flex items-center justify-between text-sm">
+          <span>{{ item.label|default:"Formation" }}</span>
+          <strong>{{ item.value|default:0|floatformat:0 }} FCFA</strong>
+        </div>
+        {% widthratio item.value|default:0 finance.encaissements|default:1 100 as rev_pct %}
+        <div class="h-2 bg-slate-200 rounded-full mt-1">
+          <div class="h-full rounded-full bg-[var(--fx-success)]" style="width: {{ rev_pct }}%;"></div>
+        </div>
+      </div>
+      {% empty %}
+      <p class="fx-empty">Aucune donnée de rentabilité pour l'instant.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+{% elif active_tab == "participants" %}
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="fx-card fx-stat fx-tone-primary">
+    <span class="fx-icon-tile">👥</span>
+    <div>
+      <p class="fx-stat-label">Nouveau aujourd'hui</p>
+      <p class="fx-stat-value">{{ participants.today|default:0 }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-info">
+    <span class="fx-icon-tile">📅</span>
+    <div>
+      <p class="fx-stat-label">Cette semaine</p>
+      <p class="fx-stat-value">{{ participants.week|default:0 }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-warning">
+    <span class="fx-icon-tile">📈</span>
+    <div>
+      <p class="fx-stat-label">Ce mois</p>
+      <p class="fx-stat-value">{{ participants.month|default:0 }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-success">
+    <span class="fx-icon-tile">🧾</span>
+    <div>
+      <p class="fx-stat-label">Taux de présence</p>
+      <p class="fx-stat-value">{{ participants.taux_presence|default:0|floatformat:1 }} %</p>
+    </div>
+  </article>
+</div>
+
+<div class="mt-4 grid gap-4 xl:grid-cols-2">
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">État global</h3>
+    </div>
+    <div class="p-4">
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="rounded border border-[var(--fx-border)] p-3">
+          <p class="text-xs uppercase text-[var(--fx-muted)]">Participants actifs</p>
+          <p class="mt-1 text-lg font-bold">{{ participants.actifs|default:0 }}</p>
+        </div>
+        <div class="rounded border border-[var(--fx-border)] p-3">
+          <p class="text-xs uppercase text-[var(--fx-muted)]">En attente</p>
+          <p class="mt-1 text-lg font-bold">{{ participants.en_attente|default:0 }}</p>
+        </div>
+        <div class="rounded border border-[var(--fx-border)] p-3">
+          <p class="text-xs uppercase text-[var(--fx-muted)]">Terminés</p>
+          <p class="mt-1 text-lg font-bold">{{ participants.termines|default:0 }}</p>
+        </div>
+        <div class="rounded border border-[var(--fx-border)] p-3">
+          <p class="text-xs uppercase text-[var(--fx-muted)]">Abandons</p>
+          <p class="mt-1 text-lg font-bold">{{ participants.abandons|default:0 }}</p>
+        </div>
+      </div>
+      <div class="mt-4 grid gap-2">
+        <div>
+          <p class="text-xs text-[var(--fx-muted)]">Taux de réussite</p>
+          <p class="text-xl font-bold">{{ participants.taux_reussite|default:0|floatformat:1 }} %</p>
+        </div>
+        <div>
+          <p class="text-xs text-[var(--fx-muted)]">Cette année</p>
+          <p class="text-xl font-bold">{{ participants.year|default:0 }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4"><h3 class="font-semibold text-[var(--fx-text)]">Pipeline</h3></div>
+    <ul class="p-4">
+      {% for row in participants.pipeline %}
+      <li class="mb-2 flex items-center justify-between text-sm">
+        <span>{{ row.name }}</span>
+        <strong>{{ row.value }}</strong>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+
+{% elif active_tab == "rh" %}
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="fx-card fx-stat fx-tone-primary">
+    <span class="fx-icon-tile">👤</span>
+    <div>
+      <p class="fx-stat-label">Employés actifs</p>
+      <p class="fx-stat-value">{{ rh.employes_actifs|default:0 }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-success">
+    <span class="fx-icon-tile">✅</span>
+    <div>
+      <p class="fx-stat-label">Présents</p>
+      <p class="fx-stat-value">{{ rh.present|default:0 }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-warning">
+    <span class="fx-icon-tile">😴</span>
+    <div>
+      <p class="fx-stat-label">En congé</p>
+      <p class="fx-stat-value">{{ rh.conges|default:0 }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-danger">
+    <span class="fx-icon-tile">⚠️</span>
+    <div>
+      <p class="fx-stat-label">Retards</p>
+      <p class="fx-stat-value">{{ rh.retards|default:0 }}</p>
+    </div>
+  </article>
+</div>
+
+<div class="mt-4">
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">Vue RH</h3>
+      <p class="mt-1 text-sm text-[var(--fx-muted)]">Accès RH.</p>
+    </div>
+    <div class="p-4">
+      <a href="{% tenant_path 'dashboard:rh-dashboard' %}" class="fx-btn fx-btn-primary">Ouvrir le dashboard RH</a>
+    </div>
+  </section>
+</div>
+
+{% elif active_tab == "comptabilite" %}
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4"><h3 class="font-semibold text-[var(--fx-text)]">Balance</h3></div>
+    <div class="p-4">
+      <p class="text-2xl font-bold">{{ comptabilite.balance|default:0|floatformat:0 }} FCFA</p>
+      <p class="mt-1 text-sm text-[var(--fx-muted)]">Vue consolidée comptable (base).</p>
+    </div>
+  </section>
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4"><h3 class="font-semibold text-[var(--fx-text)]">Mouvements critiques</h3></div>
+    <div class="p-4">
+      {% for row in comptabilite.mouvements_critiques %}
+        <div class="mb-2 flex items-center justify-between">
+          <span class="text-sm">{{ row.label }}</span>
+          <strong>{{ row.solde|default:0|floatformat:0 }}</strong>
+        </div>
+      {% empty %}
+        <p class="fx-empty">Aucune alerte de mouvement critique.</p>
+      {% endfor %}
+    </div>
+  </section>
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4"><h3 class="font-semibold text-[var(--fx-text)]">Ouverture comptable</h3></div>
+    <div class="p-4">
+      <a href="{% tenant_path 'comptabilite' %}" class="fx-btn fx-btn-primary">Tableau de bord comptable</a>
+    </div>
+  </section>
+</div>
+
+{% elif active_tab == "operations" %}
+<div class="grid gap-4 xl:grid-cols-2">
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">Flux d'activité</h3>
+    </div>
+    <div class="divide-y divide-[var(--fx-border)]">
+      {% for event in operations.timeline %}
+      <div class="px-6 py-3">
+        <p class="text-sm font-semibold text-[var(--fx-text)]">{{ event.title }}</p>
+        <p class="text-xs text-[var(--fx-muted)]">{{ event.detail }}</p>
+      </div>
+      {% empty %}
+      <p class="fx-empty">Aucune activité récente.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4"><h3 class="font-semibold text-[var(--fx-text)]">Agenda</h3></div>
+    <div class="divide-y divide-[var(--fx-border)]">
+      {% for item in operations.agenda %}
+      <div class="px-6 py-3">
+        <p class="text-sm font-semibold">{{ item.title }}</p>
+        <p class="text-xs text-[var(--fx-muted)]">{{ item.type }} · {{ item.date }}</p>
+      </div>
+      {% empty %}
+      <p class="fx-empty">Aucune échéance opérationnelle proche.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+{% elif active_tab == "analyses" %}
+<div class="grid gap-4 xl:grid-cols-2">
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h3 class="font-semibold text-[var(--fx-text)]">Inscriptions</h3>
+    </div>
+    <div class="grid gap-4 p-4 sm:grid-cols-2">
+      {% for row in analysis.inscription_evolution %}
+        <div class="rounded border border-[var(--fx-border)] p-3">
+          <p class="text-xs uppercase text-[var(--fx-muted)]">{{ row.label }}</p>
+          <p class="mt-1 text-xl font-bold">{{ row.value|default:0 }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+  <section class="fx-card">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4"><h3 class="font-semibold text-[var(--fx-text)]">Production</h3></div>
+    <ul class="divide-y divide-[var(--fx-border)] p-4">
+      {% for row in analysis.production %}
+      <li class="flex items-center justify-between py-2">
+        <span>{{ row.label }}</span>
+        <strong>{{ row.value|default:0|floatformat:1 }}{% if "Taux" in row.label %} %{% endif %}</strong>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% else %}
+<div class="fx-card p-4">
+  <p class="fx-empty">Tabuleau indisponible pour ce rôle.</p>
+</div>
+{% endif %}
+
+{% if alerts %}
+<section class="fx-card mt-4">
+  <div class="border-b border-[var(--fx-border)] px-6 py-4">
+    <h3 class="font-semibold text-[var(--fx-text)]">Alertes et points d'action</h3>
+    <p class="mt-1 text-sm text-[var(--fx-muted)]">À traiter en priorité.</p>
+  </div>
+  <div class="divide-y divide-[var(--fx-border)]">
+    {% for alert in alerts %}
+    <div class="px-6 py-3 text-sm">
+      <span class="font-semibold">{{ alert.icon }} {{ alert.text }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endblock %}

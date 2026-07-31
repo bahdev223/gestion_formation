@@ -6,6 +6,8 @@ from ..models import (
     CompteComptable, JournalComptable, ExerciceComptable,
     EcritureComptable, LigneEcritureComptable,
 )
+from organisations.models import Organisation
+
 from ..services.ecriture_service import EcritureService
 
 
@@ -17,11 +19,20 @@ class EcritureServiceTest(TestCase):
         self.journal = JournalComptable.objects.create(
             code="VN", libelle="Ventes", type_journal="VN"
         )
+        # L'exercice porte le tenant : le moteur en deduit l'organisation
+        # de l'ecriture.
+        self.organisation = Organisation.objects.create(
+            nom="Centre Compta",
+            slug="centre-compta",
+            email="compta@test.test",
+            telephone="+22300000000",
+        )
         year = timezone.localdate().year
         self.exercice = ExerciceComptable.objects.create(
             code=str(year),
             date_debut=f"{year}-01-01",
             date_fin=f"{year}-12-31",
+            organisation=self.organisation,
         )
         self.compte_caisse = CompteComptable.objects.create(
             code="571", libelle="Caisse", nature="DEBIT", type_compte="compte",
@@ -36,6 +47,7 @@ class EcritureServiceTest(TestCase):
             montant=100000,
             libelle="Vente test",
             compte_produit_code="701",
+            organisation=self.organisation,
             user=self.user,
         )
         self.assertIsNotNone(ecriture)

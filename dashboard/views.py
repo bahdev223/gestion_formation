@@ -1,23 +1,17 @@
-from decimal import Decimal
-
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db.models import Count, Sum
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.generic import UpdateView
 
-from formations.models import Formation, SessionFormation
-from inscriptions.models import Inscription
 from organisations.utils import (
     get_user_default_organisation,
     require_request_organisation,
     tenant_reverse,
 )
-from paiements.models import Paiement
-from participants.models import Participant
 
+from . import selectors
 from .forms import ConfigurationOrganisationForm
 from .models import ConfigurationOrganisation
 
@@ -27,64 +21,28 @@ def dashboard_home(request, **kwargs):
     if getattr(request, "organisation", None) is None:
         organisation = get_user_default_organisation(request.user)
         if organisation is not None:
-            return redirect(
-                f"/o/{organisation.slug}/dashboard/",
-            )
+            return redirect(f"/o/{organisation.slug}/dashboard/")
 
-    today = timezone.localdate()
     organisation = require_request_organisation(request)
-    payments_qs = Paiement.objects.filter(organisation=organisation)
-    registrations_qs = Inscription.objects.filter(organisation=organisation)
-    sessions_qs = SessionFormation.objects.filter(organisation=organisation)
-    formations_qs = Formation.objects.filter(organisation=organisation)
-    participants_qs = Participant.objects.filter(organisation=organisation)
-    valid_payments = payments_qs.filter(statut=Paiement.Statut.VALIDE)
-    active_registrations = registrations_qs.exclude(
-        statut=Inscription.Statut.ANNULE
+    stats = selectors.get_dashboard_statistics(
+        {
+            "request": request,
+            "organisation": organisation,
+        },
     )
-    total_invoiced = (
-        active_registrations.aggregate(total=Sum("montant_final"))["total"]
-        or Decimal("0")
-    )
-    total_collected = (
-        valid_payments.aggregate(total=Sum("montant"))["total"] or Decimal("0")
-    )
-    upcoming_sessions = (
-        sessions_qs.filter(date_fin__gte=today)
-        .exclude(statut=SessionFormation.Statut.ANNULEE)
-        .select_related("formation", "formateur")
-        .annotate(inscrits_count=Count("inscriptions"))
-        .order_by("date_debut")[:5]
-    )
-    context = {
-        "title": "Tableau de bord",
-        "formations_actives": formations_qs.filter(
-            statut=Formation.Statut.ACTIVE
-        ).count(),
-        "participants_count": participants_qs.count(),
-        "sessions_planifiees": upcoming_sessions.count(),
-        "inscriptions_count": active_registrations.count(),
-        "encaissements_jour": valid_payments.filter(
-            date_paiement__date=today
-        ).aggregate(total=Sum("montant"))["total"]
-        or Decimal("0"),
-        "encaissements_mois": valid_payments.filter(
-            date_paiement__year=today.year,
-            date_paiement__month=today.month,
-        ).aggregate(total=Sum("montant"))["total"]
-        or Decimal("0"),
-        "total_facture": total_invoiced,
-        "total_encaisse": total_collected,
-        "reste_global": max(total_invoiced - total_collected, Decimal("0")),
-        "upcoming_sessions": upcoming_sessions,
-        "recent_inscriptions": active_registrations.select_related(
-            "participant", "session", "session__formation"
-        ).order_by("-created_at")[:5],
-        "recent_payments": valid_payments.select_related(
-            "inscription", "inscription__participant"
-        ).order_by("-date_paiement")[:5],
-    }
-    return render(request, "dashboard/index.html", context)
+
+    if "error" not in stats:
+        # Compatibilité avec d'anciens composants attendants des variables simples.
+        stats.setdefault("title", "Tableau de bord")
+        stats.setdefault(
+            "bread_crumbs",
+            [
+                "Tableau de bord",
+                "Direction",
+            ],
+        )
+
+    return render(request, "dashboard/index.html", stats)
 
 
 class ConfigurationOrganisationView(
@@ -93,9 +51,11 @@ class ConfigurationOrganisationView(
     model = ConfigurationOrganisation
     form_class = ConfigurationOrganisationForm
     template_name = "dashboard/organisation_form.html"
+
     def get_success_url(self):
         return tenant_reverse(self.request, "dashboard:organisation-settings")
-    success_message = "Les paramètres de l’entreprise ont été enregistrés."
+
+    success_message = "Les paramètres de l'entreprise ont été enregistrés."
 
     def get_object(self, queryset=None):
         organisation = require_request_organisation(self.request)

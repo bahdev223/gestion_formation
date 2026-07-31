@@ -22,12 +22,17 @@ def connect():
         sender, instance, nature, montant, user, **kwargs
     ):
         compte_code = instance.compte.compte_comptable_code or "571"
+        # Le tenant vient du compte de tresorerie mouvemente : c'est la seule
+        # source fiable ici. Sans lui, l'ecriture etait rattachee au premier
+        # exercice ouvert trouve, donc potentiellement a une autre entreprise.
+        organisation = instance.compte.organisation
         if nature == NatureMouvement.ENCAISSEMENT:
             EcritureService.creer_ecriture_vente(
                 compte_caisse_code=compte_code,
                 montant=montant,
                 libelle=instance.libelle,
                 compte_produit_code="706",
+                organisation=organisation,
                 user=user,
             )
         elif nature == NatureMouvement.DECAISSEMENT:
@@ -36,6 +41,7 @@ def connect():
                 montant=montant,
                 libelle=instance.libelle,
                 compte_charge_code="658",
+                organisation=organisation,
                 user=user,
             )
         # Un transfert est comptabilisé une seule fois par
@@ -50,6 +56,11 @@ def connect():
     ):
         source_code = source.compte_comptable_code or "571"
         destination_code = destination.compte_comptable_code or "571"
+        if source.organisation_id != destination.organisation_id:
+            raise ValueError(
+                "Transfert refuse : les deux comptes appartiennent a des "
+                "organisations differentes."
+            )
         EcritureService.creer_ecriture_transfert(
             compte_source_code=source_code,
             compte_dest_code=destination_code,
@@ -58,6 +69,7 @@ def connect():
                 instance.notes
                 or f"Virement {source.nom} → {destination.nom}"
             ),
+            organisation=source.organisation,
             user=user,
         )
 
@@ -108,5 +120,6 @@ def connect():
                 "OD", "Opérations diverses", "OD"
             ),
             lignes=lignes,
+            organisation=instance.compte.organisation,
             user=user,
         )

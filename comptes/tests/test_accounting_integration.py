@@ -8,6 +8,7 @@ from comptabilite_ohada.models import EcritureComptable, ExerciceComptable
 from comptabilite_ohada.services.initialisation_service import InitialisationService
 from comptes.models import Compte, MouvementCompte, SensMouvement
 from comptes.services import MouvementCompteService, TransfertCompteService
+from organisations.models import Organisation
 
 
 class FinancialAccountingIntegrationTest(TestCase):
@@ -18,11 +19,20 @@ class FinancialAccountingIntegrationTest(TestCase):
         )
         InitialisationService.charger_plan_comptable()
         InitialisationService.initialiser_journaux()
+        # Le pont evenementiel deduit desormais le tenant du compte de
+        # tresorerie mouvemente, et l'exercice doit appartenir au meme.
+        self.organisation = Organisation.objects.create(
+            nom="Centre Tresorerie",
+            slug="centre-tresorerie",
+            email="tresorerie@test.test",
+            telephone="+22300000000",
+        )
         year = date.today().year
         ExerciceComptable.objects.create(
             code=str(year),
             date_debut=date(year, 1, 1),
             date_fin=date(year, 12, 31),
+            organisation=self.organisation,
         )
         self.caisse = Compte.objects.create(
             code="CAISSE-T",
@@ -30,6 +40,7 @@ class FinancialAccountingIntegrationTest(TestCase):
             type="ESPECES",
             solde_actuel=Decimal("100000"),
             compte_comptable_code="571",
+            organisation=self.organisation,
         )
         self.banque = Compte.objects.create(
             code="BANQUE-T",
@@ -37,6 +48,7 @@ class FinancialAccountingIntegrationTest(TestCase):
             type="BANQUE",
             solde_actuel=Decimal("0"),
             compte_comptable_code="521",
+            organisation=self.organisation,
         )
 
     def test_encaissement_met_a_jour_solde_et_comptabilite(self):
