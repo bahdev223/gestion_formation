@@ -14,19 +14,44 @@
     {% block extra_head %}{% endblock %}
     <style>
       :root {
-        --baly-blue: {{ organisation_theme.primary|default:"#15519a" }};
-        --baly-blue-dark: {{ organisation_theme.secondary|default:"#102f5d" }};
-        --baly-blue-deep: {{ organisation_theme.sidebar|default:"#0b2448" }};
+        /* Identite Formix. Les noms --baly-* sont conserves car de nombreux
+           templates s'appuient dessus : seules les valeurs changent, ce qui
+           reteinte l'existant sans renommage massif. Chaque valeur reste
+           surchargeable par organisation via organisation_theme. */
+        --baly-blue: {{ organisation_theme.primary|default:"#c2600a" }};
+        --baly-blue-dark: {{ organisation_theme.secondary|default:"#9c4a06" }};
+        --baly-blue-deep: {{ organisation_theme.sidebar|default:"#1f1509" }};
         --baly-header: {{ organisation_theme.header|default:"#ffffff" }};
-        --baly-orange: {{ organisation_theme.accent|default:"#f28b16" }};
-        --baly-orange-soft: #fff2df;
-        --baly-red: #e84f3c;
+        --baly-orange: {{ organisation_theme.accent|default:"#ef8a1c" }};
+        --baly-orange-soft: #fff3e2;
+        --baly-red: #d64532;
         --baly-surface: {{ organisation_theme.surface|default:"#ffffff" }};
         --baly-surface-strong: {{ organisation_theme.surface|default:"#ffffff" }};
-        --baly-bg: {{ organisation_theme.background|default:"#f4f6f9" }};
-        --baly-border: #e3e8ef;
-        --baly-text: #182230;
-        --baly-muted: #667085;
+        --baly-bg: {{ organisation_theme.background|default:"#f6f5f3" }};
+        --baly-border: #e7e5e1;
+        --baly-text: #1d1a16;
+        --baly-muted: #6f6a63;
+
+        /* Alias semantiques, a preferer dans le code nouveau. */
+        --fx-primary: var(--baly-blue);
+        --fx-primary-hover: var(--baly-blue-dark);
+        --fx-accent: var(--baly-orange);
+        --fx-accent-soft: var(--baly-orange-soft);
+        --fx-surface: var(--baly-surface);
+        --fx-border: var(--baly-border);
+        --fx-text: var(--baly-text);
+        --fx-muted: var(--baly-muted);
+        --fx-success: #15803d;
+        --fx-success-soft: #e8f6ec;
+        --fx-warning: #a45c07;
+        --fx-warning-soft: #fdf3e3;
+        --fx-danger: var(--baly-red);
+        --fx-danger-soft: #fdecea;
+        --fx-info: #1d6fa5;
+        --fx-info-soft: #e9f3fa;
+        --fx-radius: 0.75rem;
+        --fx-shadow: 0 1px 2px rgba(29, 26, 22, .05), 0 1px 3px rgba(29, 26, 22, .04);
+        --fx-shadow-lift: 0 10px 26px -14px rgba(29, 26, 22, .28);
       }
       * { box-sizing: border-box; }
       [x-cloak] { display: none !important; }
@@ -64,9 +89,11 @@
         font-weight: 700;
         letter-spacing: 0.02em;
       }
-      .baly-badge-blue { background: rgba(24, 76, 151, 0.12); color: var(--baly-blue); }
-      .baly-badge-orange { background: var(--baly-orange-soft); color: #9a4f00; }
-      .baly-badge-red { background: rgba(232, 79, 60, 0.12); color: var(--baly-red); }
+      /* Conserves pour les templates existants, mais reteintes sur le theme :
+         le fond etait un bleu code en dur, insensible a la personnalisation. */
+      .baly-badge-blue { background: var(--baly-orange-soft); color: #8f4405; }
+      .baly-badge-orange { background: var(--baly-orange-soft); color: #8f4405; }
+      .baly-badge-red { background: rgba(214, 69, 50, 0.12); color: var(--baly-red); }
       .baly-pill {
         border-radius: 0.4rem;
         border: 1px solid var(--baly-border);
@@ -101,10 +128,162 @@
         place-items: center;
         width: 2.25rem;
         height: 2.25rem;
-        border-radius: 0.25rem;
-        background: #eef4fb;
-        color: var(--baly-blue);
-        border: 1px solid #dbe7f5;
+        border-radius: 0.5rem;
+        background: var(--fx-accent-soft);
+        color: var(--fx-primary);
+        border: 1px solid rgba(239, 138, 28, .28);
+      }
+
+      /* ---------------------------------------------------------------
+         Composants partages. Objectif : arreter de recoder des couleurs
+         Tailwind en dur page par page. Tout se refere au theme, donc une
+         organisation qui personnalise ses couleurs reteinte l'interface
+         entiere sans toucher aux templates.
+         --------------------------------------------------------------- */
+
+      .fx-card {
+        background: var(--fx-surface);
+        border: 1px solid var(--fx-border);
+        border-radius: var(--fx-radius);
+        box-shadow: var(--fx-shadow);
+      }
+      .fx-card-hover { transition: box-shadow .18s ease, transform .18s ease; }
+      .fx-card-hover:hover { box-shadow: var(--fx-shadow-lift); transform: translateY(-1px); }
+
+      .fx-page-head { margin-bottom: 1.5rem; }
+      .fx-page-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -.01em;
+        color: var(--fx-text);
+      }
+      .fx-page-subtitle { margin-top: .3rem; font-size: .875rem; color: var(--fx-muted); }
+
+      /* Tuile de statistique : barre d'accent a gauche + icone. */
+      .fx-stat {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: .9rem;
+        padding: 1.15rem 1.25rem;
+        overflow: hidden;
+      }
+      .fx-stat::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 3px;
+        background: var(--fx-tone, var(--fx-primary));
+      }
+      .fx-stat-label {
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--fx-muted);
+      }
+      .fx-stat-value {
+        margin-top: .3rem;
+        font-size: 1.6rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--fx-text);
+      }
+      .fx-stat-hint { margin-top: .25rem; font-size: .75rem; color: var(--fx-muted); }
+
+      .fx-icon-tile {
+        display: grid;
+        place-items: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        flex: 0 0 auto;
+        border-radius: .625rem;
+        background: var(--fx-tone-soft, var(--fx-accent-soft));
+        color: var(--fx-tone, var(--fx-primary));
+      }
+      .fx-icon-tile svg { width: 1.15rem; height: 1.15rem; }
+
+      /* Tonalites : posees sur le conteneur, elles pilotent tuile et barre. */
+      .fx-tone-primary { --fx-tone: var(--fx-primary); --fx-tone-soft: var(--fx-accent-soft); }
+      .fx-tone-success { --fx-tone: var(--fx-success); --fx-tone-soft: var(--fx-success-soft); }
+      .fx-tone-warning { --fx-tone: var(--fx-warning); --fx-tone-soft: var(--fx-warning-soft); }
+      .fx-tone-danger  { --fx-tone: var(--fx-danger);  --fx-tone-soft: var(--fx-danger-soft); }
+      .fx-tone-info    { --fx-tone: var(--fx-info);    --fx-tone-soft: var(--fx-info-soft); }
+
+      .fx-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        border-radius: 999px;
+        padding: .25rem .625rem;
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .01em;
+        white-space: nowrap;
+      }
+      .fx-badge-neutral { background: #f1efec; color: #55504a; }
+      .fx-badge-primary { background: var(--fx-accent-soft); color: #8f4405; }
+      .fx-badge-success { background: var(--fx-success-soft); color: #12652f; }
+      .fx-badge-warning { background: var(--fx-warning-soft); color: #8a4d06; }
+      .fx-badge-danger  { background: var(--fx-danger-soft);  color: #ab3325; }
+      .fx-badge-info    { background: var(--fx-info-soft);    color: #175c88; }
+
+      .fx-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        border-radius: .625rem;
+        padding: .6rem 1rem;
+        font-size: .875rem;
+        font-weight: 600;
+        transition: background .16s ease, border-color .16s ease, filter .16s ease;
+      }
+      /* Orange plus profond que l'accent : le blanc doit rester lisible. */
+      .fx-btn-primary { background: var(--fx-primary); color: #fff; }
+      .fx-btn-primary:hover { background: var(--fx-primary-hover); }
+      .fx-btn-ghost {
+        background: var(--fx-surface);
+        border: 1px solid var(--fx-border);
+        color: var(--fx-text);
+      }
+      .fx-btn-ghost:hover { background: #faf9f7; border-color: #d9d5cf; }
+
+      .fx-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+      .fx-table th {
+        text-align: left;
+        padding: .7rem 1rem;
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: var(--fx-muted);
+        background: #faf9f7;
+        border-bottom: 1px solid var(--fx-border);
+      }
+      .fx-table td {
+        padding: .8rem 1rem;
+        font-size: .875rem;
+        border-bottom: 1px solid var(--fx-border);
+        color: var(--fx-text);
+      }
+      .fx-table tbody tr:last-child td { border-bottom: 0; }
+      .fx-table tbody tr:hover td { background: #fdfcfb; }
+      /* Un tableau doit pouvoir defiler seul, sans elargir la page. */
+      .fx-table-scroll { overflow-x: auto; }
+
+      .fx-empty {
+        padding: 2.5rem 1.25rem;
+        text-align: center;
+        color: var(--fx-muted);
+        font-size: .875rem;
+      }
+      .fx-link { color: var(--fx-primary); font-weight: 600; }
+      .fx-link:hover { text-decoration: underline; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .fx-card-hover, .fx-btn { transition: none; }
+        .fx-card-hover:hover { transform: none; }
       }
     </style>
 </head>

@@ -2,6 +2,7 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from dashboard.views import dashboard_home
+
 from . import views
 
 app_name = "organisations"

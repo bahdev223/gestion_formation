@@ -38,7 +38,7 @@ class ConfigurationOrganisation(OrganisationOwnedModel, TimeStampedModel):
     )
     couleur_sidebar = models.CharField(
         max_length=7,
-        default="#0b2448",
+        default="#1f1509",
         validators=[hex_color_validator],
     )
     couleur_header = models.CharField(
@@ -48,22 +48,22 @@ class ConfigurationOrganisation(OrganisationOwnedModel, TimeStampedModel):
     )
     couleur_primaire = models.CharField(
         max_length=7,
-        default="#15519a",
+        default="#c2600a",
         validators=[hex_color_validator],
     )
     couleur_secondaire = models.CharField(
         max_length=7,
-        default="#102f5d",
+        default="#9c4a06",
         validators=[hex_color_validator],
     )
     couleur_accent = models.CharField(
         max_length=7,
-        default="#f28b16",
+        default="#ef8a1c",
         validators=[hex_color_validator],
     )
     couleur_fond = models.CharField(
         max_length=7,
-        default="#f4f6f9",
+        default="#f6f5f3",
         validators=[hex_color_validator],
     )
     couleur_surface = models.CharField(

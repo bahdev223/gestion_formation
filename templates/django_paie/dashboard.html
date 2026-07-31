@@ -16,7 +16,7 @@
 {% if alertes %}
   <div class="space-y-2">
     {% for alerte in alertes %}
-      <div class="border-l-3 {% if alerte.type == 'danger' %}border-red-500 bg-red-50 text-red-800{% elif alerte.type == 'warning' %}border-amber-500 bg-amber-50 text-amber-800{% else %}border-blue-500 bg-blue-50 text-blue-800{% endif %} px-4 py-3 text-sm">{{ alerte.message }}</div>
+      <div class="border-l-3 {% if alerte.type == 'danger' %}border-red-500 bg-red-50 text-red-800{% elif alerte.type == 'warning' %}border-[var(--fx-warning)] bg-[var(--fx-warning-soft)] text-[var(--fx-warning)]{% else %}border-[var(--fx-primary)] bg-[var(--fx-accent-soft)] text-[var(--fx-primary)]{% endif %} px-4 py-3 text-sm">{{ alerte.message }}</div>
     {% endfor %}
   </div>
 {% endif %}
@@ -35,10 +35,10 @@
       <a href="{% tenant_url 'django_paie:echeance-list' %}" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Voir les échéances</a>
     </div>
     <div class="grid gap-px bg-slate-200 sm:grid-cols-4">
-      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Payées</p><p class="mt-2 text-2xl font-bold text-emerald-600">{{ resume.paye|default:0 }}</p></div>
-      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Partielles</p><p class="mt-2 text-2xl font-bold text-amber-600">{{ resume.partiel|default:0 }}</p></div>
+      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Payées</p><p class="mt-2 text-2xl font-bold text-[var(--fx-success)]">{{ resume.paye|default:0 }}</p></div>
+      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Partielles</p><p class="mt-2 text-2xl font-bold text-[var(--fx-warning)]">{{ resume.partiel|default:0 }}</p></div>
       <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">En retard</p><p class="mt-2 text-2xl font-bold text-red-600">{{ resume.en_retard|default:0 }}</p></div>
-      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">À payer</p><p class="mt-2 text-2xl font-bold text-blue-700">{{ resume.a_payer|default:0 }}</p></div>
+      <div class="bg-white p-5"><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">À payer</p><p class="mt-2 text-2xl font-bold text-[var(--fx-primary)]">{{ resume.a_payer|default:0 }}</p></div>
     </div>
     <div class="border-t border-slate-200 px-6 py-5">
       <h3 class="font-semibold text-slate-900">Derniers paiements</h3>
@@ -62,15 +62,15 @@
         <a href="{% tenant_url 'django_paie:paiement-create' %}" class="baly-btn-accent block rounded-md px-4 py-3 text-center text-sm font-semibold">Enregistrer un paiement</a>
       </div>
     </div>
-    <div class="border border-blue-200 bg-blue-50 p-5">
-      <p class="text-xs font-semibold uppercase tracking-wider text-blue-700">Mode actif</p>
-      <p class="mt-2 text-xl font-bold text-blue-950">{{ mode }}</p>
-      <p class="mt-2 text-sm leading-6 text-blue-800">Les salaires mensuels se configurent sur les fiches utilisateurs.</p>
+    <div class="border border-[var(--fx-border)] bg-[var(--fx-accent-soft)] p-5">
+      <p class="text-xs font-semibold uppercase tracking-wider text-[var(--fx-primary)]">Mode actif</p>
+      <p class="mt-2 text-xl font-bold text-[var(--fx-text)]">{{ mode }}</p>
+      <p class="mt-2 text-sm leading-6 text-[var(--fx-primary)]">Les salaires mensuels se configurent sur les fiches utilisateurs.</p>
       <form method="post" action="{% tenant_url 'dashboard:payroll-generate' %}" class="mt-4">
         {% csrf_token %}
-        <label for="periode-paie" class="mb-1.5 block text-xs font-semibold text-blue-900">Période à générer</label>
+        <label for="periode-paie" class="mb-1.5 block text-xs font-semibold text-[var(--fx-primary)]">Période à générer</label>
         <div class="flex gap-2">
-          <input id="periode-paie" name="periode" type="month" value="{{ periode_courante_input }}" min="2000-01" max="2100-12" required class="min-w-0 flex-1 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500">
+          <input id="periode-paie" name="periode" type="month" value="{{ periode_courante_input }}" min="2000-01" max="2100-12" required class="min-w-0 flex-1 rounded-md border border-[var(--fx-border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--fx-primary)]">
           <button class="baly-btn-primary rounded-md px-3 py-2 text-sm font-semibold text-white">Générer</button>
         </div>
       </form>

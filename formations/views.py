@@ -1,6 +1,6 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.contrib import messages
 from django.db import IntegrityError
 from django.shortcuts import redirect
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
