@@ -13,9 +13,28 @@ class UserLoginView(LoginView):
     authentication_form = EmailOrMatriculeAuthenticationForm
     template_name = "accounts/login.html"
 
+    # Duree de la session quand « Se souvenir de moi » est coche.
+    REMEMBER_ME_SECONDS = 60 * 60 * 24 * 30
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        # Sans cette case, la session expire a la fermeture du navigateur.
+        if self.request.POST.get("remember_me"):
+            self.request.session.set_expiry(self.REMEMBER_ME_SECONDS)
+        else:
+            self.request.session.set_expiry(0)
+        return response
+
     def get_success_url(self):
         if self.request.user.must_change_password:
             return "/accounts/change-password/"
+        # Une destination explicite (?next=) doit gagner sur la redirection par
+        # role : sans cela, un utilisateur envoye vers /admin/ par
+        # AdminPathSecurityMiddleware atterrissait sur son tableau de bord.
+        # get_redirect_url() de LoginView rejette deja les URL externes.
+        redirection_demandee = self.get_redirect_url()
+        if redirection_demandee:
+            return redirection_demandee
         if get_platform_role(self.request.user):
             return "/platform/"
         organisation = get_user_default_organisation(self.request.user)

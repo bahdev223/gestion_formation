@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "formix-dev",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["manage.py", "runserver", "8021"],
+      "port": 8021
+    }
+  ]
+}

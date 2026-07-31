@@ -1,7 +1,7 @@
 {% extends "layouts/dashboard.html" %}
 
 {% block page_title %}Ressources humaines{% endblock %}
-{% block page_subtitle %}Gestion des équipes, de l’organisation interne et de la masse salariale de BALY’S GROUP.{% endblock %}
+{% block page_subtitle %}Gestion des équipes, de l’organisation interne et de la masse salariale de {{ company_name|default:"votre entreprise" }}.{% endblock %}
 {% block breadcrumb %}Ressources humaines / Vue générale{% endblock %}
 {% block page_actions %}
 <a href="{% tenant_url 'dashboard:rh-employee-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'dashboard:rh-employee-create' %}" hx-target="#global-modal-content" class="baly-btn-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold">

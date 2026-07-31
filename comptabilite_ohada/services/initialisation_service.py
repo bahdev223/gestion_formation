@@ -1,12 +1,17 @@
 import json
+from datetime import date
 from decimal import Decimal
-from pathlib import Path
 from importlib.resources import files as pkg_files
 
 from django.db import transaction
 
-from ..models import CompteComptable, ConfigurationComptable, SoldeInitialComptable
-from ..models import JournalComptable, ExerciceComptable
+from ..models import (
+    CompteComptable,
+    ConfigurationComptable,
+    ExerciceComptable,
+    JournalComptable,
+    SoldeInitialComptable,
+)
 from .ecriture_service import EcritureService
 
 
@@ -14,10 +19,8 @@ class InitialisationService:
     """Initialisation du plan comptable SYSCOHADA et de la configuration."""
 
     @staticmethod
+    @transaction.atomic
     def charger_plan_comptable(force=False):
-        if force:
-            CompteComptable.objects.all().delete()
-
         try:
             content = pkg_files("comptabilite_ohada.data").joinpath("plan_comptable.json").read_text(encoding="utf-8")
         except (ImportError, FileNotFoundError):
@@ -29,11 +32,8 @@ class InitialisationService:
             return {"success": False, "error": "Aucun compte dans le fichier"}
 
         comptes_crees = 0
-        parents = {}
-
         for item in comptes_data:
             code = item["code"]
-            parent_code = item.get("parent_code")
             defaults = {
                 "libelle": item["libelle"],
                 "nature": item.get("nature", "NEUTRE"),
@@ -44,26 +44,30 @@ class InitialisationService:
                 "categorie": item.get("categorie", "bilan"),
                 "actif": item.get("actif", True),
             }
-            compte, created = CompteComptable.objects.get_or_create(
-                code=code, defaults=defaults,
-            )
+            if force:
+                _, created = CompteComptable.objects.update_or_create(
+                    code=code, defaults=defaults
+                )
+            else:
+                _, created = CompteComptable.objects.get_or_create(
+                    code=code, defaults=defaults
+                )
             if created:
                 comptes_crees += 1
-                parents[code] = compte
 
+        comptes = {
+            compte.code: compte
+            for compte in CompteComptable.objects.filter(
+                code__in=[item["code"] for item in comptes_data]
+            )
+        }
         for item in comptes_data:
-            code = item["code"]
             parent_code = item.get("parent_code")
-            if parent_code and parent_code in parents:
-                compte = CompteComptable.objects.get(code=code)
-                compte.parent = parents[parent_code]
+            compte = comptes[item["code"]]
+            parent = comptes.get(parent_code)
+            if compte.parent_id != getattr(parent, "pk", None):
+                compte.parent = parent
                 compte.save(update_fields=["parent"])
-
-        config, _ = ConfigurationComptable.objects.get_or_create(pk=1)
-        config.est_initialise = True
-        config.date_initialisation = date.today()
-        config.nombre_comptes = CompteComptable.objects.count()
-        config.save()
 
         return {"success": True, "comptes_crees": comptes_crees, "total": len(comptes_data)}
 
@@ -88,15 +92,20 @@ class InitialisationService:
             )
 
     @staticmethod
-    def initialiser_soldes(soldes, user=None):
-        config = ConfigurationComptable.get_config()
+    def initialiser_soldes(soldes, *, organisation, user=None):
+        if organisation is None:
+            raise ValueError("L'organisation est obligatoire.")
+        config = ConfigurationComptable.get_config(organisation=organisation)
         solde_init, _ = SoldeInitialComptable.objects.get_or_create(configuration=config)
         for field, value in soldes.items():
             if hasattr(solde_init, field):
                 setattr(solde_init, field, Decimal(str(value)))
         solde_init.save()
 
-        exercice = ExerciceComptable.objects.filter(cloture=False).first()
+        exercice = ExerciceComptable.objects.filter(
+            organisation=organisation,
+            cloture=False,
+        ).first()
         if not exercice:
             return solde_init
 
@@ -133,8 +142,6 @@ class InitialisationService:
                 lignes.append({"compte": EcritureService.get_compte(contrepartie),
                                "debit": -ecart})
 
-        config = ConfigurationComptable.get_config()
-        from datetime import date
         EcritureService.creer_ecriture(
             reference=f"SI-{date.today().strftime('%Y%m%d')}",
             date_ecriture=date.today(),
@@ -146,6 +153,3 @@ class InitialisationService:
         )
 
         return solde_init
-
-
-from datetime import date

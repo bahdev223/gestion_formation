@@ -1,12 +1,18 @@
 from typing import Optional
-from django_rh.models import Employee
+
 from django_rh.domain.entities.employee import EmployeeEntity
+from django_rh.models import Employee
 
 
 class EmployeeRepository:
-    def get(self, employee_id: int) -> Optional[EmployeeEntity]:
+    def get(self, *, organisation, employee_id: int) -> Optional[EmployeeEntity]:
+        if organisation is None:
+            raise ValueError("L'organisation est obligatoire.")
         try:
-            emp = Employee.objects.get(id=employee_id)
+            emp = Employee.objects.get(
+                id=employee_id,
+                organisation=organisation,
+            )
             return EmployeeEntity(
                 id=emp.id, matricule=emp.matricule,
                 first_name=emp.first_name, last_name=emp.last_name,

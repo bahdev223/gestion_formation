@@ -1,10 +1,14 @@
 from django.db import transaction
 
 from formations.models import Formation
+from subscriptions.services import QuotaService
 
 
 @transaction.atomic
 def create_formation(data, user=None):
+    organisation = data.get("organisation")
+    if data.get("statut") == Formation.Statut.ACTIVE:
+        QuotaService.require_active_formation_slot(organisation)
     return Formation.objects.create(**data)
 
 
@@ -17,7 +21,7 @@ def archive_formation(formation, user=None):
 
 @transaction.atomic
 def reactivate_formation(formation, user=None):
+    QuotaService.require_active_formation_slot(formation.organisation)
     formation.statut = Formation.Statut.ACTIVE
     formation.save(update_fields=["statut", "updated_at"])
     return formation
-

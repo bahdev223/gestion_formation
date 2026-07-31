@@ -109,6 +109,7 @@
     </style>
 </head>
 <body class="bg-[var(--baly-bg)] antialiased" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    {% block public_nav %}
     {% if not user.is_authenticated %}
     <nav class="border-b border-slate-200 bg-white">
         <div class="container mx-auto flex items-center justify-between px-4 py-3">
@@ -126,6 +127,7 @@
         </div>
     </nav>
     {% endif %}
+    {% endblock %}
     {% if platform_maintenance %}
       <div class="border-b border-amber-300 bg-amber-50 px-4 py-2 text-center text-xs font-semibold text-amber-900">
         {{ platform_maintenance.titre }} — {{ platform_maintenance.message }}
@@ -137,7 +139,7 @@
         {{ announcement.titre }} — {{ announcement.message }}
       </div>
     {% endfor %}
-    <main class="{% if user.is_authenticated %}min-h-screen{% else %}container mx-auto px-4 py-8{% endif %}">
+    <main class="{% block main_class %}{% if user.is_authenticated %}min-h-screen{% else %}container mx-auto px-4 py-8{% endif %}{% endblock %}">
         {% block content %}{% endblock %}
     </main>
 </body>

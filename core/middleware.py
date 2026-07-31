@@ -1,4 +1,5 @@
 from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
 
 from core.features import module_est_actif
 
@@ -68,3 +69,19 @@ class ModuleAccessMiddleware:
             if reste == prefixe or reste.startswith(f"{prefixe}/"):
                 return module
         return None
+
+
+class AdminPathSecurityMiddleware:
+    """Verrouille /admin/ au strict niveau superutilisateur."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        path = request.path or ""
+        if path == "/admin/" or path == "/admin" or path.startswith("/admin/"):
+            if not request.user.is_authenticated:
+                return redirect(f"/accounts/login/?next={request.path}")
+            if not request.user.is_superuser:
+                raise PermissionDenied("AccÃ¨s /admin rÃ©servÃ© aux super administrateurs.")
+        return self.get_response(request)

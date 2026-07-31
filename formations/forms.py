@@ -1,5 +1,7 @@
 from django import forms
 
+from subscriptions.services import QuotaService
+
 from .models import CategorieFormation, Formation, Seance, SessionFormation
 
 FIELD_CLASSES = (
@@ -60,6 +62,7 @@ class FormationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         organisation = kwargs.pop("organisation", None)
+        self.organisation = organisation
         super().__init__(*args, **kwargs)
         self.fields["categorie"].required = False
         categories = CategorieFormation.objects.filter(
@@ -99,6 +102,29 @@ class FormationForm(forms.ModelForm):
                 "nouvelle_categorie",
                 "Choisissez une catégorie existante ou saisissez-en une nouvelle.",
             )
+        becomes_active = (
+            cleaned_data.get("statut") == Formation.Statut.ACTIVE
+            and (
+                self.instance._state.adding
+                or self.instance.statut != Formation.Statut.ACTIVE
+            )
+        )
+        if self.organisation and becomes_active:
+            try:
+                QuotaService.require_active_formation_slot(
+                    self.organisation
+                )
+            except forms.ValidationError as exc:
+                self.add_error("statut", exc)
+        image = cleaned_data.get("image")
+        if self.organisation and image:
+            try:
+                QuotaService.require_storage(
+                    self.organisation,
+                    image.size,
+                )
+            except forms.ValidationError as exc:
+                self.add_error("image", exc)
         return cleaned_data
 
     def save(self, commit=True):
@@ -106,11 +132,9 @@ class FormationForm(forms.ModelForm):
         nouvelle_categorie = self.cleaned_data.get("nouvelle_categorie", "").strip()
         if nouvelle_categorie:
             categorie, _ = CategorieFormation.objects.get_or_create(
-                nom=nouvelle_categorie
+                organisation=formation.organisation,
+                nom=nouvelle_categorie,
             )
-            if formation.organisation_id and not categorie.organisation_id:
-                categorie.organisation = formation.organisation
-                categorie.save(update_fields=["organisation"])
             formation.categorie = categorie
         if commit:
             formation.save()

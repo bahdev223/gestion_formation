@@ -46,8 +46,13 @@ class ConfigurationComptable(OrganisationOwnedModel, models.Model):
         return self.nom
 
     @classmethod
-    def get_config(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
+    def get_config(cls, *, organisation):
+        if organisation is None:
+            raise ValueError("L'organisation est obligatoire.")
+        obj, _ = cls.objects.get_or_create(
+            organisation=organisation,
+            defaults={"nom": organisation.nom},
+        )
         return obj
 
 

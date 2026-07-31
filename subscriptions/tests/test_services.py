@@ -3,11 +3,13 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from organisations.models import MembreOrganisation, Organisation
+from participants.models import Participant
 from platform_admin.models import PlatformAuditEvent
 from subscriptions.models import Abonnement, PlanAbonnement
 from subscriptions.services import FeatureService, QuotaService
@@ -58,6 +60,55 @@ class SubscriptionServicesTest(TestCase):
         )
 
         self.assertFalse(QuotaService.can_add_user(self.organisation))
+
+    def test_quota_stockage_prend_en_compte_les_fichiers(self):
+        from unittest.mock import patch
+
+        with patch.object(
+            QuotaService,
+            "storage_bytes",
+            return_value=(1024 * 1024 * 1024) - 100,
+        ):
+            self.assertTrue(
+                QuotaService.can_store_bytes(self.organisation, 100)
+            )
+            self.assertFalse(
+                QuotaService.can_store_bytes(self.organisation, 101)
+            )
+
+    def test_quota_participant_est_bloquant(self):
+        self.plan.max_participants = 1
+        self.plan.save(update_fields=["max_participants"])
+        Participant.objects.create(
+            organisation=self.organisation,
+            nom="Diallo",
+            prenom="Awa",
+            telephone="+22370000001",
+        )
+
+        with self.assertRaises(ValidationError):
+            QuotaService.require_participant_slot(self.organisation)
+
+    def test_quota_formation_active_est_bloquant(self):
+        from formations.models import CategorieFormation, Formation
+
+        self.plan.max_formations_actives = 1
+        self.plan.save(update_fields=["max_formations_actives"])
+        categorie = CategorieFormation.objects.create(
+            organisation=self.organisation,
+            nom="Management",
+        )
+        Formation.objects.create(
+            organisation=self.organisation,
+            categorie=categorie,
+            nom="Management operationnel",
+            duree=2,
+            prix_standard=100000,
+            statut=Formation.Statut.ACTIVE,
+        )
+
+        with self.assertRaises(ValidationError):
+            QuotaService.require_active_formation_slot(self.organisation)
 
     @override_settings(
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",

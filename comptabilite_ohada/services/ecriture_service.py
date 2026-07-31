@@ -1,12 +1,17 @@
-from decimal import Decimal
 from datetime import date, datetime
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from ..models import EcritureComptable, LigneEcritureComptable, JournalComptable
-from ..models import CompteComptable, ExerciceComptable
+from ..models import (
+    CompteComptable,
+    EcritureComptable,
+    ExerciceComptable,
+    JournalComptable,
+    LigneEcritureComptable,
+)
 from ..signals.ecriture import ecriture_validee
 
 
@@ -114,6 +119,7 @@ class EcritureService:
         )
 
         ecriture = EcritureComptable.objects.create(
+            organisation=exercice.organisation,
             reference=reference,
             date_ecriture=date_ecriture,
             libelle=libelle,
@@ -269,9 +275,9 @@ class EcritureService:
         ref = cls.generer_reference("TRF")
         return cls.creer_ecriture(ref, date.today(), libelle, journal, [
             {"compte": cls.get_compte(compte_dest_code), "debit": montant,
-             "libelle": f"Transfert reçu"},
+             "libelle": "Transfert reçu"},
             {"compte": cls.get_compte(compte_source_code), "credit": montant,
-             "libelle": f"Transfert émis"},
+             "libelle": "Transfert émis"},
         ], user=user)
 
     @classmethod
@@ -282,7 +288,7 @@ class EcritureService:
         return cls.creer_ecriture(ref, date.today(), libelle, journal, [
             {"compte": cls.get_compte("521"), "debit": montant, "libelle": "Dépôt banque"},
             {"compte": cls.get_compte(compte_caisse_code), "credit": montant,
-             "libelle": f"Dépôt depuis caisse"},
+             "libelle": "Dépôt depuis caisse"},
         ], user=user)
 
     @classmethod
@@ -292,7 +298,7 @@ class EcritureService:
         ref = cls.generer_reference("RB")
         return cls.creer_ecriture(ref, date.today(), libelle, journal, [
             {"compte": cls.get_compte(compte_caisse_code), "debit": montant,
-             "libelle": f"Retrait banque vers caisse"},
+             "libelle": "Retrait banque vers caisse"},
             {"compte": cls.get_compte("521"), "credit": montant, "libelle": "Retrait banque"},
         ], user=user)
 

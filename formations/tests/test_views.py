@@ -26,6 +26,9 @@ class FormationCoverViewTest(TestCase):
             email="contact@couverture.test",
             telephone="+22370000005",
         )
+        from core.testing import souscrire_plan_complet
+
+        souscrire_plan_complet(cls.organisation)
         cls.categorie = CategorieFormation.objects.create(
             organisation=cls.organisation,
             nom="Management couverture",

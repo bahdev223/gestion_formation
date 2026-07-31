@@ -8,7 +8,7 @@ from .models import PlatformStaffProfile
 
 
 def get_platform_role(user):
-    if not user or not user.is_authenticated:
+    if not user or not user.is_authenticated or not user.is_active:
         return None
     if user.is_superuser:
         return PlatformStaffProfile.Role.SUPER_ADMIN

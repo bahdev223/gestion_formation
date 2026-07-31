@@ -153,6 +153,24 @@ class RhPaieApiIsolationTest(TestCase):
         selector = EmployeeSelector(organisation=self.a["organisation"])
         self.assertIsNone(selector.get_by_id(self.b["employee"].pk))
 
+    def test_le_repository_rh_exige_et_applique_lorganisation(self):
+        from django_rh.infrastructure.repositories.employee_repository import (
+            EmployeeRepository,
+        )
+
+        repository = EmployeeRepository()
+        self.assertIsNone(
+            repository.get(
+                organisation=self.a["organisation"],
+                employee_id=self.b["employee"].pk,
+            )
+        )
+        with self.assertRaises(ValueError):
+            repository.get(
+                organisation=None,
+                employee_id=self.a["employee"].pk,
+            )
+
     def test_licencier_un_employe_de_b_depuis_a_est_refuse(self):
         from django_rh.domain.exceptions.rh_exceptions import (
             EmployeeNotFoundError,

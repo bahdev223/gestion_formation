@@ -1,16 +1,18 @@
 import json
 from datetime import date
 from decimal import Decimal
+
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.db import transaction
 from django.http import JsonResponse
 from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import PermissionDenied
-from django.db import transaction
+
 from organisations.utils import require_request_organisation
-from ..models import EcheanceSalariale, PaiementSalarial, PeriodePaie, RubriquePaie
-from ..models.bulletin import BulletinPaie, LigneBulletin, CotisationBulletin, ValidationPaie
-from ..services import ModeSimpleService, ModeCompletService, StatistiquesPaieService
+
 from ..conf import paie_settings
+from ..models import EcheanceSalariale, PaiementSalarial, PeriodePaie
+from ..models.bulletin import BulletinPaie
+from ..services import ModeCompletService, ModeSimpleService, StatistiquesPaieService
 from .docs_content import API_DOCS
 
 
@@ -69,19 +71,12 @@ def _parse_date(val):
         return None
 
 
-def _verifier_employe_entreprise(request, employe):
-    """Refuse un employe appartenant a une autre organisation.
-
-    L'ancienne version sortait immediatement quand MODE_PAR_ENTREPRISE etait
-    False (le cas ici) et ne verifiait donc rien : n'importe quel employe
-    pouvait etre designe par son identifiant. Employee porte un FK
-    organisation, c'est lui qui fait foi.
-    """
+def _employe_du_tenant(request, model, employe_id):
     organisation = require_request_organisation(request)
-    if getattr(employe, "organisation_id", None) != organisation.pk:
-        raise PermissionDenied(
-            "Employé introuvable ou rattaché à une autre entreprise."
-        )
+    return model.objects.filter(
+        pk=employe_id,
+        organisation=organisation,
+    ).first()
 
 
 def _serialize_echeance(e, include_paiements=False):
@@ -138,14 +133,14 @@ def _serialize_bulletin(b):
         "date_edition": b.date_edition.isoformat(),
         "lignes": [
             {
-                "rubrique": l.rubrique.code,
-                "libelle": l.rubrique.libelle,
-                "base": int(l.base),
-                "taux": float(l.taux),
-                "montant": int(l.montant),
-                "ordre": l.ordre,
+                "rubrique": ligne.rubrique.code,
+                "libelle": ligne.rubrique.libelle,
+                "base": int(ligne.base),
+                "taux": float(ligne.taux),
+                "montant": int(ligne.montant),
+                "ordre": ligne.ordre,
             }
-            for l in b.lignes.select_related("rubrique").all()
+            for ligne in b.lignes.select_related("rubrique").all()
         ],
         "cotisations": [
             {
@@ -201,11 +196,9 @@ class EcheanceListAPI(APIView):
 
         from django.apps import apps
         model = apps.get_model(paie_settings.EMPLOYE_MODEL)
-        try:
-            employe = model.objects.get(pk=employe_id)
-        except model.DoesNotExist:
+        employe = _employe_du_tenant(request, model, employe_id)
+        if employe is None:
             return _json_error(f"Employé {employe_id} introuvable.", 404)
-        _verifier_employe_entreprise(request, employe)
 
         entreprise_id = self.get_entreprise_id()
         service = ModeSimpleService(entreprise_id=entreprise_id)
@@ -358,11 +351,9 @@ class AvanceAPI(APIView):
 
         from django.apps import apps
         model = apps.get_model(paie_settings.EMPLOYE_MODEL)
-        try:
-            employe = model.objects.get(pk=employe_id)
-        except model.DoesNotExist:
+        employe = _employe_du_tenant(request, model, employe_id)
+        if employe is None:
             return _json_error(f"Employé {employe_id} introuvable.", 404)
-        _verifier_employe_entreprise(request, employe)
 
         entreprise_id = self.get_entreprise_id()
         service = ModeSimpleService(entreprise_id=entreprise_id)
@@ -397,11 +388,9 @@ class BulletinCalculAPI(APIView):
 
         from django.apps import apps
         model = apps.get_model(paie_settings.EMPLOYE_MODEL)
-        try:
-            employe = model.objects.get(pk=employe_id)
-        except model.DoesNotExist:
+        employe = _employe_du_tenant(request, model, employe_id)
+        if employe is None:
             return _json_error(f"Employé {employe_id} introuvable.", 404)
-        _verifier_employe_entreprise(request, employe)
 
         entreprise_id = self.get_entreprise_id()
         service = ModeCompletService(entreprise_id=entreprise_id)
@@ -409,7 +398,10 @@ class BulletinCalculAPI(APIView):
             bulletin_dataclass, echeance = service.calculer_bulletin(employe, periode)
         except Exception as e:
             return _json_error(str(e))
-        bulletin_model = BulletinPaie.objects.get(echeance=echeance)
+        bulletin_model = BulletinPaie.objects.get(
+            echeance=echeance,
+            echeance__entreprise_id=entreprise_id,
+        )
         return JsonResponse({"data": _serialize_bulletin(bulletin_model)}, status=201)
 
 

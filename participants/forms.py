@@ -1,5 +1,7 @@
 from django import forms
 
+from subscriptions.services import QuotaService
+
 from .models import Participant
 
 
@@ -39,7 +41,7 @@ class ParticipantForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        kwargs.pop("organisation", None)
+        self.organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = (
@@ -47,3 +49,21 @@ class ParticipantForm(forms.ModelForm):
                 "text-sm outline-none focus:border-blue-600 focus:ring-2 "
                 "focus:ring-blue-100"
             )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.organisation and self.instance._state.adding:
+            try:
+                QuotaService.require_participant_slot(self.organisation)
+            except forms.ValidationError as exc:
+                self.add_error(None, exc)
+        photo = cleaned_data.get("photo")
+        if self.organisation and photo:
+            try:
+                QuotaService.require_storage(
+                    self.organisation,
+                    photo.size,
+                )
+            except forms.ValidationError as exc:
+                self.add_error("photo", exc)
+        return cleaned_data

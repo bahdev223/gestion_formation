@@ -1,6 +1,7 @@
 from datetime import timedelta
 from math import ceil
 
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from .models import Abonnement
@@ -57,10 +58,77 @@ class QuotaService:
     @staticmethod
     def _plan(organisation):
         abonnement = getattr(organisation, "abonnement", None)
-        return abonnement.plan if abonnement else None
+        if abonnement is None or not abonnement.is_active:
+            return None
+        return abonnement.plan
+
+    @staticmethod
+    def _file_size(field_file):
+        if not field_file:
+            return 0
+        try:
+            return field_file.size
+        except (FileNotFoundError, OSError, ValueError):
+            return 0
+
+    @staticmethod
+    def storage_bytes(organisation):
+        from dashboard.models import ConfigurationOrganisation
+        from documents.models import Attestation, DocumentGenere
+        from formations.models import Formation
+        from participants.models import DocumentParticipant, Participant
+
+        total = QuotaService._file_size(organisation.logo)
+        total += sum(
+            QuotaService._file_size(member.user.photo)
+            for member in organisation.membres.filter(
+                is_active=True
+            ).select_related("user")
+        )
+        for config in ConfigurationOrganisation.objects.filter(
+            organisation=organisation
+        ):
+            total += sum(
+                QuotaService._file_size(getattr(config, field))
+                for field in ("logo", "signature_image", "cachet_image")
+            )
+        total += sum(
+            QuotaService._file_size(item.image)
+            for item in Formation.objects.filter(
+                organisation=organisation
+            ).only("image")
+        )
+        total += sum(
+            QuotaService._file_size(item.photo)
+            for item in Participant.objects.filter(
+                organisation=organisation
+            ).only("photo")
+        )
+        total += sum(
+            QuotaService._file_size(item.fichier)
+            for item in DocumentParticipant.objects.filter(
+                organisation=organisation
+            ).only("fichier")
+        )
+        total += sum(
+            QuotaService._file_size(item.fichier_pdf)
+            for item in Attestation.objects.filter(
+                organisation=organisation
+            ).only("fichier_pdf")
+        )
+        total += sum(
+            QuotaService._file_size(item.fichier)
+            for item in DocumentGenere.objects.filter(
+                organisation=organisation
+            ).only("fichier")
+        )
+        return total
 
     @staticmethod
     def usage(organisation):
+        from formations.models import Formation
+        from participants.models import Participant
+
         plan = QuotaService._plan(organisation)
         if not plan:
             return {}
@@ -70,21 +138,24 @@ class QuotaService:
                 "limit": plan.max_utilisateurs,
             },
             "participants": {
-                "used": getattr(organisation, "participants", []).count()
-                if hasattr(organisation, "participants")
-                else 0,
+                "used": Participant.objects.filter(
+                    organisation=organisation
+                ).count(),
                 "limit": plan.max_participants,
             },
             "formations_actives": {
-                "used": getattr(organisation, "formations", []).filter(
+                "used": Formation.objects.filter(
+                    organisation=organisation,
                     statut="ACTIVE"
-                ).count()
-                if hasattr(organisation, "formations")
-                else 0,
+                ).count(),
                 "limit": plan.max_formations_actives,
             },
             "stockage_mo": {
-                "used": 0,
+                "used": round(
+                    QuotaService.storage_bytes(organisation)
+                    / (1024 * 1024),
+                    2,
+                ),
                 "limit": plan.max_stockage_mo,
             },
         }
@@ -103,3 +174,43 @@ class QuotaService:
     def can_add_active_formation(organisation):
         usage = QuotaService.usage(organisation).get("formations_actives")
         return bool(usage and usage["used"] < usage["limit"])
+
+    @staticmethod
+    def can_store_bytes(organisation, additional_bytes):
+        plan = QuotaService._plan(organisation)
+        if not plan:
+            return False
+        limit_bytes = plan.max_stockage_mo * 1024 * 1024
+        return (
+            QuotaService.storage_bytes(organisation)
+            + max(int(additional_bytes or 0), 0)
+            <= limit_bytes
+        )
+
+    @staticmethod
+    def require_participant_slot(organisation):
+        if not QuotaService.can_add_participant(organisation):
+            raise ValidationError(
+                "Le quota de participants de votre offre est atteint."
+            )
+
+    @staticmethod
+    def require_user_slot(organisation):
+        if not QuotaService.can_add_user(organisation):
+            raise ValidationError(
+                "Le quota d'utilisateurs de votre offre est atteint."
+            )
+
+    @staticmethod
+    def require_active_formation_slot(organisation):
+        if not QuotaService.can_add_active_formation(organisation):
+            raise ValidationError(
+                "Le quota de formations actives de votre offre est atteint."
+            )
+
+    @staticmethod
+    def require_storage(organisation, additional_bytes):
+        if not QuotaService.can_store_bytes(organisation, additional_bytes):
+            raise ValidationError(
+                "Le quota de stockage de votre offre serait dépassé."
+            )

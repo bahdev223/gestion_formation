@@ -104,3 +104,26 @@ de l’expiration. Chaque alerte envoyée est journalisée pour éviter les doub
 
 Le compte de démonstration `admin/admin123` ne doit jamais être conservé en
 production.
+
+## Contrôles de santé recommandés (Coolify)
+
+- Liveness : /health/live/ (container vivant).
+- Readiness : /health/ready/ (DB + media disponibles).
+
+## Variables utiles pour l'entrypoint
+
+- RUN_MIGRATIONS : 	rue ou alse selon politique d'opérations.
+- RUN_MIGRATE : alias facultatif, même comportement que RUN_MIGRATIONS.
+- COLLECT_STATIC et RUN_COLLECTSTATIC : compatibles, l'un ou l'autre active le collectstatic.
+- SEED_DEFAULT_PLANS : charger les plans par défaut au déploiement initial.
+
+## Post-déploiement
+
+1. python manage.py check --deploy (si réglage local en prod).
+2. python manage.py test_email <email> pour valider l'envoi SMTP.
+3. python manage.py audit_tenant_integrity (sur environnement propre).
+
+
+
+Note s\u00e9curit\u00e9 : l\u0027acc\u00e8s \u00e0 /admin/ est maintenant strictement limit\u00e9 aux comptes is_superuser=True.
+

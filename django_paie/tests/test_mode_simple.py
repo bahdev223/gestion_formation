@@ -407,7 +407,16 @@ class StatistiquesPaieServiceTest(TestCase):
         self.employe = get_user_model().objects.create_user(
             username="fatou", password="test123"
         )
-        self.service = ModeSimpleService()
+        self.entreprise_id = "stats-test"
+        self.service = ModeSimpleService(entreprise_id=self.entreprise_id)
+
+    def test_organisation_est_obligatoire(self):
+        from django.core.exceptions import PermissionDenied
+
+        from ..services import StatistiquesPaieService
+
+        with self.assertRaises(PermissionDenied):
+            StatistiquesPaieService(entreprise_id="")
 
     def test_arrieres_ignore_partiel_avant_date(self):
         echeance = self.service.creer_echeance(self.employe, "09/2026", 50000)
@@ -415,7 +424,7 @@ class StatistiquesPaieServiceTest(TestCase):
         echeance.save()
         self.service.enregistrer_paiement(echeance.id, 20000)
         from ..services import StatistiquesPaieService
-        stats = StatistiquesPaieService()
+        stats = StatistiquesPaieService(entreprise_id=self.entreprise_id)
         arrieres = stats.arrieres()
         self.assertEqual(arrieres["nombre_echeances"], 0)
 
@@ -423,7 +432,7 @@ class StatistiquesPaieServiceTest(TestCase):
         echeance = self.service.creer_echeance(self.employe, "07/2026", 50000)
         self.service.enregistrer_paiement(echeance.id, 60000)
         from ..services import StatistiquesPaieService
-        stats = StatistiquesPaieService()
+        stats = StatistiquesPaieService(entreprise_id=self.entreprise_id)
         resume = stats.resume_annuel(annee=2026)
         self.assertEqual(resume["reste_global"], 0)
         self.assertEqual(resume["total_montant_du"], 50000)

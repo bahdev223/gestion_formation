@@ -21,10 +21,10 @@
 </head>
 <body>
   <div class="header">
-    <div class="brand">{{ organisation.nom|default:"BALY'S GROUP" }}</div>
+    <div class="brand">{{ company_name|default:"Entreprise" }}</div>
     <div class="muted">{{ organisation.adresse }}{% if organisation.telephone %} · {{ organisation.telephone }}{% endif %}{% if organisation.email %} · {{ organisation.email }}{% endif %}</div>
   </div>
   {% block pdf_content %}{% endblock %}
-  <div class="footer">Document genere par {{ organisation.nom|default:"BALY'S GROUP" }}</div>
+  <div class="footer">Document genere par {{ company_name|default:"Entreprise" }}</div>
 </body>
 </html>

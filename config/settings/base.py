@@ -43,6 +43,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.AdminPathSecurityMiddleware",
     "accounts.middleware.MandatoryPasswordChangeMiddleware",
     "organisations.middleware.CurrentOrganisationMiddleware",
     "core.middleware.ModuleAccessMiddleware",
@@ -76,13 +77,19 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
+    },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 LANGUAGE_CODE = "fr-fr"
-TIME_ZONE = "Europe/Paris"
+TIME_ZONE = os.environ.get("TIME_ZONE", "Africa/Bamako")
 USE_I18N = True
 USE_TZ = True
 
@@ -132,7 +139,7 @@ UNFOLD = {
 
 DJANGO_PAIE = {
     "MODE": "SIMPLE",
-    "EMPLOYE_MODEL": "rh.Employee",
+    "EMPLOYE_MODEL": "django_rh.Employee",
     "CONTRAT_MODEL": None,
     "ABSENCE_MODEL": None,
     "RH_ADAPTER": None,

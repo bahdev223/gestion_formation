@@ -17,7 +17,7 @@ class ConfigurationOrganisation(OrganisationOwnedModel, TimeStampedModel):
         BORDEAUX = "BORDEAUX", "Bordeaux premium"
         CUSTOM = "CUSTOM", "Personnalise"
 
-    nom = models.CharField(max_length=255, default="BALY'S GROUP")
+    nom = models.CharField(max_length=255, default="")
     logo = models.ImageField(upload_to="settings/", null=True, blank=True)
     adresse = models.TextField(blank=True)
     telephone = models.CharField(max_length=50, blank=True)

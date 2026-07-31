@@ -11,7 +11,7 @@
 {% block dashboard_content %}
 {% if messages %}{% for message in messages %}<div class="mb-3 border-l-3 {% if message.tags == 'error' %}border-red-500 bg-red-50 text-red-800{% else %}border-emerald-500 bg-emerald-50 text-emerald-800{% endif %} px-4 py-3 text-sm">{{ message }}</div>{% endfor %}{% endif %}
 <div class="baly-surface overflow-hidden rounded-lg">
-  <div class="border-b border-slate-200 px-6 py-5"><h2 class="font-bold text-slate-950">Personnel BALY’S GROUP</h2><p class="mt-1 text-sm text-slate-500">Un salaire doit être défini avant la génération mensuelle.</p></div>
+  <div class="border-b border-slate-200 px-6 py-5"><h2 class="font-bold text-slate-950">Personnel de {{ company_name|default:"votre entreprise" }}</h2><p class="mt-1 text-sm text-slate-500">Un salaire doit être défini avant la génération mensuelle.</p></div>
   <div class="divide-y divide-slate-100">
     {% for employee in payroll_users %}
     <form method="post" action="{% tenant_url 'dashboard:payroll-employee-salary-update' employee.pk %}" class="grid items-center gap-4 px-6 py-4 md:grid-cols-[1fr_180px_120px]">

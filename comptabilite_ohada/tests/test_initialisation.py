@@ -17,9 +17,15 @@ class InitialisationServiceTest(TestCase):
 
     def test_charger_plan_comptable_ecraser(self):
         CompteComptable.objects.create(code="571", libelle="Old", nature="DEBIT")
-        self.assertEqual(CompteComptable.objects.count(), 1)
+        CompteComptable.objects.create(
+            code="CUSTOM-001",
+            libelle="Compte personnalise",
+            nature="DEBIT",
+        )
+        self.assertEqual(CompteComptable.objects.count(), 2)
         result = self.service.charger_plan_comptable(force=True)
         self.assertTrue(result.get("success"))
         self.assertGreater(CompteComptable.objects.count(), 50)
         compte = CompteComptable.objects.get(code="571")
         self.assertEqual(compte.libelle, "Caisse")
+        self.assertTrue(CompteComptable.objects.filter(code="CUSTOM-001").exists())

@@ -2,7 +2,7 @@
 {% block compte_title %}{% if mode == "ajout" %}Nouveau compte{% else %}Modifier le compte{% endif %}{% endblock %}
 {% block compte_content %}
 <form method="post" class="baly-surface mt-3 overflow-hidden">{% csrf_token %}
-  <header class="border-b border-slate-200 px-5 py-3"><h2 class="text-sm font-bold text-slate-950">Informations du compte</h2><p class="mt-0.5 text-xs text-slate-500">Caisse, banque ou canal de paiement utilisé par BALY’S Group.</p></header>
+  <header class="border-b border-slate-200 px-5 py-3"><h2 class="text-sm font-bold text-slate-950">Informations du compte</h2><p class="mt-0.5 text-xs text-slate-500">Caisse, banque ou canal de paiement utilisé par {{ company_name|default:"votre entreprise" }}.</p></header>
   <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
     <div><label class="mb-1 block text-xs font-bold text-slate-700">Code *</label><input name="code" value="{{ compte.code|default:'' }}" required class="w-full border border-slate-300 px-3 py-2 text-sm" {% if mode != "ajout" %}readonly{% endif %}></div>
     <div class="md:col-span-1 xl:col-span-2"><label class="mb-1 block text-xs font-bold text-slate-700">Nom du compte *</label><input name="nom" value="{{ compte.nom|default:'' }}" required class="w-full border border-slate-300 px-3 py-2 text-sm"></div>

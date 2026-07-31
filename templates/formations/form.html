@@ -1,7 +1,7 @@
 {% extends "layouts/dashboard.html" %}
 
 {% block page_title %}Nouvelle formation{% endblock %}
-{% block page_subtitle %}Ajoutez une formation au catalogue BALY'S GROUP.{% endblock %}
+{% block page_subtitle %}Ajoutez une formation au catalogue de {{ company_name|default:"votre entreprise" }}.{% endblock %}
 
 {% block dashboard_content %}
 <form method="post" enctype="multipart/form-data" class="baly-surface rounded-xl">

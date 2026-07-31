@@ -106,7 +106,8 @@ class ConfigurationOrganisationView(
         configuration = qs.first()
         if configuration is None:
             configuration = ConfigurationOrganisation.objects.create(
-                organisation=organisation
+                organisation=organisation,
+                nom=organisation.nom,
             )
         return configuration
 

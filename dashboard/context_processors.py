@@ -15,6 +15,32 @@ DEFAULT_THEME = {
 }
 
 
+def _strip_or_empty(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _resolve_company_name(configuration, active_organisation):
+    config_name = _strip_or_empty(getattr(configuration, "nom", ""))
+    if config_name and config_name.upper() not in {"BALY'S GROUP", "BALY’S GROUP"}:
+        return config_name
+
+    active_name = _strip_or_empty(getattr(active_organisation, "nom", ""))
+    if active_name:
+        return active_name
+
+    return "Votre entreprise"
+
+
+def _resolve_company_logo(configuration, active_organisation):
+    config_logo = getattr(configuration, "logo", None)
+    if config_logo:
+        return config_logo
+    org_logo = getattr(active_organisation, "logo", None)
+    return org_logo
+
+
 def organisation(request):
     active_organisation = get_request_organisation(request)
     try:
@@ -24,6 +50,9 @@ def organisation(request):
         configuration = qs.first()
     except DatabaseError:
         configuration = None
+
+    organisation_name = _resolve_company_name(configuration, active_organisation)
+    organisation_logo = _resolve_company_logo(configuration, active_organisation)
     theme = DEFAULT_THEME.copy()
     if configuration:
         theme.update(
@@ -37,4 +66,9 @@ def organisation(request):
                 "surface": configuration.couleur_surface,
             }
         )
-    return {"organisation": configuration, "organisation_theme": theme}
+    return {
+        "organisation": configuration,
+        "organisation_theme": theme,
+        "company_name": organisation_name,
+        "company_logo": organisation_logo,
+    }

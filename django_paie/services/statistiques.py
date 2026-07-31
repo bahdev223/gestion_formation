@@ -1,30 +1,28 @@
 from datetime import date
 from decimal import Decimal
-from django.db.models import Sum, Count, Q
+
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q, Sum
+
 from ..models import EcheanceSalariale, PaiementSalarial, PeriodePaie
-from ..conf import paie_settings
 
 
 class StatistiquesPaieService:
-    def __init__(self, entreprise_id=""):
-        if paie_settings.MODE_PAR_ENTREPRISE and not entreprise_id:
+    def __init__(self, *, entreprise_id):
+        if not entreprise_id:
             raise PermissionDenied(
                 "Aucune entreprise fournie pour les statistiques de paie."
             )
         self.entreprise_id = entreprise_id
 
     def _base_qs(self):
-        qs = EcheanceSalariale.objects.all()
-        if self.entreprise_id:
-            qs = qs.filter(entreprise_id=self.entreprise_id)
-        return qs
+        return EcheanceSalariale.objects.filter(
+            entreprise_id=self.entreprise_id
+        )
 
     def _paiements_qs(self, echeances_qs):
         qs = PaiementSalarial.objects.filter(echeance__in=echeances_qs, statut="VALIDE")
-        if self.entreprise_id:
-            qs = qs.filter(echeance__entreprise_id=self.entreprise_id)
-        return qs
+        return qs.filter(echeance__entreprise_id=self.entreprise_id)
 
     def resume_periode(self, periode):
         try:
@@ -149,24 +147,17 @@ class StatistiquesPaieService:
             type_paiement="AVANCE",
             statut="VALIDE",
         )
-        if self.entreprise_id:
-            paiements = paiements.filter(echeance__entreprise_id=self.entreprise_id)
+        paiements = paiements.filter(
+            echeance__entreprise_id=self.entreprise_id
+        )
 
         total = paiements.aggregate(total=Sum("montant"))["total"] or 0
-        if self.entreprise_id:
-            employes_ids = set(
-                p.echeance.employe_object_id
-                for p in paiements.select_related("echeance").only(
-                    "echeance__employe_object_id"
-                )
+        employes_ids = set(
+            p.echeance.employe_object_id
+            for p in paiements.select_related("echeance").only(
+                "echeance__employe_object_id"
             )
-        else:
-            employes_ids = set(
-                p.echeance.employe_object_id
-                for p in paiements.select_related("echeance").only(
-                    "echeance__employe_object_id"
-                )
-            )
+        )
         nb_employes = len(employes_ids)
         moyenne = int(total / nb_employes) if nb_employes > 0 else 0
 
@@ -207,14 +198,15 @@ class StatistiquesPaieService:
         except (ValueError, AttributeError):
             return None
 
-        from ..models.bulletin import CotisationBulletin, BulletinPaie
+        from ..models.bulletin import CotisationBulletin
         qs = CotisationBulletin.objects.filter(
             type_cotisation="PATRONALE",
             bulletin__echeance__mois=mois,
             bulletin__echeance__annee=annee,
         )
-        if self.entreprise_id:
-            qs = qs.filter(bulletin__echeance__entreprise_id=self.entreprise_id)
+        qs = qs.filter(
+            bulletin__echeance__entreprise_id=self.entreprise_id
+        )
 
         total = qs.aggregate(total=Sum("montant"))["total"] or 0
         details = {}

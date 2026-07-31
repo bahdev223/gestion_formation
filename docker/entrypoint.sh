@@ -23,7 +23,7 @@ if [ -z "${DATABASE_URL:-}" ]; then
     fi
 fi
 
-if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+if [ "${RUN_MIGRATIONS:-true}" = "true" ] || [ "${RUN_MIGRATE:-false}" = "true" ]; then
     echo "Applying database migrations..."
     python manage.py migrate --noinput
 fi
@@ -33,7 +33,7 @@ if [ "${SEED_DEFAULT_PLANS:-true}" = "true" ]; then
     python manage.py seed_plans
 fi
 
-if [ "${COLLECT_STATIC:-true}" = "true" ]; then
+if [ "${COLLECT_STATIC:-${RUN_COLLECTSTATIC:-true}}" = "true" ]; then
     echo "Collecting static files..."
     python manage.py collectstatic --noinput --clear
 fi

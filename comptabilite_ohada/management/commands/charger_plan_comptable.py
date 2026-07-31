@@ -11,7 +11,10 @@ class Command(BaseCommand):
             "--ecraser",
             action="store_true",
             default=False,
-            help="Écraser les comptes existants.",
+            help=(
+                "Actualiser les comptes standards existants sans supprimer "
+                "les comptes absents du fichier."
+            ),
         )
 
     def handle(self, *args, **options):
