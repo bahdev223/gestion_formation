@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
+from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.generic import UpdateView
@@ -11,9 +12,19 @@ from organisations.utils import (
     tenant_reverse,
 )
 
-from . import selectors
 from .forms import ConfigurationOrganisationForm
 from .models import ConfigurationOrganisation
+
+try:
+    from .services.dashboard_service import get_dashboard_statistics
+except Exception:  # pragma: no cover - compatibility fallback for deploys
+    from . import selectors
+    get_dashboard_statistics = getattr(selectors, "get_dashboard_statistics", None)
+
+if get_dashboard_statistics is None:  # pragma: no cover - defensive guard
+    raise ImproperlyConfigured(
+        "Le sélecteur dashboard n'expose pas get_dashboard_statistics."
+    )
 
 
 @login_required
@@ -24,7 +35,7 @@ def dashboard_home(request, **kwargs):
             return redirect(f"/o/{organisation.slug}/dashboard/")
 
     organisation = require_request_organisation(request)
-    stats = selectors.get_dashboard_statistics(
+    stats = get_dashboard_statistics(
         {
             "request": request,
             "organisation": organisation,
