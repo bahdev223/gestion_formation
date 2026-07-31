@@ -2,6 +2,7 @@
 {% load static %}
 {% block page_title %}Formations{% endblock %}
 {% block page_subtitle %}Gestion des categories, formations, sessions et seances.{% endblock %}
+
 {% block dashboard_content %}
 {% if messages %}
   {% for message in messages %}
@@ -31,6 +32,7 @@
             <th class="px-6 py-4">Durée</th>
             <th class="px-6 py-4">Prix</th>
             <th class="px-6 py-4">Statut</th>
+            <th class="px-6 py-4 text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -56,6 +58,25 @@
               <td class="whitespace-nowrap px-6 py-4 text-slate-600">{{ formation.duree }} {{ formation.get_unite_duree_display|lower }}</td>
               <td class="whitespace-nowrap px-6 py-4 font-semibold text-slate-900">{{ formation.prix_standard|floatformat:0 }} FCFA</td>
               <td class="px-6 py-4"><span class="baly-badge">{{ formation.get_statut_display }}</span></td>
+              <td class="whitespace-nowrap px-6 py-4 text-right">
+                <div class="inline-flex flex-wrap justify-end gap-2">
+                  {% if perms.formations.change_formation %}
+                    <a
+                      href="{% tenant_url 'formations:update' formation.pk %}"
+                      class="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      @click.prevent="globalModalOpen = true"
+                      hx-get="{% tenant_url 'formations:update' formation.pk %}"
+                      hx-target="#global-modal-content"
+                    >Modifier</a>
+                  {% endif %}
+                  {% if perms.formations.delete_formation %}
+                    <a
+                      href="{% tenant_url 'formations:delete' formation.pk %}"
+                      class="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                    >Supprimer</a>
+                  {% endif %}
+                </div>
+              </td>
             </tr>
           {% endfor %}
         </tbody>

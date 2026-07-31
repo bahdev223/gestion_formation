@@ -4,6 +4,8 @@ from .views import (
     CategorieCreateView,
     CategorieListView,
     FormationCreateView,
+    FormationDeleteView,
+    FormationUpdateView,
     FormationIndexView,
     SeanceCreateView,
     SeanceListView,
@@ -17,6 +19,8 @@ app_name = "formations"
 urlpatterns = [
     path("", FormationIndexView.as_view(), name="index"),
     path("create/", FormationCreateView.as_view(), name="create"),
+    path("<int:pk>/modifier/", FormationUpdateView.as_view(), name="update"),
+    path("<int:pk>/supprimer/", FormationDeleteView.as_view(), name="delete"),
     path("categories/", CategorieListView.as_view(), name="categorie-list"),
     path(
         "categories/create/",

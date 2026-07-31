@@ -1,0 +1,27 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block page_title %}Supprimer la formation{% endblock %}
+{% block page_subtitle %}Confirmez la suppression avant d'exécuter cette action.{% endblock %}
+
+{% block dashboard_content %}
+<div class="mx-auto max-w-2xl">
+  <div class="baly-surface rounded-xl p-6">
+    <div class="mb-5 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+      <p class="font-semibold">Action irréversible</p>
+      <p class="mt-1">La suppression d'une formation supprime définitivement ses informations.</p>
+    </div>
+
+    <h2 class="text-lg font-bold text-slate-900">Supprimer "{{ object.nom }}" ?</h2>
+    <p class="mt-1 text-sm text-slate-600">Code: <span class="font-mono">{{ object.code }}</span></p>
+    <p class="mt-4 text-sm text-slate-600">
+      Catégorie: <strong>{{ object.categorie.nom }}</strong> · Durée: <strong>{{ object.duree }} {{ object.get_unite_duree_display|lower }}</strong> · Prix: <strong>{{ object.prix_standard|floatformat:0 }} FCFA</strong>
+    </p>
+
+    <form method="post" class="mt-8 flex flex-wrap gap-3">
+      {% csrf_token %}
+      <a href="{% tenant_url 'formations:index' %}" class="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700">Annuler</a>
+      <button type="submit" class="rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Supprimer définitivement</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

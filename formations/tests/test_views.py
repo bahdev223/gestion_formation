@@ -101,3 +101,84 @@ class FormationCoverViewTest(TestCase):
             response,
             "/static/images/formation-cover-default.svg",
         )
+
+
+class FormationCrudViewTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_superuser(
+            username="formation-crud-admin",
+            email="formation-crud@example.test",
+            password="test1234",
+        )
+        cls.organisation = Organisation.objects.create(
+            nom="Centre CRUD",
+            slug="centre-crud",
+            email="contact@crud.test",
+            telephone="+22370000006",
+        )
+        from core.testing import souscrire_plan_complet
+
+        souscrire_plan_complet(cls.organisation)
+        cls.categorie = CategorieFormation.objects.create(
+            organisation=cls.organisation,
+            nom="Management CRUD",
+        )
+        cls.formation = Formation.objects.create(
+            organisation=cls.organisation,
+            nom="Gestion opérationnelle",
+            categorie=cls.categorie,
+            duree=5,
+            prix_standard=100000,
+            statut=Formation.Statut.ACTIVE,
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_update_formation_via_form(self):
+        url = f"/o/centre-crud/formations/{self.formation.pk}/modifier/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            url,
+            {
+                "nom": "Gestion opérationnelle avancée",
+                "categorie": self.categorie.pk,
+                "nouvelle_categorie": "",
+                "description": "Mise Ã  jour test",
+                "objectifs": "",
+                "programme": "",
+                "duree": 6,
+                "unite_duree": Formation.UniteDuree.JOURS,
+                "prix_standard": 120000,
+                "statut": Formation.Statut.ACTIVE,
+            },
+        )
+        self.assertRedirects(
+            response,
+            "/o/centre-crud/formations/",
+            fetch_redirect_response=False,
+        )
+        self.formation.refresh_from_db()
+        self.assertEqual(self.formation.nom, "Gestion opérationnelle avancée")
+        self.assertEqual(self.formation.duree, 6)
+
+    def test_delete_formation(self):
+        formation_to_delete = Formation.objects.create(
+            organisation=self.organisation,
+            nom="A supprimer",
+            categorie=self.categorie,
+            duree=2,
+            prix_standard=50000,
+            statut=Formation.Statut.ACTIVE,
+        )
+        url = f"/o/centre-crud/formations/{formation_to_delete.pk}/supprimer/"
+        response = self.client.post(url)
+        self.assertRedirects(
+            response,
+            "/o/centre-crud/formations/",
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Formation.objects.filter(pk=formation_to_delete.pk).exists())

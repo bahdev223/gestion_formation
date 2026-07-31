@@ -1,6 +1,9 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.views.generic import CreateView, DetailView, ListView
+from django.contrib import messages
+from django.db import IntegrityError
+from django.shortcuts import redirect
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from core.mixins import HtmxModalFormMixin, OrganisationScopedMixin
 
@@ -35,6 +38,65 @@ class FormationCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequ
     modal_eyebrow = "Catalogue"
     submit_label = "Enregistrer la formation"
     full_width_fields = "description objectifs programme image"
+
+
+class FormationUpdateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
+    permission_required = "formations.change_formation"
+    model = Formation
+    form_class = FormationForm
+    template_name = "formations/form.html"
+    tenant_success_view_name = "formations:index"
+    success_message = "La formation a Ã©tÃ© modifiÃ©e avec succÃ¨s."
+    modal_title = "Modifier la formation"
+    modal_eyebrow = "Catalogue"
+    submit_label = "Enregistrer les changements"
+    full_width_fields = "description objectifs programme image"
+
+
+class FormationDeleteView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = "formations.delete_formation"
+    model = Formation
+    template_name = "formations/delete_confirm.html"
+    tenant_success_view_name = "formations:index"
+
+    def get_success_url(self):
+        from organisations.utils import tenant_reverse
+
+        return tenant_reverse(self.request, self.tenant_success_view_name)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.pop("organisation", None)
+        return kwargs
+
+    def form_valid(self, form):
+        return DeleteView.form_valid(self, form)
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.sessions.exists():
+            messages.error(
+                request,
+                (
+                    "Suppression impossible : cette formation est liÃ©e Ã  "
+                    f"{self.object.sessions.count()} session(s). "
+                    "Supprimez ou dÃ©placez ces sessions avant de continuer."
+                ),
+            )
+            return redirect(self.get_success_url())
+        try:
+            response = super().delete(request, *args, **kwargs)
+            messages.success(
+                request,
+                f"La formation Â« {self.object.nom} Â» a Ã©tÃ© supprimÃ©e avec succÃ¨s.",
+            )
+            return response
+        except IntegrityError:
+            messages.error(
+                request,
+                "Suppression impossible : la formation est rÃ©fÃ©rencÃ©e par d'autres donnÃ©es.",
+            )
+            return redirect(self.get_success_url())
 
 
 class CategorieListView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
