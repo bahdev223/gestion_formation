@@ -1,5 +1,5 @@
 {% extends "layouts/dashboard.html" %}
-{% load static %}
+{% load static media_safe %}
 {% block page_title %}Formations{% endblock %}
 {% block page_subtitle %}Gestion des categories, formations, sessions et seances.{% endblock %}
 
@@ -41,7 +41,7 @@
               <td class="px-6 py-4">
                 <div class="flex min-w-[260px] items-center gap-3">
                   <img
-                    src="{% if formation.image %}{{ formation.image.url }}{% else %}{% static 'images/formation-cover-default.svg' %}{% endif %}"
+                    src="{{ formation.image|media_safe_url:'images/formation-cover-default.svg' }}"
                     alt="Couverture de {{ formation.nom }}"
                     class="h-12 w-20 shrink-0 border border-slate-200 object-cover"
                     loading="lazy"

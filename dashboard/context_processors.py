@@ -34,11 +34,24 @@ def _resolve_company_name(configuration, active_organisation):
 
 
 def _resolve_company_logo(configuration, active_organisation):
+    def _is_existing(logo_field):
+        from django.core.files.storage import default_storage
+
+        if not logo_field:
+            return False
+        name = getattr(logo_field, "name", None)
+        if not name:
+            return False
+        storage = getattr(logo_field, "storage", None) or default_storage
+        return storage.exists(name)
+
     config_logo = getattr(configuration, "logo", None)
-    if config_logo:
+    if _is_existing(config_logo):
         return config_logo
     org_logo = getattr(active_organisation, "logo", None)
-    return org_logo
+    if _is_existing(org_logo):
+        return org_logo
+    return None
 
 
 def organisation(request):

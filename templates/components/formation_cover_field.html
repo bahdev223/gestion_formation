@@ -1,6 +1,6 @@
-{% load static %}
+{% load static media_safe %}
 <div
-  x-data="{ preview: '{% if form.instance.image %}{{ form.instance.image.url }}{% endif %}' }"
+  x-data="{ preview: '{% if form.instance.image %}{{ form.instance.image|media_safe_url }}{% endif %}' }"
   @change="if ($event.target.type === 'file' && $event.target.files.length) preview = URL.createObjectURL($event.target.files[0])"
   class="grid gap-4 border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[180px_1fr] sm:items-center"
 >
