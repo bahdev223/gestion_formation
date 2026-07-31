@@ -1,11 +1,13 @@
 from django.urls import include, path
 
+from dashboard.views import dashboard_home
 from . import views
 
 app_name = "organisations"
 
 urlpatterns = [
-    path("dashboard/", views.owner_dashboard, name="owner-dashboard"),
+    path("dashboard/", dashboard_home),
+    path("abonnement/", views.owner_dashboard, name="owner-dashboard"),
     path("formations/", include(("formations.urls", "formations"), namespace="formations")),
     path("participants/", include(("participants.urls", "participants"), namespace="participants")),
     path("inscriptions/", include(("inscriptions.urls", "inscriptions"), namespace="inscriptions")),

@@ -96,10 +96,7 @@ def organisation_create(request):
         ) = create_platform_organisation(form.cleaned_data, actor=request.user)
         login_url = request.build_absolute_uri(reverse("accounts:login"))
         organisation_url = request.build_absolute_uri(
-            reverse(
-                "organisations:owner-dashboard",
-                kwargs={"organisation_slug": organisation.slug},
-            )
+            f"/o/{organisation.slug}/dashboard/"
         )
         email_sent = False
         if form.cleaned_data.get("envoyer_identifiants"):
@@ -417,7 +414,7 @@ def impersonate_organisation(request, organisation_id):
     request.session["platform_original_user_id"] = original_user_id
     request.session["platform_impersonated_organisation_id"] = organisation.pk
     return redirect(
-        "organisations:owner-dashboard",
+        "organisations:dashboard:index",
         organisation_slug=organisation.slug,
     )
 

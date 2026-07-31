@@ -1,8 +1,8 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block page_title %}Espace entreprise{% endblock %}
-{% block page_subtitle %}Suivi de l'abonnement, des limites et de l'acces SaaS de {{ organisation.nom }}.{% endblock %}
-{% block breadcrumb %}Organisation / Tableau de bord{% endblock %}
+{% block page_title %}Mon abonnement{% endblock %}
+{% block page_subtitle %}Suivi de votre abonnement, des limites et de l'accès SaaS de {{ organisation.nom }}.{% endblock %}
+{% block breadcrumb %}Abonnement{% endblock %}
 
 {% block dashboard_content %}
 {% if abonnement and abonnement.days_remaining <= 7 %}

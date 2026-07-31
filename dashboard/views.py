@@ -28,8 +28,7 @@ def dashboard_home(request, **kwargs):
         organisation = get_user_default_organisation(request.user)
         if organisation is not None:
             return redirect(
-                "organisations:owner-dashboard",
-                organisation_slug=organisation.slug,
+                f"/o/{organisation.slug}/dashboard/",
             )
 
     today = timezone.localdate()
