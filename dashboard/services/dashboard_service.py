@@ -587,7 +587,7 @@ def get_dashboard_statistics(filters=None):
         ],
     }
 
-    return {
+    stats = {
         "dashboard_tabs": tabs,
         "active_tab": active_tab,
         "role": profile,
@@ -715,6 +715,13 @@ def get_dashboard_statistics(filters=None):
         "alerts": alerts,
         "analysis": analysis,
     }
+
+    if not stats["dashboard_tabs"]:
+        stats["dashboard_tabs"] = _tabs_for_profile(profile)
+
+    if stats["active_tab"] not in {tab["key"] for tab in stats["dashboard_tabs"]}:
+        stats["active_tab"] = stats["dashboard_tabs"][0]["key"] if stats["dashboard_tabs"] else "vision"
+    active_tab = stats["active_tab"]
 
     stats["widget_board"] = get_dashboard_widget_board(
         profile=profile,
