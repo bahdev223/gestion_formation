@@ -18,14 +18,23 @@ from django.utils import timezone
 
 from accounts.models import User
 from comptes.models import Compte, MouvementCompte
-from documents.models import Attestation, DocumentGenere
+from dashboard.services import (
+    alert_service,
+    analytics_service,
+    finance_service,
+    formation_service,
+    operation_service,
+    participant_service,
+)
+from dashboard.widgets.engine import get_dashboard_widget_board
 from django_rh.models import Employee
+from documents.models import Attestation, DocumentGenere
 from formations.models import Formation, Seance, SessionFormation
 from inscriptions.models import Inscription
 from organisations.models import MembreOrganisation, Organisation
+from paiements.models import Paiement
 from participants.models import Participant
 from presences.models import Presence
-from paiements.models import Paiement
 
 
 class _Event(TypedDict):
@@ -706,3 +715,17 @@ def get_dashboard_statistics(filters=None):
         "alerts": alerts,
         "analysis": analysis,
     }
+
+    stats["widget_board"] = get_dashboard_widget_board(
+        profile=profile,
+        active_tab=active_tab,
+        stats=stats,
+    )
+    stats["finance_metrics"] = finance_service.build_finance_metrics(stats)
+    stats["formation_metrics"] = formation_service.build_formation_metrics(stats)
+    stats["participant_metrics"] = participant_service.build_participant_metrics(stats)
+    stats["operation_metrics"] = operation_service.build_operation_metrics(stats)
+    stats["analytics_metrics"] = analytics_service.build_analytics_metrics(stats)
+    stats["alert_cards"] = alert_service.build_alerts(stats)
+
+    return stats
