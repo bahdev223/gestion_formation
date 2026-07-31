@@ -1,59 +1,135 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Comptabilit&eacute; OHADA{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { padding-top: 60px; background: #f5f7fa; }
-        .sidebar { position: fixed; top: 56px; bottom: 0; left: 0; width: 220px; background: #2c3e50; padding: 20px 0; overflow-y: auto; }
-        .sidebar a { color: #bdc3c7; padding: 10px 20px; display: block; text-decoration: none; }
-        .sidebar a:hover, .sidebar a.active { color: #fff; background: #34495e; }
-        .content { margin-left: 240px; padding: 20px; }
-        .stat-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .table-hover tbody tr:hover { background: #f0f7ff; }
-        .badge-ohada { background: #2980b9; }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% tenant_url 'comptabilite:dashboard' %}">Comptabilit&eacute; OHADA</a>
-            <div class="d-flex">
-                <span class="navbar-text me-3">{{ user.get_full_name|default:user.username }}</span>
-                <a href="/admin/logout/" class="btn btn-outline-light btn-sm">D&eacute;connexion</a>
-            </div>
-        </div>
-    </nav>
+{% extends "layouts/dashboard.html" %}
 
-    <div class="sidebar">
-        <a href="{% tenant_url 'comptabilite:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Tableau de bord</a>
-        <a href="{% tenant_url 'comptabilite:ecriture_list' %}" class="{% if 'ecriture' in request.resolver_match.url_name %}active{% endif %}">&Eacute;critures</a>
-        <a href="{% tenant_url 'comptabilite:compte_list' %}" class="{% if 'compte' in request.resolver_match.url_name %}active{% endif %}">Plan comptable</a>
-        <a href="{% tenant_url 'comptabilite:journal_list' %}" class="{% if 'journal' in request.resolver_match.url_name %}active{% endif %}">Journaux</a>
-        <a href="{% tenant_url 'comptabilite:balance' %}" class="{% if 'balance' in request.resolver_match.url_name %}active{% endif %}">Balance</a>
-        <a href="{% tenant_url 'comptabilite:grand_livre' %}" class="{% if 'grand_livre' in request.resolver_match.url_name %}active{% endif %}">Grand livre</a>
-        <a href="{% tenant_url 'comptabilite:bilan' %}" class="{% if 'bilan' in request.resolver_match.url_name %}active{% endif %}">Bilan</a>
-        <a href="{% tenant_url 'comptabilite:compte_resultat' %}" class="{% if 'compte_resultat' in request.resolver_match.url_name %}active{% endif %}">Compte de r&eacute;sultat</a>
-        <a href="{% tenant_url 'comptabilite:exercice_list' %}" class="{% if 'exercice' in request.resolver_match.url_name %}active{% endif %}">Exercices</a>
-        <a href="{% tenant_url 'comptabilite:immobilisation_list' %}" class="{% if 'immobilisation' in request.resolver_match.url_name %}active{% endif %}">Immobilisations</a>
-        <a href="{% tenant_url 'comptabilite:rapprochement_list' %}" class="{% if 'rapprochement' in request.resolver_match.url_name %}active{% endif %}">Rapprochement</a>
-    </div>
+{% block page_title %}{% block compta_title %}Comptabilité{% endblock %}{% endblock %}
+{% block page_subtitle %}Pilotage opérationnel des écritures, comptes et états financiers.{% endblock %}
+{% block breadcrumb %}Comptabilité{% endblock %}
 
-    <div class="content">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-        {% block content %}{% endblock %}
-    </div>
+{% block page_actions %}
+<div class="flex flex-wrap gap-2">
+  <a href="{% tenant_url 'comptabilite:ecriture_create' %}" class="baly-btn-accent px-4 py-2.5 text-sm font-semibold">Nouvelle écriture</a>
+  <a href="{% tenant_url 'comptabilite:ecriture_list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Écritures</a>
+  <a href="{% tenant_url 'comptabilite:dashboard' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Tableau de bord</a>
+</div>
+{% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    {% block extra_js %}{% endblock %}
-</body>
-</html>
+{% block dashboard_content %}
+<nav class="mb-4 flex flex-wrap gap-2 border-b border-slate-200 pb-4 text-sm">
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:dashboard' %}">Dashboard</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:ecriture_list' %}">Écritures</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:compte_list' %}">Comptes</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:journal_list' %}">Journaux</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:balance' %}">Balance</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:grand_livre' %}">Grand livre</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:bilan' %}">Bilan</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:compte_resultat' %}">Résultat</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:immobilisation_list' %}">Immobilisations</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:rapprochement_list' %}">Rapprochement</a>
+  <a class="baly-badge" href="{% tenant_url 'comptabilite:exercice_list' %}">Exercices</a>
+</nav>
+<div class="compta-native mt-2">{% block compta_content %}{% endblock %}</div>
+
+<style>
+  .compta-native .row {display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1rem}
+  .compta-native .col-md-3 {grid-column:span 3}
+  .compta-native .col-md-4 {grid-column:span 4}
+  .compta-native .col-md-6 {grid-column:span 6}
+  .compta-native .col-md-8 {grid-column:span 8}
+  .compta-native .col-auto {width:auto}
+  .compta-native .stat-card,
+  .compta-native .card {border:1px solid #e2e8f0;background:#fff;padding:1rem;border-radius:.5rem}
+  .compta-native .table,
+  .compta-native .table-sm {width:100%;font-size:.875rem;border-collapse:collapse}
+  .compta-native .table th,
+  .compta-native .table td,
+  .compta-native .table-sm th,
+  .compta-native .table-sm td {border-bottom:1px solid #e2e8f0;padding:.72rem .7rem}
+  .compta-native .table-hover tbody tr:hover {background:#f8fbff}
+  .compta-native .text-muted {color:#64748b}
+  .compta-native .table-responsive,
+  .compta-native .overflow-x-auto {overflow:auto}
+  .compta-native .text-end {text-align:right}
+  .compta-native .form-control,
+  .compta-native .form-select,
+  .compta-native input[type="text"],
+  .compta-native input[type="search"],
+  .compta-native input[type="number"],
+  .compta-native select,
+  .compta-native textarea {width:100%;border:1px solid #cbd5e1;border-radius:.45rem;padding:.55rem .65rem;background:#fff}
+  .compta-native .table-dark {background:#f8fafc}
+  .compta-native .d-flex {display:flex}
+  .compta-native .justify-content-between {justify-content:space-between}
+  .compta-native .align-items-center {align-items:center}
+  .compta-native .mb-4 {margin-bottom:1rem}
+  .compta-native .mb-3 {margin-bottom:.75rem}
+  .compta-native .mb-1 {margin-bottom:.25rem}
+  .compta-native .mt-1 {margin-top:.25rem}
+  .compta-native .mt-2 {margin-top:.5rem}
+  .compta-native .mt-3 {margin-top:.75rem}
+  .compta-native .mr-2,
+  .compta-native .mx-2 {margin-right:.5rem}
+  .compta-native .me-1 {margin-right:.25rem}
+  .compta-native .py-2 {padding-top:.5rem;padding-bottom:.5rem}
+  .compta-native .px-2 {padding-left:.5rem;padding-right:.5rem}
+  .compta-native .g-3 {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}
+  .compta-native .g-2 {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
+  .compta-native .h5 {font-size:1rem;font-weight:700}
+  .compta-native .fw-bold {font-weight:700}
+  .compta-native h1 {font-size:1.5rem;font-weight:700}
+  .compta-native h3 {font-weight:700;margin-bottom:1rem}
+  .compta-native .baly-surface h3 {margin-bottom:0}
+  .compta-native a {color:#1756a9}
+  .compta-native .btn,
+  .compta-native button {display:inline-flex;align-items:center;justify-content:center;padding:.55rem 1rem;border-radius:.45rem;border:1px solid transparent;line-height:1.1}
+  .compta-native .btn-sm {padding:.32rem .65rem;font-size:.75rem}
+  .compta-native .btn-primary,
+  .compta-native .btn-info,
+  .compta-native .btn-success,
+  .compta-native .btn-warning,
+  .compta-native .btn-danger,
+  .compta-native .btn-outline-success {color:#fff}
+  .compta-native .btn-primary,
+  .compta-native .btn-info,
+  .compta-native .btn-outline-primary {background:#1756a9;border-color:#1756a9;color:#fff}
+  .compta-native .btn-success,
+  .compta-native .btn-outline-success {background:#15803d;border-color:#15803d;color:#fff}
+  .compta-native .btn-warning,
+  .compta-native .btn-outline-warning {background:#b45309;border-color:#b45309;color:#fff}
+  .compta-native .btn-danger,
+  .compta-native .btn-outline-danger {background:#b91c1c;border-color:#b91c1c;color:#fff}
+  .compta-native .btn-outline-primary,
+  .compta-native .btn-outline-secondary,
+  .compta-native .btn-outline-warning,
+  .compta-native .btn-outline-success,
+  .compta-native .btn-outline-danger {background:#fff;border-color:#cbd5e1;color:#0f172a}
+  .compta-native .btn-outline-warning {background:#fffbeb}
+  .compta-native .btn-outline-danger {background:#fef2f2}
+  .compta-native .btn-outline-success {background:#ecfdf5}
+  .compta-native .btn-outline-secondary {background:#f8fafc}
+  .compta-native .badge,
+  .compta-native .text-bg-success,
+  .compta-native .text-bg-warning,
+  .compta-native .text-bg-danger,
+  .compta-native .text-bg-secondary {display:inline-flex;padding:.2rem .5rem;border-radius:.45rem;font-size:.72rem;font-weight:700;line-height:1}
+  .compta-native .bg-success,
+  .compta-native .badge.bg-success,
+  .compta-native .text-bg-success {background:#dcfce7;color:#166534}
+  .compta-native .bg-warning,
+  .compta-native .badge.bg-warning,
+  .compta-native .text-bg-warning {background:#ffedd5;color:#c2410c}
+  .compta-native .bg-danger,
+  .compta-native .badge.bg-danger {background:#fee2e2;color:#b91c1c}
+  .compta-native .bg-secondary,
+  .compta-native .badge.bg-secondary,
+  .compta-native .text-bg-secondary {background:#f1f5f9;color:#334155}
+  .compta-native .pagination {display:flex;align-items:center;gap:.35rem;list-style:none;padding:0;margin:1rem 0 0}
+  .compta-native .page-link,
+  .compta-native .pagination .page-link {display:block;padding:.35rem .65rem;font-size:.8125rem;border:1px solid #cbd5e1;border-radius:.375rem;color:#1d4ed8;text-decoration:none}
+  .compta-native .page-item.disabled .page-link {background:#f8fafc;color:#94a3b8}
+  @media (max-width:900px){
+    .compta-native .col-md-3,
+    .compta-native .col-md-4,
+    .compta-native .col-md-6,
+    .compta-native .col-md-8 {grid-column:span 12}
+  }
+</style>
+{% endblock %}

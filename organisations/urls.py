@@ -1,4 +1,5 @@
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 from dashboard.views import dashboard_home
 from . import views
@@ -6,6 +7,8 @@ from . import views
 app_name = "organisations"
 
 urlpatterns = [
+    path("comptabilit", RedirectView.as_view(url="comptabilite/")),
+    path("comptabilit/", RedirectView.as_view(url="comptabilite/")),
     path("dashboard/", dashboard_home),
     path("abonnement/", views.owner_dashboard, name="owner-dashboard"),
     path("formations/", include(("formations.urls", "formations"), namespace="formations")),

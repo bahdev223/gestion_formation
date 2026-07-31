@@ -1,8 +1,50 @@
 {% extends "comptabilite_ohada/base.html" %}
-{% block compta_title %}Écriture {{ ecriture.reference }}{% endblock %}
-{% block page_actions %}<div class="flex gap-2">{% if not ecriture.validee %}<a href="{% tenant_url 'comptabilite:ecriture_update' ecriture.pk %}" class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700">Modifier</a><form method="post" action="{% tenant_url 'comptabilite:ecriture_valider' ecriture.pk %}">{% csrf_token %}<button class="baly-btn-accent px-4 py-2 text-xs font-bold">Valider définitivement</button></form>{% endif %}<a href="{% tenant_url 'comptabilite:ecriture_list' %}" class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700">Retour</a></div>{% endblock %}
+{% load compta_tags %}
+{% block title %}Écriture {{ ecriture.reference }}{% endblock %}
 {% block compta_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Écriture {{ ecriture.reference }}</h1>
+  <div class="flex gap-2">
+    <a href="{% tenant_url 'comptabilite:ecriture_list' %}" class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700">Retour</a>
+    {% if not ecriture.validee %}
+    <form method="post" action="{% tenant_url 'comptabilite:ecriture_valider' ecriture.pk %}">{% csrf_token %}
+      <button class="baly-btn-accent px-4 py-2 text-xs font-bold">Valider</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
 {% if messages %}{% include "components/messages.html" %}{% endif %}
-<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><article class="stat-card"><p class="stat-label">Journal</p><p class="stat-value">{{ ecriture.journal.code }}</p><p class="stat-hint">{{ ecriture.journal.libelle }}</p></article><article class="stat-card"><p class="stat-label">Exercice</p><p class="stat-value">{{ ecriture.exercice.code }}</p><p class="stat-hint">{{ ecriture.date_ecriture|date:"d/m/Y" }}</p></article><article class="stat-card"><p class="stat-label">Total débit</p><p class="stat-value">{{ ecriture.total_debit|floatformat:0 }}</p><p class="stat-hint">FCFA</p></article><article class="stat-card"><p class="stat-label">Équilibre</p><p class="stat-value {% if ecriture.est_equilibree %}text-emerald-700{% else %}text-red-700{% endif %}">{% if ecriture.est_equilibree %}OK{% else %}NON{% endif %}</p><p class="stat-hint">{% if ecriture.validee %}Validée{% else %}Brouillon{% endif %}</p></article></div>
-<section class="baly-surface mt-3 overflow-hidden"><header class="border-b border-slate-200 px-4 py-3"><h2 class="text-sm font-bold text-slate-950">{{ ecriture.libelle }}</h2><p class="mt-0.5 text-xs text-slate-500">Référence {{ ecriture.reference }} · Pièce {{ ecriture.piece|default:"—" }} · Créée par {{ ecriture.created_by|default:"—" }}</p></header><div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="bg-slate-50 uppercase tracking-wider text-slate-500"><tr><th class="px-4 py-2">Compte</th><th class="px-4 py-2">Libellé</th><th class="px-4 py-2 text-right">Débit</th><th class="px-4 py-2 text-right">Crédit</th></tr></thead><tbody class="divide-y divide-slate-100">{% for ligne in ecriture.lignes.all %}<tr><td class="px-4 py-3"><span class="font-mono font-bold">{{ ligne.compte.code }}</span><span class="ml-2 text-slate-500">{{ ligne.compte.libelle }}</span></td><td class="px-4 py-3">{{ ligne.libelle|default:ecriture.libelle }}</td><td class="px-4 py-3 text-right font-bold">{% if ligne.debit %}{{ ligne.debit|floatformat:0 }}{% else %}—{% endif %}</td><td class="px-4 py-3 text-right font-bold">{% if ligne.credit %}{{ ligne.credit|floatformat:0 }}{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="4" class="px-4 py-10 text-center text-red-700">Aucune ligne comptable : cette écriture ne peut pas être validée.</td></tr>{% endfor %}</tbody><tfoot class="bg-slate-50 font-bold"><tr><td colspan="2" class="px-4 py-3 text-right">Totaux</td><td class="px-4 py-3 text-right">{{ ecriture.total_debit|floatformat:0 }}</td><td class="px-4 py-3 text-right">{{ ecriture.total_credit|floatformat:0 }}</td></tr></tfoot></table></div></section>
+<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="stat-card"><p class="stat-label">Journal</p><p class="stat-value">{{ ecriture.journal.code }}</p><p class="stat-hint">{{ ecriture.journal.libelle }}</p></article>
+  <article class="stat-card"><p class="stat-label">Date</p><p class="stat-value">{{ ecriture.date_ecriture|date:"d/m/Y" }}</p></article>
+  <article class="stat-card"><p class="stat-label">Débit total</p><p class="stat-value">{{ ecriture.total_debit|floatformat:0 }}</p><p class="stat-hint">FCFA</p></article>
+  <article class="stat-card"><p class="stat-label">Équilibre</p><p class="stat-value {% if ecriture.est_equilibree %}text-emerald-700{% else %}text-red-700{% endif %}">{% if ecriture.est_equilibree %}OK{% else %}À corriger{% endif %}</p><p class="stat-hint">{% if ecriture.validee %}Validée{% else %}Brouillon{% endif %}</p></article>
+</div>
+
+<section class="baly-surface mt-3 overflow-hidden">
+  <header class="border-b border-slate-200 px-4 py-3"><h2 class="text-sm font-bold text-slate-950">{{ ecriture.libelle }}</h2></header>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-xs">
+      <thead class="bg-slate-50 uppercase tracking-wider text-slate-500">
+        <tr><th class="px-4 py-2">Compte</th><th class="px-4 py-2">Libellé</th><th class="px-4 py-2 text-right">Débit</th><th class="px-4 py-2 text-right">Crédit</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for ligne in ecriture.lignes.all %}
+        <tr>
+          <td class="px-4 py-3"><span class="font-mono font-bold">{{ ligne.compte.code }}</span><span class="ml-2 text-slate-500">{{ ligne.compte.libelle }}</span></td>
+          <td class="px-4 py-3">{{ ligne.libelle|default:ecriture.libelle }}</td>
+          <td class="px-4 py-3 text-right font-bold">{% if ligne.debit %}{{ ligne.debit|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td class="px-4 py-3 text-right font-bold">{% if ligne.credit %}{{ ligne.credit|floatformat:0 }}{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-4 py-10 text-center text-red-700">Aucune ligne comptable.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="bg-slate-50 font-bold">
+        <tr><td colspan="2" class="px-4 py-3 text-right">Totaux</td><td class="px-4 py-3 text-right">{{ ecriture.total_debit|floatformat:0 }}</td><td class="px-4 py-3 text-right">{{ ecriture.total_credit|floatformat:0 }}</td></tr>
+      </tfoot>
+    </table>
+  </div>
+</section>
 {% endblock %}
