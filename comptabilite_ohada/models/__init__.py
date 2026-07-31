@@ -5,6 +5,7 @@ from .exercice import ExerciceComptable
 from .configuration import ConfigurationComptable, SoldeInitialComptable
 from .amortissement import Immobilisation, PlanAmortissement
 from .rapprochement import ReleveBancaire, LigneReleveBancaire
+from .regle import RegleComptable, TypeOperationComptable
 
 __all__ = [
     "CompteComptable",
@@ -22,4 +23,6 @@ __all__ = [
     "PlanAmortissement",
     "ReleveBancaire",
     "LigneReleveBancaire",
+    "RegleComptable",
+    "TypeOperationComptable",
 ]
