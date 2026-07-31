@@ -142,5 +142,72 @@
     <main class="{% block main_class %}{% if user.is_authenticated %}min-h-screen{% else %}container mx-auto px-4 py-8{% endif %}{% endblock %}">
         {% block content %}{% endblock %}
     </main>
+
+    <script>
+      (function () {
+        const filePreviewMap = new WeakMap();
+
+        function setFilenameText(wrapper, text) {
+          const filenameNode = wrapper.querySelector('[data-media-filename]');
+          if (filenameNode) {
+            filenameNode.textContent = text;
+          }
+        }
+
+        function updateFilePreview(input) {
+          const wrapper = input.closest('[data-media-upload-wrap]');
+          if (!wrapper) {
+            return;
+          }
+
+          const preview = wrapper.querySelector('[data-media-preview]');
+          const currentName = wrapper.dataset.mediaFileName || '';
+          const files = input.files || [];
+
+          const oldUrl = filePreviewMap.get(input);
+          if (oldUrl) {
+            URL.revokeObjectURL(oldUrl);
+            filePreviewMap.delete(input);
+          }
+
+          if (files.length === 0) {
+            setFilenameText(wrapper, currentName ? `Fichier actuel : ${currentName}` : 'Aucun fichier sélectionné.');
+            return;
+          }
+
+          const file = files[0];
+          const objectUrl = URL.createObjectURL(file);
+          filePreviewMap.set(input, objectUrl);
+          if (preview) {
+            preview.src = objectUrl;
+          }
+          setFilenameText(wrapper, `Fichier sélectionné : ${file.name}`);
+        }
+
+        function bindFileInput(input) {
+          if (!input || input.type !== 'file' || input.dataset.mediaUploadBound === '1') {
+            return;
+          }
+          input.dataset.mediaUploadBound = '1';
+          input.addEventListener('change', () => updateFilePreview(input));
+        }
+
+        function bindAllFileInputs() {
+          document.querySelectorAll("input[type='file']").forEach(bindFileInput);
+        }
+
+        document.addEventListener('change', function (event) {
+          const input = event.target;
+          if (!(input instanceof HTMLInputElement) || input.type !== 'file') {
+            return;
+          }
+          bindFileInput(input);
+          updateFilePreview(input);
+        });
+
+        document.addEventListener('htmx:afterSwap', bindAllFileInputs);
+        bindAllFileInputs();
+      })();
+    </script>
 </body>
 </html>

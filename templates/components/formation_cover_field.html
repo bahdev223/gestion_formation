@@ -1,28 +1,29 @@
 {% load static media_safe %}
-<div
-  x-data="{ preview: '{% if form.instance.image %}{{ form.instance.image|media_safe_url }}{% endif %}' }"
-  @change="if ($event.target.type === 'file' && $event.target.files.length) preview = URL.createObjectURL($event.target.files[0])"
-  class="grid gap-4 border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[180px_1fr] sm:items-center"
->
-  <div class="relative aspect-[16/9] overflow-hidden border border-slate-200 bg-white">
-    <img
-      x-show="preview"
-      :src="preview"
-      alt="Aperçu de la couverture"
-      class="h-full w-full object-cover"
-    >
-    <img
-      x-show="!preview"
-      src="{% static 'images/formation-cover-default.svg' %}"
-      alt="Couverture de formation par défaut"
-      class="h-full w-full object-cover"
-    >
-  </div>
-  <div>
-    <p class="mb-2 text-sm font-semibold text-slate-800">Choisir la couverture</p>
-    {{ field }}
-    <p class="mt-2 text-xs leading-5 text-slate-500">
-      Une image horizontale au format 16:9 est recommandée.
-    </p>
+<div class="media-upload-wrap overflow-hidden border border-slate-200 bg-slate-50 p-4">
+  <div class="grid gap-4 sm:grid-cols-[210px_1fr] sm:items-center" data-media-upload-wrap>
+    <div class="relative aspect-[16/9] overflow-hidden border border-slate-200 bg-white">
+      <img
+        data-media-preview
+        src="{% if form.instance.image %}{{ form.instance.image|media_safe_url }}{% else %}{% static 'images/formation-cover-default.svg' %}{% endif %}"
+        alt="Aperçu de la couverture"
+        class="h-full w-full object-cover"
+      >
+    </div>
+    <div>
+      <p class="mb-2 text-sm font-semibold text-slate-800">Choisir la couverture</p>
+      {{ field }}
+      <p data-media-filename class="mt-1.5 text-xs text-slate-500">
+        {% if form.instance.image %}
+          Fichier actuel : {{ form.instance.image.name|slice:":90" }}
+        {% else %}
+          Aucun fichier sélectionné.
+        {% endif %}
+      </p>
+      <p class="mt-2 text-xs leading-5 text-slate-500">
+        Une image horizontale au format 16:9 est recommandée.
+      </p>
+      {% if field.help_text %}<p class="mt-1.5 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+      {% for error in field.errors %}<p class="mt-1.5 text-sm font-medium text-red-600">{{ error }}</p>{% endfor %}
+    </div>
   </div>
 </div>

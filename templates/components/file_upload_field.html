@@ -1,0 +1,25 @@
+{% load media_safe static %}
+<div class="media-upload-wrap grid gap-3 border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[140px_1fr] sm:items-center"
+     data-media-upload-wrap
+     data-media-file-name="{{ field.value|default:'' }}">
+  <div class="relative aspect-square overflow-hidden border border-slate-200 bg-white">
+    <img
+      data-media-preview
+      src="{% if field.value %}{{ field.value|media_safe_url }}{% else %}{% static 'images/formation-cover-default.svg' %}{% endif %}"
+      alt="Aperçu"
+      class="h-full w-full object-cover"
+    >
+  </div>
+  <div>
+    {{ field }}
+    <p data-media-filename class="mt-1.5 text-xs text-slate-500">
+      {% if field.value %}
+        Fichier actuel : {{ field.value|slice:"0:80" }}
+      {% else %}
+        Aucun fichier sélectionné.
+      {% endif %}
+    </p>
+    {% if field.help_text %}<p class="mt-1.5 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+    {% for error in field.errors %}<p class="mt-1.5 text-sm font-medium text-red-600">{{ error }}</p>{% endfor %}
+  </div>
+</div>

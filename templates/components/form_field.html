@@ -4,6 +4,8 @@
   </label>
   {% if field.name == "image" %}
     {% include "components/formation_cover_field.html" with field=field %}
+  {% elif field.field.widget.input_type == "file" %}
+    {% include "components/file_upload_field.html" with field=field %}
   {% else %}
     {{ field }}
   {% endif %}
