@@ -17,7 +17,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from accounts.models import User
-from comptes.models import Compte, MouvementCompte
+from comptes.models import Compte, TypeCompte, MouvementCompte, SensMouvement, StatutMouvement
 from dashboard.services import (
     alert_service,
     analytics_service,
@@ -203,24 +203,24 @@ def _month_series(organisation, today: date, months: int = 6):
 
 def _cash_sources(organisation):
     accounts = Compte.objects.filter(organisation=organisation, actif=True)
-    bank = _to_decimal(accounts.filter(type=Compte.TypeCompte.BANQUE).aggregate(
+    bank = _to_decimal(accounts.filter(type=TypeCompte.BANQUE).aggregate(
         total=Coalesce(Sum("solde_actuel"), Decimal("0"), output_field=models.DecimalField())
     )["total"])
-    cash = _to_decimal(accounts.filter(type=Compte.TypeCompte.ESPECES).aggregate(
+    cash = _to_decimal(accounts.filter(type=TypeCompte.ESPECES).aggregate(
         total=Coalesce(Sum("solde_actuel"), Decimal("0"), output_field=models.DecimalField())
     )["total"])
-    mobile = _to_decimal(accounts.filter(type=Compte.TypeCompte.MOBILE_MONEY).aggregate(
+    mobile = _to_decimal(accounts.filter(type=TypeCompte.MOBILE_MONEY).aggregate(
         total=Coalesce(Sum("solde_actuel"), Decimal("0"), output_field=models.DecimalField())
     )["total"])
 
     wave = _to_decimal(accounts.filter(
-        type__in=[Compte.TypeCompte.MOBILE_MONEY, Compte.TypeCompte.PORTEFEUILLE_NUMERIQUE],
+        type__in=[TypeCompte.MOBILE_MONEY, TypeCompte.PORTEFEUILLE_NUMERIQUE],
         nom__icontains="wave",
-    ).aggregate(total=Coalesce(Sum("solde_actuel"), Decimal("0"), output_field=models.DecimalField())["total"]))
+    ).aggregate(total=Coalesce(Sum("solde_actuel"), Decimal("0"), output_field=models.DecimalField()))["total"])
     moov = _to_decimal(accounts.filter(
-        type__in=[Compte.TypeCompte.MOBILE_MONEY, Compte.TypeCompte.PORTEFEUILLE_NUMERIQUE],
+        type__in=[TypeCompte.MOBILE_MONEY, TypeCompte.PORTEFEUILLE_NUMERIQUE],
         nom__icontains="moov",
-    ).aggregate(total=Coalesce(Sum("solde_actuel"), Decimal("0"), output_field=models.DecimalField())["total"]))
+    ).aggregate(total=Coalesce(Sum("solde_actuel"), Decimal("0"), output_field=models.DecimalField()))["total"])
     orange = mobile - wave - moov
 
     return {
@@ -357,17 +357,17 @@ def get_dashboard_statistics(filters=None):
 
     today_moves = MouvementCompte.objects.filter(
         compte__organisation=organisation,
-        statut=MouvementCompte.StatutMouvement.VALIDE,
+        statut=StatutMouvement.VALIDE,
         annule=False,
         date__date=today,
     )
     encaisse_jour = _to_decimal(today_moves.filter(
-        sens=MouvementCompte.SensMouvement.ENTREE,
-    ).aggregate(total=Coalesce(Sum("montant"), Decimal("0"), output_field=models.DecimalField())["total"])
+        sens=SensMouvement.ENTREE,
+    ).aggregate(total=Coalesce(Sum("montant"), Decimal("0"), output_field=models.DecimalField()))["total"]
     )
     decaisse_jour = _to_decimal(today_moves.filter(
-        sens=MouvementCompte.SensMouvement.SORTIE,
-    ).aggregate(total=Coalesce(Sum("montant"), Decimal("0"), output_field=models.DecimalField())["total"])
+        sens=SensMouvement.SORTIE,
+    ).aggregate(total=Coalesce(Sum("montant"), Decimal("0"), output_field=models.DecimalField()))["total"]
     )
 
     sources = _cash_sources(organisation)

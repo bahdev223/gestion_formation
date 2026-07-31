@@ -42,18 +42,7 @@
   <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
     {% for widget in dashboard_cards %}
       {% if widget.kind == "card" or widget.kind|default:"card" == "card" %}
-        {% if widget.tone == "success" %}
-          {% with tone_class="fx-tone-success" %}
-        {% elif widget.tone == "danger" %}
-          {% with tone_class="fx-tone-danger" %}
-        {% elif widget.tone == "warning" %}
-          {% with tone_class="fx-tone-warning" %}
-        {% elif widget.tone == "info" %}
-          {% with tone_class="fx-tone-info" %}
-        {% else %}
-          {% with tone_class="fx-tone-primary" %}
-        {% endif %}
-        <article class="fx-card fx-stat {{ tone_class }} col-span-1">
+        <article class="fx-card fx-stat col-span-1{% if widget.tone == 'success' %} fx-tone-success{% elif widget.tone == 'danger' %} fx-tone-danger{% elif widget.tone == 'warning' %} fx-tone-warning{% elif widget.tone == 'info' %} fx-tone-info{% else %} fx-tone-primary{% endif %}">
           <span class="fx-icon-tile">{{ widget.icon|default:"â€¢" }}</span>
           <div>
             <p class="fx-stat-label">{{ widget.title }}</p>
@@ -63,7 +52,6 @@
             {% endif %}
           </div>
         </article>
-        {% endwith %}
       {% else %}
         <article class="fx-card col-span-2">
           <div class="border-b border-[var(--fx-border)] px-6 py-4">
