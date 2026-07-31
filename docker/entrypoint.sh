@@ -1,5 +1,12 @@
 #!/bin/sh
 set -eu
+MEDIA_PATH="${APP_MEDIA_ROOT:-/app/media}"
+STATIC_PATH="${APP_STATIC_ROOT:-/app/static/dist}"
+LOG_PATH="/app/logs"
+
+mkdir -p "$MEDIA_PATH" "$STATIC_PATH" "$LOG_PATH"
+chown -R django:django "$MEDIA_PATH" "$STATIC_PATH" "$LOG_PATH" || true
+chmod -R 775 "$MEDIA_PATH" "$STATIC_PATH" "$LOG_PATH" || true
 
 if [ -z "${DJANGO_SECRET_KEY:-}" ]; then
     echo "ERROR: DJANGO_SECRET_KEY is missing."

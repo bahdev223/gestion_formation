@@ -98,10 +98,18 @@ STATICFILES_DIRS = [
     ("images", BASE_DIR / "static" / "images"),
     BASE_DIR / "static" / "src",
 ]
-STATIC_ROOT = BASE_DIR / "static" / "dist"
+static_root = os.environ.get("APP_STATIC_ROOT")
+if static_root:
+    STATIC_ROOT = Path(static_root)
+else:
+    STATIC_ROOT = BASE_DIR / "static" / "dist"
 
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+media_root = os.environ.get("APP_MEDIA_ROOT")
+if media_root:
+    MEDIA_ROOT = Path(media_root)
+else:
+    MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

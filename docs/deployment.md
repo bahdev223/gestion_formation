@@ -39,7 +39,7 @@ rediriger le trafic HTTP vers HTTPS.
 4. Générer une longue valeur aléatoire pour `DJANGO_SECRET_KEY`.
 5. Renseigner les variables du domaine indiquées ci-dessus.
 6. Définir le domaine Coolify sur `https://formix.saheltech.tech`.
-7. Monter un volume persistant sur `/app/media`.
+7. Monter un volume persistant sur `/app/media` avec `APP_MEDIA_ROOT=/app/media` dans les variables.
 8. Utiliser `/health/` comme chemin de contrôle de santé.
 
 ### Connexion PostgreSQL dans Coolify
