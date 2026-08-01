@@ -112,7 +112,13 @@ class PlanStarterTest(TestCase):
     def test_les_modules_du_plan_restent_visibles(self):
         response = self.client.get("/o/mod-starter/dashboard/")
         body = response.content.decode()
-        for libelle in ("Formations", "Apprenants", "Inscriptions", "Paiements"):
+        for libelle in (
+            "Formations",
+            "Apprenants",
+            "Inscriptions",
+            "Paiements",
+            "Opérations",
+        ):
             with self.subTest(libelle=libelle):
                 self.assertIn(libelle, body)
 

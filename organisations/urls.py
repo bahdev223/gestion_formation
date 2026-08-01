@@ -15,6 +15,7 @@ urlpatterns = [
     path("formations/", include(("formations.urls", "formations"), namespace="formations")),
     path("participants/", include(("participants.urls", "participants"), namespace="participants")),
     path("inscriptions/", include(("inscriptions.urls", "inscriptions"), namespace="inscriptions")),
+    path("operations/", include(("operations.urls", "operations"), namespace="operations")),
     path("paiements/", include(("paiements.urls", "paiements"), namespace="paiements")),
     path("presences/", include(("presences.urls", "presences"), namespace="presences")),
     path("documents/", include(("documents.urls", "documents"), namespace="documents")),

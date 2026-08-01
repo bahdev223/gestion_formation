@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "formations",
     "participants",
     "inscriptions",
+    "operations",
     "paiements",
     "presences",
     "documents",

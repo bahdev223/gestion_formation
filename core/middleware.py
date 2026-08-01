@@ -20,6 +20,7 @@ PREFIXES_MODULES = (
     ("ressources-humaines", "rh"),
     ("paie-salariale", "paie"),
     ("comptabilite", "comptabilite"),
+    ("operations", "operations"),
     ("formations", "formations"),
     ("participants", "participants"),
     ("inscriptions", "inscriptions"),

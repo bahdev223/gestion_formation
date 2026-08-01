@@ -24,6 +24,7 @@ MODULES_DE_BASE = frozenset(
     {
         "dashboard",
         "parametres",
+        "operations",
         "formations",
         "sessions",
         "participants",

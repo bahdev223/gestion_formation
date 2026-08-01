@@ -1,0 +1,97 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block page_title %}{% if object %}Modifier l’opération{% else %}Nouvelle opération{% endif %}{% endblock %}
+{% block page_subtitle %}Décrivez ce qui s’est passé — la comptabilité est générée automatiquement.{% endblock %}
+{% block breadcrumb %}Opérations / {% if object %}{{ object.numero }}{% else %}Nouvelle{% endif %}{% endblock %}
+
+{% block dashboard_content %}
+<form method="post" enctype="multipart/form-data" class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+  {% csrf_token %}
+
+  <div class="fx-card overflow-hidden">
+    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+      <h2 class="font-semibold text-[var(--fx-text)]">Opération</h2>
+      {% if definition %}
+        <p class="mt-1 text-sm text-[var(--fx-muted)]">
+          Classe {{ definition.classe }} · {{ definition.classe_libelle }}
+          {% if definition.aide %} — {{ definition.aide }}{% endif %}
+        </p>
+      {% else %}
+        <p class="mt-1 text-sm text-[var(--fx-muted)]">
+          Choisissez un type : le formulaire s’adapte ensuite.
+        </p>
+      {% endif %}
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="mx-6 mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="grid gap-5 p-6 sm:grid-cols-2">
+      {% for field in form %}
+        <div class="{% if field.name == 'description' or field.name == 'justificatif' %}sm:col-span-2{% endif %}">
+          <label for="{{ field.id_for_label }}" class="mb-1.5 block text-[13px] font-semibold text-[var(--fx-text)]">
+            {{ field.label }}{% if field.field.required %} <span class="text-[var(--fx-danger)]">*</span>{% endif %}
+          </label>
+          {# Le champ « type d'opération » recharge la page : le formulaire est
+             reconstruit côté serveur à partir du catalogue. #}
+          {{ field }}
+          {% if field.help_text %}
+            <p class="mt-1 text-xs text-[var(--fx-muted)]">{{ field.help_text }}</p>
+          {% endif %}
+          {% for erreur in field.errors %}
+            <p class="mt-1 text-sm font-medium text-[var(--fx-danger)]">{{ erreur }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <aside class="space-y-4">
+    <div class="fx-card p-5">
+      <h3 class="text-sm font-semibold text-[var(--fx-text)]">Enregistrement</h3>
+      <p class="mt-2 text-xs leading-5 text-[var(--fx-muted)]">
+        Un brouillon n’est pas comptabilisé : vous pouvez le compléter plus tard.
+        La validation génère l’écriture comptable selon les règles de votre
+        entreprise.
+      </p>
+      <div class="mt-4 grid gap-2">
+        <button type="submit" name="valider" value="1" class="fx-btn fx-btn-primary w-full">
+          Valider et comptabiliser
+        </button>
+        <button type="submit" name="brouillon" value="1" class="fx-btn fx-btn-ghost w-full">
+          Enregistrer en brouillon
+        </button>
+        <a href="{% tenant_url 'operations:index' %}" class="fx-btn fx-btn-ghost w-full">Annuler</a>
+      </div>
+    </div>
+
+    {% if definition %}
+    <div class="fx-card p-5">
+      <h3 class="text-sm font-semibold text-[var(--fx-text)]">Ce que Formix va faire</h3>
+      <ul class="mt-3 space-y-2 text-xs text-[var(--fx-muted)]">
+        <li>Numéroter l’opération</li>
+        <li>Déterminer les comptes selon vos règles</li>
+        <li>Générer l’écriture équilibrée</li>
+        <li>Rattacher le justificatif</li>
+      </ul>
+      <p class="mt-3 text-xs text-[var(--fx-muted)]">
+        Vous n’avez aucun débit ni crédit à saisir.
+      </p>
+    </div>
+    {% endif %}
+  </aside>
+</form>
+
+<script>
+  function rechargerFormulaire(type) {
+    // Le formulaire est reconstruit cote serveur a partir du catalogue : c'est
+    // lui qui decide des champs, pas le navigateur.
+    const url = new URL(window.location.href);
+    url.searchParams.set("type", type);
+    window.location.assign(url.toString());
+  }
+</script>
+{% endblock %}

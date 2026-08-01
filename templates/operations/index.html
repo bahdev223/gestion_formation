@@ -1,0 +1,135 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block page_title %}Opérations{% endblock %}
+{% block page_subtitle %}Tout ce qui se passe dans l’entreprise. La comptabilité en découle.{% endblock %}
+{% block breadcrumb %}Opérations{% endblock %}
+
+{% block page_actions %}
+<a href="{% tenant_url 'operations:create' %}" class="fx-btn fx-btn-primary">Nouvelle opération</a>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="fx-card fx-stat fx-tone-primary">
+    <span class="fx-icon-tile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+    </span>
+    <div>
+      <p class="fx-stat-label">Total</p>
+      <p class="fx-stat-value">{{ compteurs.total }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-warning">
+    <span class="fx-icon-tile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+    </span>
+    <div>
+      <p class="fx-stat-label">Brouillons</p>
+      <p class="fx-stat-value">{{ compteurs.brouillon }}</p>
+      <p class="fx-stat-hint">Non comptabilisés</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-success">
+    <span class="fx-icon-tile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+    </span>
+    <div>
+      <p class="fx-stat-label">Validées</p>
+      <p class="fx-stat-value">{{ compteurs.validee }}</p>
+    </div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-danger">
+    <span class="fx-icon-tile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12"/><path d="m18 6-12 12"/></svg>
+    </span>
+    <div>
+      <p class="fx-stat-label">Annulées</p>
+      <p class="fx-stat-value">{{ compteurs.annulee }}</p>
+    </div>
+  </article>
+</div>
+
+<div class="mt-4 flex flex-wrap gap-2">
+  <a href="?" class="fx-btn {% if not statut_actif and not classe_active %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Toutes</a>
+  <a href="?statut=BROUILLON" class="fx-btn {% if statut_actif == 'BROUILLON' %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Brouillons</a>
+  <a href="?statut=VALIDEE" class="fx-btn {% if statut_actif == 'VALIDEE' %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Validées</a>
+  <a href="?statut=ANNULEE" class="fx-btn {% if statut_actif == 'ANNULEE' %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Annulées</a>
+  {% for groupe in groupes %}
+    <a href="?classe={{ groupe.classe }}" class="fx-btn {% if classe_active == groupe.classe %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">{{ groupe.libelle }}</a>
+  {% endfor %}
+</div>
+
+<section class="fx-card mt-4 overflow-hidden">
+  <div class="fx-table-scroll">
+    <table class="fx-table">
+      <thead>
+        <tr>
+          <th>Numéro</th>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th class="text-right">Montant</th>
+          <th>Statut</th>
+          <th>Comptabilisée</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for operation in operations %}
+        <tr>
+          <td class="font-mono text-xs">
+            <a href="{% tenant_url 'operations:detail' pk=operation.pk %}" class="fx-link">{{ operation.numero }}</a>
+          </td>
+          <td>{{ operation.date_operation|date:"d/m/Y" }}</td>
+          <td>
+            <span class="fx-badge fx-badge-neutral">{{ operation.classe_libelle }}</span>
+            <span class="ml-1">{{ operation.libelle_type }}</span>
+          </td>
+          <td class="max-w-[22rem] truncate">{{ operation.description }}</td>
+          <td class="text-right font-semibold">{{ operation.montant|floatformat:0 }} {{ operation.devise }}</td>
+          <td>
+            {% if operation.statut == 'VALIDEE' %}
+              <span class="fx-badge fx-badge-success">Validée</span>
+            {% elif operation.statut == 'ANNULEE' %}
+              <span class="fx-badge fx-badge-danger">Annulée</span>
+            {% else %}
+              <span class="fx-badge fx-badge-warning">Brouillon</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if operation.ecriture_id %}
+              <span class="font-mono text-xs">{{ operation.ecriture.reference }}</span>
+            {% else %}
+              <span class="text-[var(--fx-muted)]">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="fx-empty">
+              <p class="font-semibold text-[var(--fx-text)]">Aucune opération enregistrée</p>
+              <p class="mt-2">Commencez par déclarer un encaissement, une dépense ou une facture.</p>
+              <a href="{% tenant_url 'operations:create' %}" class="fx-link mt-4 inline-block text-sm">Créer une opération</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if is_paginated %}
+<div class="mt-4 flex items-center justify-between text-sm text-[var(--fx-muted)]">
+  <span>Page {{ page_obj.number }} sur {{ paginator.num_pages }}</span>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="fx-btn fx-btn-ghost px-3 py-1.5">Précédent</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="fx-btn fx-btn-ghost px-3 py-1.5">Suivant</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

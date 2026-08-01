@@ -1,0 +1,170 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block page_title %}{{ operation.numero }}{% endblock %}
+{% block page_subtitle %}{{ operation.libelle_type }} · {{ operation.classe_libelle }}{% endblock %}
+{% block breadcrumb %}Opérations / {{ operation.numero }}{% endblock %}
+
+{% block page_actions %}
+<div class="flex flex-wrap gap-2">
+  {% if operation.est_modifiable %}
+    <a href="{% tenant_url 'operations:update' pk=operation.pk %}" class="fx-btn fx-btn-ghost">Modifier</a>
+    <form method="post" action="{% tenant_url 'operations:valider' pk=operation.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="fx-btn fx-btn-primary">Valider et comptabiliser</button>
+    </form>
+  {% endif %}
+  <a href="{% tenant_url 'operations:index' %}" class="fx-btn fx-btn-ghost">Retour</a>
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+
+  <div class="space-y-5">
+    <section class="fx-card overflow-hidden">
+      <div class="flex items-center justify-between border-b border-[var(--fx-border)] px-6 py-4">
+        <h2 class="font-semibold text-[var(--fx-text)]">Ce qui s’est passé</h2>
+        {% if operation.statut == 'VALIDEE' %}
+          <span class="fx-badge fx-badge-success">Validée</span>
+        {% elif operation.statut == 'ANNULEE' %}
+          <span class="fx-badge fx-badge-danger">Annulée</span>
+        {% else %}
+          <span class="fx-badge fx-badge-warning">Brouillon</span>
+        {% endif %}
+      </div>
+      <dl class="grid gap-4 p-6 sm:grid-cols-2">
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">Date</dt>
+          <dd class="mt-1 text-[15px]">{{ operation.date_operation|date:"d/m/Y" }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">Montant</dt>
+          <dd class="mt-1 text-[15px] font-bold">{{ operation.montant|floatformat:0 }} {{ operation.devise }}</dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">Description</dt>
+          <dd class="mt-1 text-[15px]">{{ operation.description }}</dd>
+        </div>
+        {% if operation.compte_tresorerie %}
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">Compte de trésorerie</dt>
+          <dd class="mt-1 text-[15px]">{{ operation.compte_tresorerie.nom }}</dd>
+        </div>
+        {% endif %}
+        {% if operation.compte_destination %}
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">Destination</dt>
+          <dd class="mt-1 text-[15px]">{{ operation.compte_destination.nom }}</dd>
+        </div>
+        {% endif %}
+        {% if operation.centre_cout %}
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">Centre de coût</dt>
+          <dd class="mt-1 text-[15px]">{{ operation.centre_cout }}</dd>
+        </div>
+        {% endif %}
+        {% if operation.projet %}
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">Projet</dt>
+          <dd class="mt-1 text-[15px]">{{ operation.projet }}</dd>
+        </div>
+        {% endif %}
+        {% for cle, valeur in operation.donnees.items %}
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">{{ cle|capfirst }}</dt>
+          <dd class="mt-1 text-[15px]">{{ valeur }}</dd>
+        </div>
+        {% endfor %}
+      </dl>
+    </section>
+
+    <section class="fx-card overflow-hidden">
+      <div class="flex items-center justify-between border-b border-[var(--fx-border)] px-6 py-4">
+        <div>
+          <h2 class="font-semibold text-[var(--fx-text)]">Écriture générée</h2>
+          <p class="mt-1 text-sm text-[var(--fx-muted)]">Produite automatiquement selon vos règles comptables.</p>
+        </div>
+        {% if operation.ecriture %}
+          <span class="font-mono text-xs">{{ operation.ecriture.reference }}</span>
+        {% endif %}
+      </div>
+      {% if lignes_ecriture %}
+      <div class="fx-table-scroll">
+        <table class="fx-table">
+          <thead>
+            <tr>
+              <th>Compte</th>
+              <th>Libellé</th>
+              <th class="text-right">Débit</th>
+              <th class="text-right">Crédit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ligne in lignes_ecriture %}
+            <tr>
+              <td class="font-mono text-xs">{{ ligne.compte.code }} — {{ ligne.compte.libelle }}</td>
+              <td>{{ ligne.libelle }}</td>
+              <td class="text-right">{% if ligne.debit %}{{ ligne.debit|floatformat:0 }}{% else %}—{% endif %}</td>
+              <td class="text-right">{% if ligne.credit %}{{ ligne.credit|floatformat:0 }}{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="fx-empty">
+        <p>Cette opération n’est pas encore comptabilisée.</p>
+        {% if operation.est_modifiable %}
+          <p class="mt-2">Validez-la pour générer son écriture.</p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="space-y-4">
+    <div class="fx-card p-5">
+      <h3 class="text-sm font-semibold text-[var(--fx-text)]">Suivi</h3>
+      <dl class="mt-3 space-y-3 text-xs">
+        <div>
+          <dt class="text-[var(--fx-muted)]">Créée par</dt>
+          <dd class="mt-0.5 font-medium">{{ operation.cree_par|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-[var(--fx-muted)]">Créée le</dt>
+          <dd class="mt-0.5 font-medium">{{ operation.created_at|date:"d/m/Y H:i" }}</dd>
+        </div>
+        {% if operation.validee_le %}
+        <div>
+          <dt class="text-[var(--fx-muted)]">Validée par</dt>
+          <dd class="mt-0.5 font-medium">{{ operation.validee_par|default:"—" }} · {{ operation.validee_le|date:"d/m/Y H:i" }}</dd>
+        </div>
+        {% endif %}
+        {% if operation.module_source %}
+        <div>
+          <dt class="text-[var(--fx-muted)]">Module d’origine</dt>
+          <dd class="mt-0.5 font-medium">{{ operation.module_source }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    {% if operation.justificatif %}
+    <div class="fx-card p-5">
+      <h3 class="text-sm font-semibold text-[var(--fx-text)]">Justificatif</h3>
+      <a href="{{ operation.justificatif.url }}" target="_blank" rel="noopener" class="fx-link mt-2 inline-block text-xs">
+        Ouvrir le document
+      </a>
+    </div>
+    {% endif %}
+
+    {% if operation.motif_annulation %}
+    <div class="fx-card p-5">
+      <h3 class="text-sm font-semibold text-[var(--fx-text)]">Motif d’annulation</h3>
+      <p class="mt-2 text-xs text-[var(--fx-muted)]">{{ operation.motif_annulation }}</p>
+    </div>
+    {% endif %}
+  </aside>
+
+</div>
+{% endblock %}

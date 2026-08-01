@@ -5,6 +5,7 @@ TENANT_NAMESPACES = {
     "formations": "formations",
     "participants": "participants",
     "inscriptions": "inscriptions",
+    "operations": "operations",
     "paiements": "paiements",
     "presences": "presences",
     "documents": "documents",

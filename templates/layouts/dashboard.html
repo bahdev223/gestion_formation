@@ -77,6 +77,12 @@
             <span>Paiements</span>
           </a>
           {% endif %}
+          {% if 'operations' in modules_actifs %}
+          <a class="menu-item" href="{% tenant_path 'operations' %}">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11"></path><path d="M9 12h11"></path><path d="M9 18h11"></path><path d="M4 6h.01"></path><path d="M4 12h.01"></path><path d="M4 18h.01"></path></svg>
+            <span>Opérations</span>
+          </a>
+          {% endif %}
           {% if 'presences' in modules_actifs %}
           <a class="menu-item" href="{% tenant_path 'presences' %}">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11"></path></svg>
