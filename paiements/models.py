@@ -12,10 +12,9 @@ from core.models import OrganisationOwnedModel, TimeStampedModel
 class Paiement(OrganisationOwnedModel, TimeStampedModel):
     class ModePaiement(models.TextChoices):
         ESPECES = "ESPECES", "Especes"
-        ORANGE_MONEY = "ORANGE_MONEY", "Orange Money"
-        MOOV_MONEY = "MOOV_MONEY", "Moov Money"
-        VIREMENT = "VIREMENT", "Virement bancaire"
-        CHEQUE = "CHEQUE", "Cheque"
+        MOBILE_MONEY = "MOBILE_MONEY", "Paiement mobile"
+        BANQUE = "BANQUE", "Paiement bancaire"
+        CARTE = "CARTE", "Carte bancaire"
         AUTRE = "AUTRE", "Autre"
 
     class Statut(models.TextChoices):
@@ -29,6 +28,13 @@ class Paiement(OrganisationOwnedModel, TimeStampedModel):
     montant = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("1"))])
     date_paiement = models.DateTimeField(default=timezone.now)
     mode_paiement = models.CharField(max_length=30, choices=ModePaiement.choices)
+    compte = models.ForeignKey(
+        "comptes.Compte",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="paiements_formations",
+    )
     reference_transaction = models.CharField(max_length=150, blank=True)
     payeur_nom = models.CharField(max_length=255, blank=True)
     observations = models.TextField(blank=True)

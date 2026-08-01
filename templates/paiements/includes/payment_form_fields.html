@@ -1,0 +1,53 @@
+{{ inscription_summaries|json_script:"payment-inscription-summaries" }}
+
+{% if form.non_field_errors %}
+  <div class="mx-6 mt-5 border-l-3 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-700">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
+
+<div
+  class="grid gap-5 p-6 md:grid-cols-2"
+  x-data="{ selectedInscription: '', summaries: {} }"
+  x-init="summaries = JSON.parse(document.getElementById('payment-inscription-summaries').textContent); selectedInscription = $el.querySelector('[name=inscription]')?.value || ''"
+>
+  {% for field in form %}
+    <div class="{% if field.name == 'inscription' or field.name == 'observations' %}md:col-span-2{% endif %}">
+      <label for="{{ field.id_for_label }}" class="mb-2 block text-sm font-semibold text-slate-800">
+        {{ field.label }}{% if field.field.required %} <span class="text-red-600">*</span>{% endif %}
+      </label>
+      {{ field }}
+
+      {% if field.name == "inscription" %}
+        <div
+          x-show="selectedInscription && summaries[selectedInscription]"
+          x-cloak
+          class="mt-3 rounded-md border border-blue-100 bg-blue-50/70 p-3"
+        >
+          <div class="mb-2">
+            <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Situation de l'inscription</p>
+            <p class="mt-1 text-sm font-bold text-slate-950" x-text="summaries[selectedInscription]?.participant || ''"></p>
+            <p class="text-xs text-slate-500" x-text="(summaries[selectedInscription]?.formation || '') + ' · ' + (summaries[selectedInscription]?.session || '')"></p>
+          </div>
+          <div class="grid gap-2 text-xs sm:grid-cols-3">
+            <div class="rounded-md bg-white px-3 py-2">
+              <p class="font-semibold text-slate-500">Montant dû</p>
+              <p class="mt-1 font-bold text-slate-950" x-text="Number(summaries[selectedInscription]?.montant || 0).toLocaleString('fr-FR') + ' FCFA'"></p>
+            </div>
+            <div class="rounded-md bg-white px-3 py-2">
+              <p class="font-semibold text-slate-500">Déjà payé</p>
+              <p class="mt-1 font-bold text-emerald-700" x-text="Number(summaries[selectedInscription]?.paye || 0).toLocaleString('fr-FR') + ' FCFA'"></p>
+            </div>
+            <div class="rounded-md bg-white px-3 py-2">
+              <p class="font-semibold text-slate-500">Reste à payer</p>
+              <p class="mt-1 font-bold text-orange-700" x-text="Number(summaries[selectedInscription]?.reste || 0).toLocaleString('fr-FR') + ' FCFA'"></p>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if field.help_text %}<p class="mt-1.5 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+      {% for error in field.errors %}<p class="mt-1.5 text-sm text-red-600">{{ error }}</p>{% endfor %}
+    </div>
+  {% endfor %}
+</div>

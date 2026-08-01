@@ -5,9 +5,13 @@ laisse le moteur en déduire l'écriture. Aucun code de compte n'apparaît ici �
 ils viennent de RegleComptable, modifiable par entreprise.
 """
 
+import logging
 from datetime import date
 
+from django.core.exceptions import ValidationError
 from django.dispatch import receiver
+
+logger = logging.getLogger(__name__)
 
 
 def connect():
@@ -44,26 +48,40 @@ def connect():
             regle = RegleComptableService.resoudre(
                 organisation, TypeOperationComptable.ENCAISSEMENT
             )
-            EcritureService.creer_ecriture_vente(
-                compte_caisse_code=compte_code,
-                montant=montant,
-                libelle=instance.libelle,
-                compte_produit_code=regle["compte_credit"],
-                organisation=organisation,
-                user=user,
-            )
+            try:
+                EcritureService.creer_ecriture_vente(
+                    compte_caisse_code=compte_code,
+                    montant=montant,
+                    libelle=instance.libelle,
+                    compte_produit_code=regle["compte_credit"],
+                    organisation=organisation,
+                    user=user,
+                )
+            except ValidationError as exc:
+                logger.warning(
+                    "Ecriture comptable ignoree pour le mouvement %s: %s",
+                    instance.pk,
+                    exc,
+                )
         elif nature == NatureMouvement.DECAISSEMENT:
             regle = RegleComptableService.resoudre(
                 organisation, TypeOperationComptable.DECAISSEMENT
             )
-            EcritureService.creer_ecriture_charge(
-                compte_caisse_code=compte_code,
-                montant=montant,
-                libelle=instance.libelle,
-                compte_charge_code=regle["compte_debit"],
-                organisation=organisation,
-                user=user,
-            )
+            try:
+                EcritureService.creer_ecriture_charge(
+                    compte_caisse_code=compte_code,
+                    montant=montant,
+                    libelle=instance.libelle,
+                    compte_charge_code=regle["compte_debit"],
+                    organisation=organisation,
+                    user=user,
+                )
+            except ValidationError as exc:
+                logger.warning(
+                    "Ecriture comptable ignoree pour le mouvement %s: %s",
+                    instance.pk,
+                    exc,
+                )
         # Un transfert est comptabilisé une seule fois par
         # on_transfert_effectue, après les deux mouvements financiers.
 
