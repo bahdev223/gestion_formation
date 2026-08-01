@@ -51,8 +51,12 @@ class BalanceView(
             organisation=organisation,
             exercice=self.get_scoped_exercice(organisation),
         )
-        context["total_debit"] = sum(l["total_debit"] for l in context["balance"])
-        context["total_credit"] = sum(l["total_credit"] for l in context["balance"])
+        context["total_debit"] = sum(
+            ligne["total_debit"] for ligne in context["balance"]
+        )
+        context["total_credit"] = sum(
+            ligne["total_credit"] for ligne in context["balance"]
+        )
         return context
 
 
