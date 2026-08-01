@@ -1,42 +1,164 @@
 {% extends "layouts/dashboard.html" %}
+{% load media_safe %}
 {% block page_title %}Apprenants{% endblock %}
-{% block page_subtitle %}Chaque nouvel apprenant est créé avec son inscription à une session de formation.{% endblock %}
+{% block page_subtitle %}Registre des apprenants et suivi de leurs inscriptions aux sessions.{% endblock %}
 {% block breadcrumb %}Inscriptions / Apprenants{% endblock %}
+
 {% block page_actions %}
-<a href="{% tenant_url 'inscriptions:create-learner' %}"
-   @click.prevent="globalModalOpen = true"
-   hx-get="{% tenant_url 'inscriptions:create-learner' %}"
-   hx-target="#global-modal-content"
-   class="baly-btn-primary rounded-md px-5 py-3 text-sm font-semibold text-white">
-  Inscrire un nouvel apprenant
-</a>
-{% endblock %}
-{% block dashboard_content %}
-<div class="baly-surface overflow-hidden rounded-lg">
-  <div class="border-b border-slate-200 px-6 py-5">
-    <h2 class="font-bold text-slate-950">Registre des apprenants</h2>
-    <p class="mt-1 text-sm text-slate-500">{{ participants|length }} apprenant{{ participants|length|pluralize }} enregistré{{ participants|length|pluralize }}.</p>
-  </div>
-  <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-        <tr><th class="px-6 py-4">Matricule</th><th class="px-6 py-4">Apprenant</th><th class="px-6 py-4">Téléphone</th><th class="px-6 py-4">Profession</th><th class="px-6 py-4">Entreprise</th><th class="px-6 py-4">Statut</th></tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        {% for participant in participants %}
-        <tr class="hover:bg-blue-50/40">
-          <td class="px-6 py-4 font-mono text-xs text-slate-500">{{ participant.matricule }}</td>
-          <td class="px-6 py-4"><p class="font-semibold text-slate-900">{{ participant.nom_complet }}</p><p class="mt-1 text-xs text-slate-500">{{ participant.email|default:"—" }}</p></td>
-          <td class="px-6 py-4">{{ participant.telephone }}</td>
-          <td class="px-6 py-4">{{ participant.profession|default:"—" }}</td>
-          <td class="px-6 py-4">{{ participant.entreprise|default:"—" }}</td>
-          <td class="px-6 py-4"><span class="baly-badge">{{ participant.get_statut_display }}</span></td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="6" class="px-6 py-14 text-center"><h3 class="font-semibold text-slate-900">Aucun apprenant inscrit</h3><p class="mt-2 text-sm text-slate-500">Utilisez « Inscrire un nouvel apprenant » pour créer sa fiche et choisir immédiatement sa session.</p></td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div class="flex min-w-0 flex-nowrap gap-2 overflow-x-auto pb-1">
+  <a href="{% tenant_url 'inscriptions:create-learner' %}"
+     @click.prevent="globalModalOpen = true"
+     hx-get="{% tenant_url 'inscriptions:create-learner' %}"
+     hx-target="#global-modal-content"
+     class="inline-flex flex-none items-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700">
+    <svg class="ui-icon h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+    <span>Inscrire</span>
+  </a>
+  <a href="{% tenant_url 'inscriptions:index' %}" class="inline-flex flex-none items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+    <svg class="ui-icon h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 12h.01"></path></svg>
+    <span>Inscriptions</span>
+  </a>
 </div>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="stat-card">
+    <p class="stat-label">Apprenants</p>
+    <p class="stat-value">{{ participants_total }}</p>
+    <p class="stat-hint">Fiches affichees</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-label">Actifs</p>
+    <p class="stat-value">{{ participants_actifs }}</p>
+    <p class="stat-hint">Disponibles pour inscription</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-label">Entreprises</p>
+    <p class="stat-value">{{ participants_entreprises }}</p>
+    <p class="stat-hint">Apprenants rattaches</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-label">Inscriptions</p>
+    <p class="stat-value">{{ participants_inscriptions }}</p>
+    <p class="stat-hint">Historique global</p>
+  </article>
+</section>
+
+<section class="baly-surface mt-3 overflow-hidden rounded-lg">
+  <div class="border-b border-slate-200 px-4 py-4">
+    <form method="get" class="grid gap-2 lg:grid-cols-[1fr_220px_auto]">
+      <label class="relative block">
+        <span class="sr-only">Rechercher un apprenant</span>
+        <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <input
+          type="search"
+          name="q"
+          value="{{ search_query }}"
+          placeholder="Rechercher par nom, matricule, telephone, email ou entreprise"
+          class="w-full border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+        >
+      </label>
+      <select name="statut" class="w-full border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100">
+        <option value="">Tous les statuts</option>
+        {% for value,label in statut_choices %}
+          <option value="{{ value }}" {% if value == active_statut %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <div class="flex gap-2">
+        <button type="submit" class="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white">
+          <svg class="ui-icon h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16"></path><path d="M7 12h10"></path><path d="M10 18h4"></path></svg>
+          <span>Filtrer</span>
+        </button>
+        {% if search_query or active_statut %}
+          <a href="{% tenant_url 'participants:index' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700">Reset</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  {% if participants %}
+    <div class="divide-y divide-slate-100">
+      {% for participant in participants %}
+        <article class="grid gap-4 px-4 py-4 transition hover:bg-slate-50 xl:grid-cols-[minmax(280px,1.2fr)_minmax(230px,1fr)_170px_150px_auto] xl:items-center">
+          <div class="flex min-w-0 items-center gap-3">
+            {% if participant.photo|media_file_exists %}
+              <img src="{{ participant.photo|media_safe_url }}" alt="{{ participant.nom_complet }}" class="h-11 w-11 shrink-0 border border-slate-200 object-cover">
+            {% else %}
+              <div class="grid h-11 w-11 shrink-0 place-items-center border border-slate-200 bg-slate-50 text-xs font-bold text-slate-600">{{ participant.prenom|slice:":1" }}{{ participant.nom|slice:":1" }}</div>
+            {% endif %}
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="truncate text-sm font-bold text-slate-950">{{ participant.nom_complet }}</h2>
+                {% if participant.statut == "ACTIF" %}
+                  <span class="baly-badge baly-badge-blue">Actif</span>
+                {% elif participant.statut == "ARCHIVE" %}
+                  <span class="baly-badge baly-badge-red">Archive</span>
+                {% else %}
+                  <span class="baly-badge">{{ participant.get_statut_display }}</span>
+                {% endif %}
+              </div>
+              <p class="mt-1 font-mono text-xs text-slate-500">{{ participant.matricule }}</p>
+            </div>
+          </div>
+
+          <div class="grid gap-2 text-xs text-slate-600 sm:grid-cols-2 xl:block">
+            <p class="flex items-center gap-2">
+              <svg class="ui-icon h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.7 19.7 0 0 1-8.6-3.1 19.3 19.3 0 0 1-6-6A19.7 19.7 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"></path></svg>
+              <span>{{ participant.telephone }}</span>
+            </p>
+            <p class="mt-0 flex items-center gap-2 xl:mt-1">
+              <svg class="ui-icon h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg>
+              <span class="truncate">{{ participant.email|default:"Non renseigne" }}</span>
+            </p>
+            <p class="mt-0 flex items-center gap-2 xl:mt-1">
+              <svg class="ui-icon h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10l8-5 8 5v10"></path><path d="M9 20v-6h6v6"></path></svg>
+              <span class="truncate">{{ participant.entreprise|default:"Particulier" }}</span>
+            </p>
+          </div>
+
+          <div class="text-sm">
+            <p class="font-bold text-slate-950">{{ participant.profession|default:"Profession non renseignee" }}</p>
+            <p class="mt-1 text-xs text-slate-500">{{ participant.ville|default:participant.pays }}</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-center text-xs">
+            <div class="border border-slate-200 bg-white px-2 py-2">
+              <p class="font-bold text-slate-950">{{ participant.inscriptions_count }}</p>
+              <p class="text-slate-500">Inscriptions</p>
+            </div>
+            <div class="border border-slate-200 bg-white px-2 py-2">
+              <p class="font-bold text-slate-950">{{ participant.total_paye_sum|default:0|floatformat:0 }}</p>
+              <p class="text-slate-500">FCFA</p>
+            </div>
+          </div>
+
+          <div class="flex flex-nowrap justify-start gap-2 xl:justify-end">
+            <a href="{% tenant_url 'inscriptions:create' %}?participant={{ participant.pk }}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'inscriptions:create' %}?participant={{ participant.pk }}" hx-target="#global-modal-content" title="Inscrire a une session" aria-label="Inscrire {{ participant.nom_complet }} a une session" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-blue-700 transition hover:bg-blue-100">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 12h.01"></path></svg>
+            </a>
+            {% if participant.telephone %}
+              <a href="tel:{{ participant.telephone }}" title="Appeler" aria-label="Appeler {{ participant.nom_complet }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.7 19.7 0 0 1-8.6-3.1 19.3 19.3 0 0 1-6-6A19.7 19.7 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"></path></svg>
+              </a>
+            {% endif %}
+            {% if participant.email %}
+              <a href="mailto:{{ participant.email }}" title="Envoyer un email" aria-label="Envoyer un email a {{ participant.nom_complet }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg>
+              </a>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="px-6 py-16 text-center">
+      <div class="feature-icon mx-auto">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="4"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg>
+      </div>
+      <h3 class="mt-4 font-bold text-slate-900">Aucun apprenant trouve</h3>
+      <p class="mt-2 text-sm text-slate-500">Inscrivez un nouvel apprenant ou ajustez les filtres.</p>
+    </div>
+  {% endif %}
+</section>
 {% endblock %}
