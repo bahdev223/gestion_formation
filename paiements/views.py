@@ -72,6 +72,10 @@ class PaiementCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequi
         context = super().get_context_data(**kwargs)
         context["payment_currency"] = self.get_current_organisation().devise
         form = context["form"]
+        context["account_mode_map"] = {
+            str(compte.pk): PaiementForm.ACCOUNT_TYPE_TO_MODE.get(compte.type, "")
+            for compte in form.fields["compte"].queryset
+        }
         inscriptions = form.fields["inscription"].queryset.annotate(
             total_paye_calc=Coalesce(
                 Sum(

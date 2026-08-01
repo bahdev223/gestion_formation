@@ -18,7 +18,8 @@ def generate_document(*, document_type, reference, template, context, user, orga
         "template": template,
         "reference": reference,
     }
-    payload = render_pdf(template, context)
+    render_context = {**context, "active_organisation": organisation}
+    payload = render_pdf(template, render_context)
     filename = f"{document_type.lower()}-{reference}.pdf".replace("/", "-")
     replace_file(document.fichier, filename, payload)
     document.save()

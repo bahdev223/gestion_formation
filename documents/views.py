@@ -67,6 +67,7 @@ def generate_receipt(request, **kwargs):
         "inscription__participant",
         "inscription__session__formation",
         "enregistre_par",
+        "compte",
     ).filter(organisation=organisation)
     paiement = get_object_or_404(
         paiements,

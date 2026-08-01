@@ -38,6 +38,7 @@
           <th class="px-6 py-4">Encaissement</th>
           <th class="px-6 py-4">Montant</th>
           <th class="px-6 py-4">Statut</th>
+          <th class="px-6 py-4 text-right">Actions</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
@@ -50,9 +51,25 @@
             <td class="px-6 py-4"><p class="font-semibold text-slate-900">{{ paiement.get_mode_paiement_display }}</p><p class="mt-1 text-xs text-slate-500">{{ paiement.compte.nom|default:"Compte non renseigné" }}</p></td>
             <td class="whitespace-nowrap px-6 py-4 font-bold">{{ paiement.montant|floatformat:0 }} {{ payment_currency }}</td>
             <td class="px-6 py-4"><span class="baly-badge">{{ paiement.get_statut_display }}</span></td>
+            <td class="px-6 py-4">
+              <div class="flex justify-end gap-2">
+                <a href="{% tenant_url 'paiements:detail' paiement.pk %}" class="grid h-9 w-9 place-items-center rounded-md border border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Voir le détail" aria-label="Voir le détail">
+                  <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </a>
+                {% if paiement.statut == "VALIDE" %}
+                  <form method="post" action="{% tenant_url 'documents:generate-receipt' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="paiement_id" value="{{ paiement.id }}">
+                    <button class="grid h-9 w-9 place-items-center rounded-md border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100" title="Générer le reçu PDF" aria-label="Générer le reçu PDF">
+                      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path><path d="M9 15h6"></path><path d="M9 18h4"></path></svg>
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
           </tr>
         {% empty %}
-          <tr><td colspan="7" class="px-6 py-14 text-center text-slate-500">Aucun paiement de formation enregistré.</td></tr>
+          <tr><td colspan="8" class="px-6 py-14 text-center text-slate-500">Aucun paiement de formation enregistré.</td></tr>
         {% endfor %}
       </tbody>
     </table>

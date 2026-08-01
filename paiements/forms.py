@@ -3,6 +3,7 @@ from decimal import Decimal
 from django import forms
 
 from comptes.models import Compte
+from comptes.models.compte import TypeCompte
 from inscriptions.models import Inscription
 
 from .models import Paiement
@@ -33,6 +34,15 @@ class MoneyDecimalField(forms.DecimalField):
 
 
 class PaiementForm(forms.ModelForm):
+    ACCOUNT_TYPE_TO_MODE = {
+        TypeCompte.ESPECES: Paiement.ModePaiement.ESPECES,
+        TypeCompte.MOBILE_MONEY: Paiement.ModePaiement.MOBILE_MONEY,
+        TypeCompte.PORTEFEUILLE_NUMERIQUE: Paiement.ModePaiement.MOBILE_MONEY,
+        TypeCompte.BANQUE: Paiement.ModePaiement.BANQUE,
+        TypeCompte.CARTE: Paiement.ModePaiement.CARTE,
+        TypeCompte.AUTRE: Paiement.ModePaiement.AUTRE,
+    }
+
     montant = MoneyDecimalField(
         label="Montant encaissé",
         min_value=Decimal("1"),
@@ -52,10 +62,10 @@ class PaiementForm(forms.ModelForm):
         model = Paiement
         fields = [
             "inscription",
+            "compte",
+            "mode_paiement",
             "montant",
             "date_paiement",
-            "mode_paiement",
-            "compte",
             "reference_transaction",
             "payeur_nom",
             "observations",
@@ -100,6 +110,21 @@ class PaiementForm(forms.ModelForm):
         self.fields["compte"].queryset = comptes.order_by("type", "code", "nom")
         self.fields["compte"].required = True
         self.fields["compte"].empty_label = "Choisir la caisse ou le compte"
+        self.fields["compte"].widget.attrs.update(
+            {
+                "x-model": "selectedAccount",
+                "x-on:change": "selectedMode = accountModeMap[selectedAccount] || ''",
+            }
+        )
+        self.fields["mode_paiement"].widget.attrs.update(
+            {
+                "x-model": "selectedMode",
+                "x-bind:disabled": "!selectedAccount",
+            }
+        )
+        self.fields["mode_paiement"].help_text = (
+            "Le mode est aligné automatiquement avec le type du compte choisi."
+        )
 
         for field in self.fields.values():
             field.widget.attrs["class"] = (
@@ -112,6 +137,8 @@ class PaiementForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         inscription = cleaned_data.get("inscription")
+        compte = cleaned_data.get("compte")
+        mode_paiement = cleaned_data.get("mode_paiement")
         amount = cleaned_data.get("montant") or Decimal("0")
         if inscription and amount > inscription.reste_a_payer:
             self.add_error(
@@ -119,4 +146,15 @@ class PaiementForm(forms.ModelForm):
                 f"Le montant dépasse le reste à payer "
                 f"({inscription.reste_a_payer:,.0f} {self.devise}).",
             )
+        if compte and mode_paiement:
+            expected_mode = self.ACCOUNT_TYPE_TO_MODE.get(compte.type)
+            if expected_mode and mode_paiement != expected_mode:
+                self.add_error(
+                    "mode_paiement",
+                    (
+                        "Le mode ne correspond pas au compte choisi. "
+                        f"Pour {compte.nom}, utilisez "
+                        f"{Paiement.ModePaiement(expected_mode).label}."
+                    ),
+                )
         return cleaned_data

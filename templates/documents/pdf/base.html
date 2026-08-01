@@ -3,9 +3,12 @@
 <head>
   <meta charset="utf-8">
   <style>
-    @page { size: A4; margin: 18mm; }
+    {% block pdf_page %}@page { size: A4; margin: 18mm; }{% endblock %}
     body { font-family: Arial, sans-serif; color: #14213d; font-size: 11px; }
-    .header { border-bottom: 3px solid #17457a; padding-bottom: 12px; margin-bottom: 24px; }
+    .header { display: table; width: 100%; border-bottom: 3px solid #17457a; padding-bottom: 12px; margin-bottom: 24px; }
+    .brand-logo, .brand-copy { display: table-cell; vertical-align: middle; }
+    .brand-logo { width: 62px; }
+    .brand-logo img { max-width: 54px; max-height: 54px; object-fit: contain; }
     .brand { font-size: 22px; font-weight: 800; color: #17457a; }
     .orange { color: #ef7d00; }
     .muted { color: #64748b; }
@@ -17,14 +20,24 @@
     .footer { position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid #dbe2ea; padding-top: 8px; font-size: 9px; color: #64748b; text-align: center; }
     .signature { margin-top: 50px; margin-left: auto; width: 230px; text-align: center; }
     .line { border-top: 1px solid #14213d; margin-top: 50px; padding-top: 5px; }
+    {% block pdf_styles %}{% endblock %}
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="brand">{{ company_name|default:"Entreprise" }}</div>
-    <div class="muted">{{ organisation.adresse }}{% if organisation.telephone %} · {{ organisation.telephone }}{% endif %}{% if organisation.email %} · {{ organisation.email }}{% endif %}</div>
+    {% if company_logo_url %}
+      <div class="brand-logo"><img src="{{ company_logo_url }}" alt="{{ company_name }}"></div>
+    {% endif %}
+    <div class="brand-copy">
+      <div class="brand">{{ company_name|default:"Entreprise" }}</div>
+      <div class="muted">
+        {{ organisation.adresse }}
+        {% if organisation.telephone %} · {{ organisation.telephone }}{% endif %}
+        {% if organisation.email %} · {{ organisation.email }}{% endif %}
+      </div>
+    </div>
   </div>
   {% block pdf_content %}{% endblock %}
-  <div class="footer">Document genere par {{ company_name|default:"Entreprise" }}</div>
+  <div class="footer">Document généré par {{ company_name|default:"Entreprise" }}</div>
 </body>
 </html>

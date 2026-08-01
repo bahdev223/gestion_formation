@@ -6,6 +6,7 @@ from django.test import TestCase
 
 from comptes.models import Compte, MouvementCompte, RoleCompte, TypeCompte
 from core.testing import souscrire_plan_complet
+from documents.models import DocumentGenere
 from formations.models import CategorieFormation, Formation, SessionFormation
 from inscriptions.models import Inscription
 from organisations.models import Organisation
@@ -36,6 +37,14 @@ class PaiementCreateViewTest(TestCase):
             type=TypeCompte.MOBILE_MONEY,
             role=RoleCompte.ENCAISSEMENT,
             solde_actuel=Decimal("600.00"),
+        )
+        cls.caisse = Compte.objects.create(
+            organisation=cls.organisation,
+            code="CAI001",
+            nom="Caisse principale",
+            type=TypeCompte.ESPECES,
+            role=RoleCompte.CAISSE,
+            solde_actuel=Decimal("0.00"),
         )
         cls.categorie = CategorieFormation.objects.create(
             organisation=cls.organisation,
@@ -97,6 +106,11 @@ class PaiementCreateViewTest(TestCase):
         self.assertNotContains(response, "Orange Money")
         self.assertNotContains(response, "Moov Money")
         self.assertNotContains(response, 'step="500"')
+        content = response.content.decode()
+        self.assertLess(
+            content.index("Compte d&#x27;encaissement"),
+            content.index("Mode de paiement"),
+        )
 
     def test_create_payment_updates_financial_account(self):
         response = self.client.post(
@@ -130,3 +144,58 @@ class PaiementCreateViewTest(TestCase):
             self.inscription.statut_paiement,
             Inscription.StatutPaiement.PARTIEL,
         )
+
+    def test_payment_mode_must_match_financial_account_type(self):
+        response = self.client.post(
+            "/o/centre-paiements/paiements/create/",
+            {
+                "inscription": self.inscription.pk,
+                "montant": "1000",
+                "date_paiement": "2026-08-01T11:12",
+                "mode_paiement": Paiement.ModePaiement.ESPECES,
+                "compte": self.compte.pk,
+                "reference_transaction": "TX-BAD",
+                "payeur_nom": "FATOUMATA BAH",
+                "observations": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Le mode ne correspond pas au compte choisi")
+        self.assertFalse(Paiement.objects.filter(reference_transaction="TX-BAD").exists())
+
+    def test_payment_index_exposes_receipt_generation_action(self):
+        paiement = Paiement.objects.create(
+            organisation=self.organisation,
+            inscription=self.inscription,
+            montant=Decimal("2500.00"),
+            mode_paiement=Paiement.ModePaiement.ESPECES,
+            compte=self.caisse,
+            enregistre_par=self.user,
+        )
+
+        response = self.client.get("/o/centre-paiements/paiements/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Générer le reçu PDF")
+        self.assertContains(response, str(paiement.pk))
+
+    def test_receipt_generation_uses_payment_document_flow(self):
+        paiement = Paiement.objects.create(
+            organisation=self.organisation,
+            inscription=self.inscription,
+            montant=Decimal("2500.00"),
+            mode_paiement=Paiement.ModePaiement.ESPECES,
+            compte=self.caisse,
+            enregistre_par=self.user,
+        )
+
+        response = self.client.post(
+            "/o/centre-paiements/documents/generer/recu/",
+            {"paiement_id": paiement.pk},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        document = DocumentGenere.objects.get(reference=paiement.numero_recu)
+        self.assertEqual(document.organisation, self.organisation)
+        self.assertTrue(document.fichier.name.endswith(".pdf"))

@@ -1,1 +1,72 @@
-{% extends "documents/pdf/base.html" %}{% block pdf_content %}<h1 class="title">Reçu de paiement</h1><table class="meta"><tr><th>Numéro du reçu</th><td>{{ paiement.numero_recu }}</td><th>Date</th><td>{{ paiement.date_paiement|date:"d/m/Y H:i" }}</td></tr><tr><th>Participant</th><td colspan="3">{{ paiement.inscription.participant.nom_complet }}</td></tr><tr><th>Formation</th><td colspan="3">{{ paiement.inscription.session.formation.nom }}</td></tr><tr><th>Session</th><td colspan="3">{{ paiement.inscription.session.titre }}</td></tr><tr><th>Mode de paiement</th><td>{{ paiement.get_mode_paiement_display }}</td><th>Référence</th><td>{{ paiement.reference_transaction|default:"—" }}</td></tr></table><p style="margin-top:28px">Montant reçu :</p><p class="amount">{{ paiement.montant|floatformat:0 }} FCFA</p><p>Arrêté le présent reçu à la somme indiquée ci-dessus.</p><div class="signature"><div class="line">{{ organisation.signature_nom|default:"La Direction" }}<br><span class="muted">{{ organisation.signature_fonction }}</span></div></div>{% endblock %}
+{% extends "documents/pdf/base.html" %}
+
+{% block pdf_page %}@page { size: A5 portrait; margin: 10mm; }{% endblock %}
+
+{% block pdf_styles %}
+  body { font-size: 10px; }
+  .header { margin-bottom: 12px; padding-bottom: 8px; border-bottom-width: 2px; }
+  .brand-logo { width: 48px; }
+  .brand-logo img { max-width: 42px; max-height: 42px; }
+  .brand { font-size: 16px; }
+  .title { margin: 10px 0 12px; font-size: 15px; }
+  .meta td, .meta th { padding: 5px 6px; }
+  .receipt-top { display: table; width: 100%; margin-bottom: 8px; }
+  .receipt-ref, .receipt-date { display: table-cell; width: 50%; }
+  .receipt-date { text-align: right; }
+  .amount-box { margin: 12px 0; padding: 10px 12px; border: 1px solid #17457a; background: #f8fafc; text-align: center; }
+  .amount-label { margin: 0 0 4px; color: #64748b; text-transform: uppercase; letter-spacing: .08em; font-size: 8px; }
+  .amount { margin: 0; font-size: 23px; }
+  .signature { margin-top: 18px; width: 185px; }
+  .line { margin-top: 32px; }
+  .footer { font-size: 8px; }
+{% endblock %}
+
+{% block pdf_content %}
+  <h1 class="title">Reçu de paiement</h1>
+
+  <div class="receipt-top">
+    <div class="receipt-ref"><strong>Reçu :</strong> {{ paiement.numero_recu }}</div>
+    <div class="receipt-date"><strong>Date :</strong> {{ paiement.date_paiement|date:"d/m/Y H:i" }}</div>
+  </div>
+
+  <table class="meta">
+    <tr>
+      <th>Participant</th>
+      <td>{{ paiement.inscription.participant.nom_complet }}</td>
+    </tr>
+    <tr>
+      <th>Inscription</th>
+      <td>{{ paiement.inscription.numero }}</td>
+    </tr>
+    <tr>
+      <th>Formation</th>
+      <td>{{ paiement.inscription.session.formation.nom }}</td>
+    </tr>
+    <tr>
+      <th>Session</th>
+      <td>{{ paiement.inscription.session.titre }}</td>
+    </tr>
+    <tr>
+      <th>Encaissement</th>
+      <td>{{ paiement.compte.nom|default:"Compte non renseigné" }} · {{ paiement.get_mode_paiement_display }}</td>
+    </tr>
+    <tr>
+      <th>Référence</th>
+      <td>{{ paiement.reference_transaction|default:"—" }}</td>
+    </tr>
+  </table>
+
+  <div class="amount-box">
+    <p class="amount-label">Montant reçu</p>
+    <p class="amount">{{ paiement.montant|floatformat:0 }} {{ payment_currency }}</p>
+  </div>
+
+  <p>Arrêté le présent reçu à la somme indiquée ci-dessus.</p>
+
+  <div class="signature">
+    <div class="line">
+      {{ organisation.signature_nom|default:"La Direction" }}<br>
+      <span class="muted">{{ organisation.signature_fonction }}</span>
+    </div>
+  </div>
+{% endblock %}

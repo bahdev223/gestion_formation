@@ -1,4 +1,5 @@
 {{ inscription_summaries|json_script:"payment-inscription-summaries" }}
+{{ account_mode_map|json_script:"payment-account-mode-map" }}
 
 {% if form.non_field_errors %}
   <div class="mx-6 mt-5 border-l-3 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -8,8 +9,8 @@
 
 <div
   class="grid gap-5 p-6 md:grid-cols-2"
-  x-data="{ selectedInscription: '', summaries: {} }"
-  x-init="summaries = JSON.parse(document.getElementById('payment-inscription-summaries').textContent); selectedInscription = $el.querySelector('[name=inscription]')?.value || ''"
+  x-data="{ selectedInscription: '', selectedAccount: '', selectedMode: '', summaries: {}, accountModeMap: {} }"
+  x-init="summaries = JSON.parse(document.getElementById('payment-inscription-summaries').textContent); accountModeMap = JSON.parse(document.getElementById('payment-account-mode-map').textContent); selectedInscription = $el.querySelector('[name=inscription]')?.value || ''; selectedAccount = $el.querySelector('[name=compte]')?.value || ''; selectedMode = $el.querySelector('[name=mode_paiement]')?.value || accountModeMap[selectedAccount] || ''"
 >
   {% for field in form %}
     <div class="{% if field.name == 'inscription' or field.name == 'observations' %}md:col-span-2{% endif %}">
@@ -24,6 +25,10 @@
         <p class="mt-1.5 text-xs text-slate-500">Saisissez librement : 1000, 1 000 ou 1500.</p>
       {% else %}
         {{ field }}
+      {% endif %}
+
+      {% if field.name == "compte" %}
+        <p class="mt-1.5 text-xs text-slate-500">Choisissez d'abord la caisse ou le compte qui reçoit l'argent.</p>
       {% endif %}
 
       {% if field.name == "inscription" %}
