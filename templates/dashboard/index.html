@@ -41,7 +41,7 @@
 
 {% with dashboard_cards=widget_board.active %}
 {% if dashboard_cards %}
-  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
+  <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
     {% for widget in dashboard_cards %}
       {% if widget.kind == "card" or widget.kind|default:"card" == "card" %}
         <article class="fx-card fx-card-hover fx-stat col-span-1 min-w-0{% if widget.tone == 'success' %} fx-tone-success{% elif widget.tone == 'danger' %} fx-tone-danger{% elif widget.tone == 'warning' %} fx-tone-warning{% elif widget.tone == 'info' %} fx-tone-info{% else %} fx-tone-primary{% endif %}">
@@ -50,7 +50,7 @@
           </span>
           <div class="min-w-0 flex-1">
             <p class="fx-stat-label">{{ widget.title }}</p>
-            <p class="fx-stat-value" title="{{ widget.value }}">{{ widget.value }}</p>
+            <p class="fx-stat-value text-balance" title="{{ widget.value }}">{{ widget.value }}</p>
             {% if widget.hint %}
               <p class="fx-stat-hint">{{ widget.hint }}</p>
             {% endif %}

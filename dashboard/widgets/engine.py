@@ -60,13 +60,6 @@ def _build_cards(
             amount = float(val)
         except (TypeError, ValueError):
             return "0 FCFA"
-        abs_amount = abs(amount)
-        if abs_amount >= 1_000_000_000:
-            return f"{amount / 1_000_000_000:.1f} Md FCFA".replace(".0 ", " ")
-        if abs_amount >= 1_000_000:
-            return f"{amount / 1_000_000:.1f} M FCFA".replace(".0 ", " ")
-        if abs_amount >= 10_000:
-            return f"{amount / 1_000:.1f} k FCFA".replace(".0 ", " ")
         return f"{amount:,.0f} FCFA"
 
     direction = analysis.get("direction", [])
