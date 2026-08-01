@@ -88,6 +88,55 @@ class SessionFormation(OrganisationOwnedModel, TimeStampedModel):
         return f"{self.titre} — {self.formation.nom}"
 
 
+class SessionAccessLink(OrganisationOwnedModel, TimeStampedModel):
+    session = models.OneToOneField(
+        SessionFormation,
+        on_delete=models.CASCADE,
+        related_name="public_access",
+    )
+    token = models.CharField(max_length=64, unique=True, db_index=True, editable=False)
+    is_active = models.BooleanField(default=True, db_index=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    last_regenerated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Lien public de session"
+        verbose_name_plural = "Liens publics de session"
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = uuid4().hex + uuid4().hex
+        if self.session_id and not self.organisation_id:
+            self.organisation = self.session.organisation
+        super().save(*args, **kwargs)
+
+    @property
+    def is_valid(self):
+        if not self.is_active:
+            return False
+        if self.expires_at and self.expires_at < timezone.now():
+            return False
+        return True
+
+    def regenerate(self):
+        self.token = uuid4().hex + uuid4().hex
+        self.is_active = True
+        self.last_regenerated_at = timezone.now()
+        self.save(
+            update_fields=[
+                "token",
+                "is_active",
+                "expires_at",
+                "last_regenerated_at",
+                "updated_at",
+            ]
+        )
+
+    def __str__(self):
+        return f"Acces public - {self.session}"
+
+
 class Seance(OrganisationOwnedModel, TimeStampedModel):
     class Statut(models.TextChoices):
         PLANIFIEE = "PLANIFIEE", "Planifiee"

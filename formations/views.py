@@ -1,12 +1,21 @@
+from datetime import datetime, time
+
+import qrcode
+import qrcode.image.svg
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError, models
 from django.forms import HiddenInput
-from django.shortcuts import redirect
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from core.mixins import HtmxModalFormMixin, OrganisationScopedMixin
+from organisations.utils import tenant_reverse
 
 from .forms import (
     CategorieFormationForm,
@@ -14,7 +23,7 @@ from .forms import (
     SeanceForm,
     SessionFormationForm,
 )
-from .models import CategorieFormation, Formation, Seance, SessionFormation
+from .models import CategorieFormation, Formation, Seance, SessionAccessLink, SessionFormation
 
 
 class FormationIndexView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -165,6 +174,156 @@ class SessionDetailView(OrganisationScopedMixin, LoginRequiredMixin, PermissionR
             ),
             "inscriptions__participant",
         )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            access_link = self.object.public_access
+        except SessionAccessLink.DoesNotExist:
+            access_link = None
+        public_session_url = ""
+        public_qr_url = ""
+        if access_link:
+            public_session_url = self.request.build_absolute_uri(
+                tenant_reverse(
+                    self.request,
+                    "formations:session-public",
+                    kwargs={"token": access_link.token},
+                )
+            )
+            public_qr_url = tenant_reverse(
+                self.request,
+                "formations:session-public-qr",
+                kwargs={"token": access_link.token},
+            )
+        context.update(
+            {
+                "session_access_link": access_link,
+                "public_session_url": public_session_url,
+                "public_qr_url": public_qr_url,
+            }
+        )
+        return context
+
+
+def _session_public_expires_at(session):
+    end_of_day = datetime.combine(session.date_fin, time.max)
+    if timezone.is_naive(end_of_day):
+        return timezone.make_aware(end_of_day)
+    return end_of_day
+
+
+def _session_detail_url(request, session):
+    return tenant_reverse(
+        request,
+        "formations:session-detail",
+        kwargs={"pk": session.pk},
+    )
+
+
+@require_POST
+@login_required
+@permission_required("formations.change_sessionformation", raise_exception=True)
+def session_access_action(request, pk, action, organisation_slug=None):
+    session = get_object_or_404(
+        SessionFormation,
+        pk=pk,
+        organisation=request.organisation,
+    )
+    try:
+        access_link = session.public_access
+    except SessionAccessLink.DoesNotExist:
+        access_link = None
+    if action == "enable":
+        access_link, _ = SessionAccessLink.objects.get_or_create(
+            session=session,
+            defaults={
+                "organisation": session.organisation,
+                "expires_at": _session_public_expires_at(session),
+            },
+        )
+        access_link.is_active = True
+        access_link.expires_at = _session_public_expires_at(session)
+        access_link.save(update_fields=["is_active", "expires_at", "updated_at"])
+        messages.success(request, "Le lien apprenants est actif.")
+    elif action == "disable":
+        if access_link:
+            access_link.is_active = False
+            access_link.save(update_fields=["is_active", "updated_at"])
+        messages.success(request, "Le lien apprenants a ete desactive.")
+    elif action == "regenerate":
+        if access_link is None:
+            access_link = SessionAccessLink.objects.create(
+                session=session,
+                organisation=session.organisation,
+                expires_at=_session_public_expires_at(session),
+            )
+        else:
+            access_link.expires_at = _session_public_expires_at(session)
+            access_link.regenerate()
+        messages.success(request, "Un nouveau lien apprenants a ete genere.")
+    else:
+        raise Http404("Action inconnue.")
+    return redirect(_session_detail_url(request, session))
+
+
+class SessionPublicAccessView(DetailView):
+    model = SessionAccessLink
+    template_name = "formations/session_public.html"
+    context_object_name = "access_link"
+    slug_field = "token"
+    slug_url_kwarg = "token"
+
+    def get_queryset(self):
+        return SessionAccessLink.objects.select_related(
+            "organisation",
+            "session",
+            "session__formation",
+            "session__formateur",
+        ).prefetch_related(
+            models.Prefetch(
+                "session__seances",
+                queryset=Seance.objects.exclude(
+                    statut=Seance.Statut.ANNULEE,
+                ).order_by("date", "heure_debut"),
+            )
+        ).filter(organisation=self.request.organisation)
+
+    def get_object(self, queryset=None):
+        access_link = super().get_object(queryset)
+        if not access_link.is_valid:
+            raise Http404("Lien apprenants indisponible.")
+        return access_link
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["session"] = self.object.session
+        context["organisation"] = self.object.organisation
+        context["qr_url"] = tenant_reverse(
+            self.request,
+            "formations:session-public-qr",
+            kwargs={"token": self.object.token},
+        )
+        return context
+
+
+def session_public_qr(request, token, organisation_slug=None):
+    access_link = get_object_or_404(
+        SessionAccessLink.objects.select_related("organisation"),
+        token=token,
+        organisation=request.organisation,
+    )
+    if not access_link.is_valid:
+        raise Http404("Lien apprenants indisponible.")
+    url = request.build_absolute_uri(
+        tenant_reverse(
+            request,
+            "formations:session-public",
+            kwargs={"token": access_link.token},
+        )
+    )
+    image = qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage)
+    return HttpResponse(image.to_string(), content_type="image/svg+xml")
 
 
 class SeanceCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):

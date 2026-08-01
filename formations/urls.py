@@ -8,9 +8,12 @@ from .views import (
     FormationIndexView,
     FormationUpdateView,
     SeanceCreateView,
+    SessionPublicAccessView,
     SessionCreateView,
     SessionDetailView,
     SessionListView,
+    session_access_action,
+    session_public_qr,
 )
 
 app_name = "formations"
@@ -29,5 +32,20 @@ urlpatterns = [
     path("sessions/", SessionListView.as_view(), name="session-list"),
     path("sessions/create/", SessionCreateView.as_view(), name="session-create"),
     path("sessions/<int:pk>/", SessionDetailView.as_view(), name="session-detail"),
+    path(
+        "sessions/<int:pk>/acces/<str:action>/",
+        session_access_action,
+        name="session-access-action",
+    ),
+    path(
+        "sessions/acces/<str:token>/",
+        SessionPublicAccessView.as_view(),
+        name="session-public",
+    ),
+    path(
+        "sessions/acces/<str:token>/qr.svg",
+        session_public_qr,
+        name="session-public-qr",
+    ),
     path("seances/create/", SeanceCreateView.as_view(), name="seance-create"),
 ]
