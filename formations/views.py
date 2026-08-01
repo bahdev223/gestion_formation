@@ -11,7 +11,6 @@ from django.forms import HiddenInput
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
-from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from core.mixins import HtmxModalFormMixin, OrganisationScopedMixin
@@ -221,7 +220,6 @@ def _session_detail_url(request, session):
     )
 
 
-@require_POST
 @login_required
 @permission_required("formations.change_sessionformation", raise_exception=True)
 def session_access_action(request, pk, action, organisation_slug=None):
@@ -230,6 +228,9 @@ def session_access_action(request, pk, action, organisation_slug=None):
         pk=pk,
         organisation=request.organisation,
     )
+    if request.method != "POST":
+        messages.warning(request, "Utilisez le bouton de la session pour modifier le lien apprenants.")
+        return redirect(_session_detail_url(request, session))
     try:
         access_link = session.public_access
     except SessionAccessLink.DoesNotExist:

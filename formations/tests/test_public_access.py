@@ -110,3 +110,17 @@ class SessionPublicAccessTest(TestCase):
         access_link = SessionAccessLink.objects.get(session=self.session)
         self.assertTrue(access_link.is_active)
         self.assertIsNotNone(access_link.expires_at)
+
+    def test_direct_get_on_access_action_redirects_without_changing_state(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            f"/o/centre-public/formations/sessions/{self.session.pk}/acces/enable/"
+        )
+
+        self.assertRedirects(
+            response,
+            f"/o/centre-public/formations/sessions/{self.session.pk}/",
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(SessionAccessLink.objects.filter(session=self.session).exists())
