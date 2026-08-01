@@ -8,7 +8,42 @@ from inscriptions.models import Inscription
 from .models import Paiement
 
 
+class MoneyDecimalField(forms.DecimalField):
+    def to_python(self, value):
+        if isinstance(value, str):
+            normalized = (
+                value.strip()
+                .replace("\u00a0", "")
+                .replace(" ", "")
+                .replace("FCFA", "")
+                .replace("XOF", "")
+            )
+            if "," in normalized and "." in normalized:
+                normalized = normalized.replace(".", "").replace(",", ".")
+            elif "," in normalized:
+                normalized = normalized.replace(",", ".")
+            elif normalized.count(".") > 1:
+                normalized = normalized.replace(".", "")
+            value = normalized
+        return super().to_python(value)
+
+
 class PaiementForm(forms.ModelForm):
+    montant = MoneyDecimalField(
+        label="Montant encaissé (FCFA)",
+        min_value=Decimal("1"),
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "inputmode": "decimal",
+                "placeholder": "Ex : 1 500",
+                "x-on:input": "$el.value = $el.value.replace(/[^0-9.,\\s]/g, '')",
+            }
+        ),
+    )
+
     class Meta:
         model = Paiement
         fields = [
@@ -32,7 +67,6 @@ class PaiementForm(forms.ModelForm):
             "observations": "Observations",
         }
         widgets = {
-            "montant": forms.NumberInput(attrs={"min": 1, "step": 500}),
             "date_paiement": forms.DateTimeInput(
                 attrs={"type": "datetime-local"},
                 format="%Y-%m-%dT%H:%M",
@@ -67,6 +101,7 @@ class PaiementForm(forms.ModelForm):
                 "text-sm outline-none focus:border-blue-600 focus:ring-2 "
                 "focus:ring-blue-100"
             )
+        self.fields["montant"].widget.attrs["class"] += " pr-16 font-semibold"
 
     def clean(self):
         cleaned_data = super().clean()

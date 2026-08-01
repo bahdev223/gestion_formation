@@ -89,15 +89,18 @@ class PaiementCreateViewTest(TestCase):
         self.assertContains(response, "Compte mobile principal")
         self.assertContains(response, "Reste à payer")
         self.assertContains(response, "100000")
+        self.assertContains(response, "Ex : 1 500")
+        self.assertContains(response, "FCFA")
         self.assertNotContains(response, "Orange Money")
         self.assertNotContains(response, "Moov Money")
+        self.assertNotContains(response, 'step="500"')
 
     def test_create_payment_updates_financial_account(self):
         response = self.client.post(
             "/o/centre-paiements/paiements/create/",
             {
                 "inscription": self.inscription.pk,
-                "montant": "1500",
+                "montant": "1 000",
                 "date_paiement": "2026-08-01T11:12",
                 "mode_paiement": Paiement.ModePaiement.MOBILE_MONEY,
                 "compte": self.compte.pk,
@@ -113,11 +116,11 @@ class PaiementCreateViewTest(TestCase):
         self.assertEqual(paiement.mode_paiement, Paiement.ModePaiement.MOBILE_MONEY)
 
         self.compte.refresh_from_db()
-        self.assertEqual(self.compte.solde_actuel, Decimal("2100.00"))
+        self.assertEqual(self.compte.solde_actuel, Decimal("1600.00"))
 
         mouvement = MouvementCompte.objects.get(object_id=paiement.pk)
         self.assertEqual(mouvement.compte, self.compte)
-        self.assertEqual(mouvement.montant, Decimal("1500.00"))
+        self.assertEqual(mouvement.montant, Decimal("1000.00"))
 
         self.inscription.refresh_from_db()
         self.assertEqual(
