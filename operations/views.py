@@ -8,7 +8,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from core.features import module_est_actif
 from core.mixins import OrganisationScopedMixin
-from organisations.access import require_member_permission
+from organisations.access import effective_permissions, require_member_permission
 from organisations.utils import require_request_organisation, tenant_reverse
 
 from .catalogue import definitions_par_classe, obtenir
@@ -92,6 +92,13 @@ class OperationIndexView(
                     "montant_entrees": entrees.aggregate(total=Sum("montant"))["total"] or 0,
                     "montant_sorties": sorties.aggregate(total=Sum("montant"))["total"] or 0,
                 },
+                "peut_gerer_operations": (
+                    self.request.user.is_superuser
+                    or "operations.manage"
+                    in effective_permissions(
+                        getattr(self.request, "organisation_member", None)
+                    )
+                ),
             }
         )
         return contexte
@@ -266,9 +273,9 @@ def valider_operation(request, organisation_slug, pk):
         messages.success(
             request, f"Opération {operation.numero} validée et comptabilisée."
         )
-    return redirect(
-        tenant_reverse(request, "operations:detail", kwargs={"pk": operation.pk})
-    )
+    destination = "operations:index" if request.POST.get("retour_liste") else "operations:detail"
+    kwargs = {} if destination == "operations:index" else {"pk": operation.pk}
+    return redirect(tenant_reverse(request, destination, kwargs=kwargs))
 
 
 @require_POST

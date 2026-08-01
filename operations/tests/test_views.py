@@ -141,6 +141,32 @@ class VuesOperationTest(TestCase):
         self.assertTrue(operation.numero)
         self.assertEqual(operation.devise, self.organisation.devise)
 
+    def test_la_liste_permet_de_modifier_et_valider_un_brouillon(self):
+        operation = Operation.objects.create(
+            organisation=self.organisation,
+            numero="OP-LISTE-001",
+            date_operation=date.today(),
+            type_operation="ENCAISSEMENT",
+            description="Brouillon depuis la liste",
+            montant=Decimal("12000"),
+            devise=self.organisation.devise,
+            compte_tresorerie=self.caisse,
+            cree_par=self.user,
+        )
+        reponse = self.client.get(self.base)
+        self.assertContains(reponse, f"{operation.pk}/modifier/")
+        self.assertContains(reponse, f"{operation.pk}/valider/")
+        self.assertContains(reponse, "Valider et comptabiliser")
+
+        reponse = self.client.post(
+            f"{self.base}{operation.pk}/valider/", {"retour_liste": "1"}
+        )
+        self.assertRedirects(reponse, self.base)
+        operation.refresh_from_db()
+        self.assertEqual(operation.statut, Operation.Statut.VALIDEE)
+        self.assertIsNotNone(operation.mouvement_id)
+        self.assertIsNotNone(operation.ecriture_id)
+
     def test_creer_et_valider_genere_lecriture(self):
         self.client.post(
             f"{self.base}nouvelle/",

@@ -103,6 +103,7 @@
           {% else %}
           <th>Compte</th>
           {% endif %}
+          {% if peut_gerer_operations %}<th class="text-right">Actions</th>{% endif %}
         </tr>
       </thead>
       <tbody>
@@ -140,10 +141,31 @@
               {{ operation.compte_tresorerie.nom|default:"—" }}
             {% endif %}
           </td>
+          {% if peut_gerer_operations %}
+          <td>
+            <div class="flex items-center justify-end gap-1.5">
+              <a href="{% tenant_url 'operations:detail' pk=operation.pk %}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 [&>svg]:h-4 [&>svg]:w-4" title="Voir l'operation" aria-label="Voir l'operation {{ operation.numero }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+              </a>
+              {% if operation.est_modifiable %}
+              <a href="{% tenant_url 'operations:update' pk=operation.pk %}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 [&>svg]:h-4 [&>svg]:w-4" title="Modifier le brouillon" aria-label="Modifier {{ operation.numero }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+              </a>
+              <form method="post" action="{% tenant_url 'operations:valider' pk=operation.pk %}" onsubmit="return confirm('Valider cette operation et appliquer son mouvement financier ?');">
+                {% csrf_token %}
+                <input type="hidden" name="retour_liste" value="1">
+                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-emerald-200 text-emerald-700 transition hover:bg-emerald-50 [&>svg]:h-4 [&>svg]:w-4" title="Valider et comptabiliser" aria-label="Valider et comptabiliser {{ operation.numero }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+          {% endif %}
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7">
+          <td colspan="{% if peut_gerer_operations %}8{% else %}7{% endif %}">
             <div class="fx-empty">
               <p class="font-semibold text-[var(--fx-text)]">Aucune opération enregistrée</p>
               <p class="mt-2">Commencez par déclarer un encaissement, une dépense ou une facture.</p>
