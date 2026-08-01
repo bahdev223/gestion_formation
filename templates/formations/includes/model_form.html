@@ -13,7 +13,11 @@
     {% endfor %}
   </div>
   <div class="flex flex-wrap justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-5">
-    <a href="{% url cancel_url_name %}" class="rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">Annuler</a>
+    {% if cancel_url %}
+      <a href="{{ cancel_url }}" class="rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">Annuler</a>
+    {% elif cancel_url_name %}
+      <a href="{% url cancel_url_name %}" class="rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">Annuler</a>
+    {% endif %}
     <button type="submit" class="baly-btn-primary rounded-lg px-6 py-3 text-sm font-semibold text-white">{{ submit_label }}</button>
   </div>
 </form>

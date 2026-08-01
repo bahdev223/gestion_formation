@@ -1,7 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db import IntegrityError
+from django.db import IntegrityError, models
+from django.forms import HiddenInput
 from django.shortcuts import redirect
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
@@ -158,21 +159,12 @@ class SessionDetailView(OrganisationScopedMixin, LoginRequiredMixin, PermissionR
         return super().get_queryset().select_related(
             "formation", "formateur"
         ).prefetch_related(
-            "inscriptions__participant"
+            models.Prefetch(
+                "seances",
+                queryset=Seance.objects.order_by("date", "heure_debut"),
+            ),
+            "inscriptions__participant",
         )
-
-
-class SeanceListView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
-    permission_required = "formations.view_seance"
-    model = Seance
-    template_name = "formations/seance_list.html"
-    context_object_name = "seances"
-    paginate_by = 20
-
-    def get_queryset(self):
-        return super().get_queryset().select_related(
-            "session", "session__formation"
-        ).order_by("-date", "-heure_debut")
 
 
 class SeanceCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
@@ -180,9 +172,63 @@ class SeanceCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequire
     model = Seance
     form_class = SeanceForm
     template_name = "formations/seance_form.html"
-    tenant_success_view_name = "formations:seance-list"
+    tenant_success_view_name = "formations:session-list"
     success_message = "La séance a été créée avec succès."
     modal_title = "Nouvelle séance"
     modal_eyebrow = "Planification"
     submit_label = "Enregistrer la séance"
     full_width_fields = "contenu observations"
+
+    def _selected_session(self):
+        session_id = self.request.GET.get("session") or self.request.POST.get("session")
+        if not session_id:
+            return None
+        try:
+            return SessionFormation.objects.get(
+                pk=int(session_id),
+                organisation=self.get_current_organisation(),
+            )
+        except (SessionFormation.DoesNotExist, TypeError, ValueError):
+            return None
+
+    def get_initial(self):
+        initial = super().get_initial()
+        session = self._selected_session()
+        if session is not None:
+            initial["session"] = session.pk
+        return initial
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        session = self._selected_session()
+        if session is not None:
+            form.fields["session"].widget = HiddenInput()
+            form.fields["session"].queryset = SessionFormation.objects.filter(pk=session.pk)
+        return form
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        session = self._selected_session()
+        from organisations.utils import tenant_reverse
+
+        if session is not None:
+            context["cancel_url"] = tenant_reverse(
+                self.request, "formations:session-detail", kwargs={"pk": session.pk}
+            )
+        else:
+            context["cancel_url"] = tenant_reverse(
+                self.request, "formations:session-list"
+            )
+        return context
+
+    def get_success_url(self):
+        session = self._selected_session()
+        if session is not None:
+            from organisations.utils import tenant_reverse
+
+            return tenant_reverse(
+                self.request,
+                "formations:session-detail",
+                kwargs={"pk": session.pk},
+            )
+        return super().get_success_url()

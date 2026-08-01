@@ -8,7 +8,6 @@ from .views import (
     FormationIndexView,
     FormationUpdateView,
     SeanceCreateView,
-    SeanceListView,
     SessionCreateView,
     SessionDetailView,
     SessionListView,
@@ -30,6 +29,5 @@ urlpatterns = [
     path("sessions/", SessionListView.as_view(), name="session-list"),
     path("sessions/create/", SessionCreateView.as_view(), name="session-create"),
     path("sessions/<int:pk>/", SessionDetailView.as_view(), name="session-detail"),
-    path("seances/", SeanceListView.as_view(), name="seance-list"),
     path("seances/create/", SeanceCreateView.as_view(), name="seance-create"),
 ]

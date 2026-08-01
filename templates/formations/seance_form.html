@@ -2,5 +2,5 @@
 {% block page_title %}Nouvelle séance{% endblock %}
 {% block page_subtitle %}Ajoutez une séance au planning d’une session.{% endblock %}
 {% block dashboard_content %}
-{% include "formations/includes/model_form.html" with form_title="Informations de la séance" cancel_url_name="formations:seance-list" submit_label="Enregistrer la séance" %}
+{% include "formations/includes/model_form.html" with form_title="Informations de la séance" cancel_url=cancel_url cancel_url_name="formations:session-list" submit_label="Enregistrer la séance" %}
 {% endblock %}
