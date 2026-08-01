@@ -111,6 +111,17 @@ class SessionPublicAccessTest(TestCase):
         self.assertTrue(access_link.is_active)
         self.assertIsNotNone(access_link.expires_at)
 
+    def test_session_list_renders_operational_cards(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get("/o/centre-public/formations/sessions/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "La bureautique")
+        self.assertContains(response, "Informatique bureautique")
+        self.assertContains(response, "Apprenants")
+        self.assertContains(response, "Seances")
+
     def test_direct_get_on_access_action_redirects_without_changing_state(self):
         self.client.force_login(self.user)
 

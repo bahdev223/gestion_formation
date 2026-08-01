@@ -3,8 +3,8 @@ from datetime import datetime, time
 import qrcode
 import qrcode.image.svg
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError, models
 from django.forms import HiddenInput
@@ -139,9 +139,52 @@ class SessionListView(OrganisationScopedMixin, LoginRequiredMixin, PermissionReq
     paginate_by = 20
 
     def get_queryset(self):
-        return super().get_queryset().select_related(
+        queryset = super().get_queryset().select_related(
             "formation", "formateur"
-        ).order_by("-date_debut", "-created_at")
+        ).annotate(
+            inscriptions_count=models.Count("inscriptions", distinct=True),
+            seances_count=models.Count("seances", distinct=True),
+        )
+        search = self.request.GET.get("q", "").strip()
+        statut = self.request.GET.get("statut", "").strip()
+        if search:
+            queryset = queryset.filter(
+                models.Q(titre__icontains=search)
+                | models.Q(formation__nom__icontains=search)
+                | models.Q(formateur__username__icontains=search)
+                | models.Q(formateur__first_name__icontains=search)
+                | models.Q(formateur__last_name__icontains=search)
+                | models.Q(lieu__icontains=search)
+            )
+        if statut:
+            queryset = queryset.filter(statut=statut)
+        return queryset.order_by("-date_debut", "-created_at")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_qs = self.get_queryset()
+        context.update(
+            {
+                "search_query": self.request.GET.get("q", "").strip(),
+                "active_statut": self.request.GET.get("statut", "").strip(),
+                "statut_choices": SessionFormation.Statut.choices,
+                "sessions_total": base_qs.count(),
+                "sessions_actives": base_qs.filter(
+                    statut__in=[
+                        SessionFormation.Statut.PLANIFIEE,
+                        SessionFormation.Statut.INSCRIPTIONS_OUVERTES,
+                        SessionFormation.Statut.EN_COURS,
+                    ]
+                ).count(),
+                "sessions_apprenants": sum(
+                    session.inscriptions_count for session in base_qs
+                ),
+                "sessions_seances": sum(
+                    session.seances_count for session in base_qs
+                ),
+            }
+        )
+        return context
 
 
 class SessionCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):

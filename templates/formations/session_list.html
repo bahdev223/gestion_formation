@@ -1,25 +1,167 @@
 {% extends "layouts/dashboard.html" %}
 {% block page_title %}Sessions{% endblock %}
-{% block page_subtitle %}Planification et suivi des sessions de formation.{% endblock %}
-{% block dashboard_content %}
-{% if messages %}{% for message in messages %}<div class="mb-4 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ message }}</div>{% endfor %}{% endif %}
-<div class="baly-surface overflow-hidden rounded-xl">
-  <div class="flex flex-col gap-3 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-    <div><h2 class="text-lg font-bold text-slate-950">Sessions programmées</h2><p class="mt-1 text-sm text-slate-500">Calendrier opérationnel des formations.</p></div>
-    <a href="{% tenant_url 'formations:session-create' %}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'formations:session-create' %}" hx-target="#global-modal-content" class="baly-btn-primary rounded-md px-4 py-2.5 text-sm font-semibold text-white">Nouvelle session</a>
-  </div>
-  {% if sessions %}
-  <div class="overflow-x-auto"><table class="w-full text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Session</th><th class="px-6 py-4">Formation</th><th class="px-6 py-4">Dates</th><th class="px-6 py-4">Formateur</th><th class="px-6 py-4">Lieu</th><th class="px-6 py-4">Statut</th><th class="px-6 py-4 text-right">Actions</th></tr></thead>
-    <tbody class="divide-y divide-slate-100">{% for session in sessions %}<tr class="hover:bg-blue-50/40">
-      <td class="px-6 py-4"><p class="font-semibold text-slate-900">{{ session.titre }}</p><p class="mt-1 font-mono text-xs text-slate-500">{{ session.code }}</p></td>
-      <td class="px-6 py-4 text-slate-700">{{ session.formation.nom }}</td>
-      <td class="whitespace-nowrap px-6 py-4 text-slate-600">{{ session.date_debut|date:"d/m/Y" }} – {{ session.date_fin|date:"d/m/Y" }}</td>
-      <td class="px-6 py-4 text-slate-600">{{ session.formateur.get_full_name|default:session.formateur.username }}</td>
-      <td class="px-6 py-4 text-slate-600">{{ session.lieu }}</td><td class="px-6 py-4"><span class="baly-badge">{{ session.get_statut_display }}</span></td>
-      <td class="whitespace-nowrap px-6 py-4 text-right"><a href="{% tenant_url 'formations:session-detail' session.pk %}" class="mr-3 inline-flex items-center rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Détails</a><a href="{% tenant_url 'inscriptions:create' %}?session={{ session.pk }}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'inscriptions:create' %}?session={{ session.pk }}" hx-target="#global-modal-content" class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Participant</a></td>
-    </tr>{% endfor %}</tbody>
-  </table></div>
-  {% else %}<div class="px-6 py-16 text-center"><h3 class="font-bold text-slate-900">Aucune session programmée</h3><p class="mt-2 text-sm text-slate-500">Créez une session à partir d’une formation du catalogue.</p></div>{% endif %}
+{% block page_subtitle %}Pilotage des sessions, apprenants, seances et acces publics.{% endblock %}
+
+{% block page_actions %}
+<div class="flex min-w-0 flex-nowrap gap-2 overflow-x-auto pb-1">
+  <a
+    href="{% tenant_url 'formations:session-create' %}"
+    @click.prevent="globalModalOpen = true"
+    hx-get="{% tenant_url 'formations:session-create' %}"
+    hx-target="#global-modal-content"
+    class="inline-flex flex-none items-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700"
+  >
+    <svg class="ui-icon h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+    <span>Session</span>
+  </a>
+  <a href="{% tenant_url 'formations:index' %}" class="inline-flex flex-none items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+    <svg class="ui-icon h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H6.5A2.5 2.5 0 0 1 4 17.5z"></path><path d="M8 4v16"></path></svg>
+    <span>Catalogue</span>
+  </a>
 </div>
+{% endblock %}
+
+{% block dashboard_content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="mb-3 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="stat-card">
+    <p class="stat-label">Sessions</p>
+    <p class="stat-value">{{ sessions_total }}</p>
+    <p class="stat-hint">Sessions affichees</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-label">Actives</p>
+    <p class="stat-value">{{ sessions_actives }}</p>
+    <p class="stat-hint">Planifiees ou en cours</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-label">Apprenants</p>
+    <p class="stat-value">{{ sessions_apprenants }}</p>
+    <p class="stat-hint">Inscriptions rattachees</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-label">Seances</p>
+    <p class="stat-value">{{ sessions_seances }}</p>
+    <p class="stat-hint">Planning total</p>
+  </article>
+</section>
+
+<section class="baly-surface mt-3 overflow-hidden rounded-lg">
+  <div class="border-b border-slate-200 px-4 py-4">
+    <form method="get" class="grid gap-2 lg:grid-cols-[1fr_220px_auto]">
+      <label class="relative block">
+        <span class="sr-only">Rechercher une session</span>
+        <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <input
+          type="search"
+          name="q"
+          value="{{ search_query }}"
+          placeholder="Rechercher par session, formation, formateur ou lieu"
+          class="w-full border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+        >
+      </label>
+      <select name="statut" class="w-full border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100">
+        <option value="">Tous les statuts</option>
+        {% for value,label in statut_choices %}
+          <option value="{{ value }}" {% if value == active_statut %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <div class="flex gap-2">
+        <button type="submit" class="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white">
+          <svg class="ui-icon h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16"></path><path d="M7 12h10"></path><path d="M10 18h4"></path></svg>
+          <span>Filtrer</span>
+        </button>
+        {% if search_query or active_statut %}
+          <a href="{% tenant_url 'formations:session-list' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700">Reset</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  {% if sessions %}
+    <div class="divide-y divide-slate-100">
+      {% for session in sessions %}
+        <article class="grid gap-4 px-4 py-4 transition hover:bg-slate-50 xl:grid-cols-[minmax(280px,1.2fr)_minmax(220px,1fr)_170px_160px_auto] xl:items-center">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="truncate text-sm font-bold text-slate-950">{{ session.titre }}</h2>
+              {% if session.statut == "EN_COURS" %}
+                <span class="baly-badge baly-badge-blue">En cours</span>
+              {% elif session.statut == "TERMINEE" %}
+                <span class="baly-badge baly-badge-blue">Terminee</span>
+              {% elif session.statut == "ANNULEE" %}
+                <span class="baly-badge baly-badge-red">Annulee</span>
+              {% elif session.statut == "INSCRIPTIONS_OUVERTES" %}
+                <span class="baly-badge baly-badge-orange">Inscriptions</span>
+              {% else %}
+                <span class="baly-badge">{{ session.get_statut_display }}</span>
+              {% endif %}
+            </div>
+            <p class="mt-1 truncate text-xs text-slate-500">{{ session.formation.nom }}</p>
+          </div>
+
+          <div class="grid gap-2 text-xs text-slate-600 sm:grid-cols-2 xl:block">
+            <p class="flex items-center gap-2">
+              <svg class="ui-icon h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v4"></path><path d="M17 3v4"></path><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M4 10h16"></path></svg>
+              <span>{{ session.date_debut|date:"d/m/Y" }} - {{ session.date_fin|date:"d/m/Y" }}</span>
+            </p>
+            <p class="mt-0 flex items-center gap-2 xl:mt-1">
+              <svg class="ui-icon h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <span class="truncate">{{ session.formateur.get_full_name|default:session.formateur.username }}</span>
+            </p>
+            <p class="mt-0 flex items-center gap-2 xl:mt-1">
+              <svg class="ui-icon h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
+              <span class="truncate">{{ session.lieu }}</span>
+            </p>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="border border-slate-200 bg-white px-2 py-2">
+              <p class="font-bold text-slate-950">{{ session.inscriptions_count }}</p>
+              <p class="text-slate-500">Appr.</p>
+            </div>
+            <div class="border border-slate-200 bg-white px-2 py-2">
+              <p class="font-bold text-slate-950">{{ session.capacite_max }}</p>
+              <p class="text-slate-500">Places</p>
+            </div>
+            <div class="border border-slate-200 bg-white px-2 py-2">
+              <p class="font-bold text-slate-950">{{ session.seances_count }}</p>
+              <p class="text-slate-500">Seances</p>
+            </div>
+          </div>
+
+          <div class="text-sm">
+            <p class="font-bold text-slate-950">{{ session.prix_applique|floatformat:0 }} FCFA</p>
+            <p class="mt-1 text-xs text-slate-500">Prix applique</p>
+          </div>
+
+          <div class="flex flex-nowrap justify-start gap-2 xl:justify-end">
+            <a href="{% tenant_url 'formations:session-detail' session.pk %}" title="Details" aria-label="Details de la session" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </a>
+            <a href="{% tenant_url 'inscriptions:create' %}?session={{ session.pk }}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'inscriptions:create' %}?session={{ session.pk }}" hx-target="#global-modal-content" title="Ajouter un participant" aria-label="Ajouter un participant" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-blue-700 transition hover:bg-blue-100">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 11h5"></path><path d="M18.5 8.5v5"></path></svg>
+            </a>
+            <a href="{% tenant_url 'formations:seance-create' %}?session={{ session.pk }}" @click.prevent="globalModalOpen = true" hx-get="{% tenant_url 'formations:seance-create' %}?session={{ session.pk }}" hx-target="#global-modal-content" title="Ajouter une seance" aria-label="Ajouter une seance" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7h8"></path><path d="M12 7v10"></path><path d="M4 5h16v14H4z"></path><path d="M8 3v4"></path><path d="M16 3v4"></path></svg>
+            </a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="px-6 py-16 text-center">
+      <div class="feature-icon mx-auto">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v4"></path><path d="M17 3v4"></path><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M4 10h16"></path></svg>
+      </div>
+      <h3 class="mt-4 font-bold text-slate-900">Aucune session trouvee</h3>
+      <p class="mt-2 text-sm text-slate-500">Creez une session ou ajustez les filtres de recherche.</p>
+    </div>
+  {% endif %}
+</section>
 {% endblock %}
