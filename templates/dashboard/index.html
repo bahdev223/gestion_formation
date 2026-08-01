@@ -67,6 +67,101 @@
     {% endfor %}
   </div>
 
+  <section class="mt-4 grid gap-3 xl:grid-cols-3">
+    {% if active_tab == "formations" or active_tab == "vision" or active_tab == "finance" or active_tab == "analyses" %}
+      <article class="fx-card fx-chart-card xl:col-span-2">
+        <div class="fx-chart-head">
+          <div>
+            <p class="fx-chart-eyebrow">Évolution</p>
+            <h3 class="fx-chart-title">Recettes mensuelles</h3>
+          </div>
+          <span class="fx-chart-badge">6 mois</span>
+        </div>
+        <div class="fx-bar-chart" aria-label="Évolution des recettes sur 6 mois">
+          {% for item in analysis.ca_series %}
+            <div class="fx-bar-item">
+              <div class="fx-bar-track">
+                <span class="fx-bar" style="height: {{ item.height|default:0 }}%"></span>
+              </div>
+              <p class="fx-bar-value">{{ item.value|floatformat:0 }}</p>
+              <p class="fx-bar-label">{{ item.label }}</p>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    {% endif %}
+
+    {% if active_tab == "formations" or active_tab == "vision" or active_tab == "analyses" %}
+      <article class="fx-card fx-chart-card">
+        <div class="fx-chart-head">
+          <div>
+            <p class="fx-chart-eyebrow">Catalogue</p>
+            <h3 class="fx-chart-title">Formations les plus suivies</h3>
+          </div>
+        </div>
+        <div class="space-y-3">
+          {% for item in analysis.top_formation_revenus %}
+            <div>
+              <div class="mb-1 flex items-center justify-between gap-3 text-xs">
+                <span class="truncate font-semibold text-[var(--fx-text)]">{{ item.label }}</span>
+                <span class="shrink-0 font-bold text-[var(--fx-primary)]">{{ item.value|floatformat:0 }}</span>
+              </div>
+              <div class="fx-progress"><span style="width: {{ item.percent|default:0 }}%"></span></div>
+            </div>
+          {% empty %}
+            <p class="fx-empty">Aucune donnée de formation disponible.</p>
+          {% endfor %}
+        </div>
+      </article>
+    {% endif %}
+
+    {% if active_tab == "participants" or active_tab == "formations" or active_tab == "vision" %}
+      <article class="fx-card fx-chart-card">
+        <div class="fx-chart-head">
+          <div>
+            <p class="fx-chart-eyebrow">Parcours</p>
+            <h3 class="fx-chart-title">Pipeline apprenants</h3>
+          </div>
+        </div>
+        <div class="space-y-3">
+          {% for item in analysis.pipeline %}
+            <div>
+              <div class="mb-1 flex items-center justify-between gap-3 text-xs">
+                <span class="font-semibold text-[var(--fx-text)]">{{ item.name }}</span>
+                <span class="font-bold text-[var(--fx-primary)]">{{ item.value }}</span>
+              </div>
+              <div class="fx-progress fx-progress-soft"><span style="width: {{ item.percent|default:0 }}%"></span></div>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    {% endif %}
+
+    {% if active_tab == "finance" or active_tab == "comptabilite" or active_tab == "vision" %}
+      <article class="fx-card fx-chart-card">
+        <div class="fx-chart-head">
+          <div>
+            <p class="fx-chart-eyebrow">Encaissements</p>
+            <h3 class="fx-chart-title">Répartition par mode</h3>
+          </div>
+        </div>
+        <div class="space-y-3">
+          {% for item in analysis.revenue_by_mode %}
+            <div>
+              <div class="mb-1 flex items-center justify-between gap-3 text-xs">
+                <span class="font-semibold text-[var(--fx-text)]">{{ item.label }}</span>
+                <span class="font-bold text-[var(--fx-primary)]">{{ item.value|floatformat:0 }}</span>
+              </div>
+              <div class="fx-progress fx-progress-accent"><span style="width: {{ item.percent|default:0 }}%"></span></div>
+            </div>
+          {% empty %}
+            <p class="fx-empty">Aucun encaissement validé.</p>
+          {% endfor %}
+        </div>
+      </article>
+    {% endif %}
+  </section>
+
   <section class="mt-4">
     <div class="mb-2 flex items-center justify-between">
       <h3 class="text-sm font-bold text-[var(--fx-text)]">Actions rapides</h3>

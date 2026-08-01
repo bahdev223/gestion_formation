@@ -17,7 +17,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from accounts.models import User
-from comptes.models import Compte, TypeCompte, MouvementCompte, SensMouvement, StatutMouvement
+from comptes.models import Compte, MouvementCompte, SensMouvement, StatutMouvement, TypeCompte
 from dashboard.services import (
     alert_service,
     analytics_service,
@@ -235,6 +235,24 @@ def _cash_sources(organisation):
     }
 
 
+def _with_percent(items, value_key="value"):
+    normalized = []
+    max_value = Decimal("0")
+    for item in items:
+        value = _to_decimal(item.get(value_key))
+        normalized.append({**item, value_key: value})
+        max_value = max(max_value, value)
+    if max_value <= 0:
+        return [{**item, "percent": 0} for item in normalized]
+    return [
+        {
+            **item,
+            "percent": max(3, int(_safe_pct(item[value_key], max_value))),
+        }
+        for item in normalized
+    ]
+
+
 def _build_operations_feed(organisation, active_inscriptions, valid_payments, today: date):
     events: list[_Event] = []
     for ins in active_inscriptions.select_related("participant", "session", "session__formation").order_by("-created_at")[:4]:
@@ -398,6 +416,7 @@ def get_dashboard_statistics(filters=None):
             "label": Paiement.ModePaiement(row["mode_paiement"]).label if row["mode_paiement"] in dict(Paiement.ModePaiement.choices) else row["mode_paiement"],
             "value": _to_decimal(row["total"]),
         })
+    mode_distribution = _with_percent(mode_distribution)
 
     # Top débiteurs
     top_unpaid = []
@@ -553,6 +572,17 @@ def get_dashboard_statistics(filters=None):
             "href": f"/o/{organisation.slug}/formations/sessions/{session.pk}/",
         })
 
+    pipeline = _with_percent([
+        {"name": "Pré-inscrits", "value": status_map.get(Inscription.Statut.PREINSCRIT, 0)},
+        {"name": "Confirmés", "value": status_map.get(Inscription.Statut.CONFIRME, 0)},
+        {"name": "En formation", "value": status_map.get(Inscription.Statut.EN_COURS, 0)},
+        {"name": "Terminés", "value": termines},
+    ])
+    top_formation_chart = _with_percent([
+        {"label": item["nom"], "value": _to_decimal(item["revenue"])}
+        for item in top_formation_revenus
+    ])
+
     analysis = {
         "ca_series": _month_series(organisation=organisation, today=today, months=6),
         "inscription_evolution": [
@@ -562,12 +592,7 @@ def get_dashboard_statistics(filters=None):
             {"label": "Année", "value": participant_year},
         ],
         "revenue_by_mode": mode_distribution,
-        "pipeline": [
-            {"name": "Pré-inscrits", "value": status_map.get(Inscription.Statut.PREINSCRIT, 0)},
-            {"name": "Confirmés", "value": status_map.get(Inscription.Statut.CONFIRME, 0)},
-            {"name": "En formation", "value": status_map.get(Inscription.Statut.EN_COURS, 0)},
-            {"name": "Terminés", "value": termines},
-        ],
+        "pipeline": pipeline,
         "agenda": agenda,
         "direction": [
             {"label": "CA", "value": ca_mois, "delta": _safe_delta(ca_mois, ca_mois_dernier)},
@@ -582,9 +607,7 @@ def get_dashboard_statistics(filters=None):
             {"label": "Sessions actives", "value": sessions_open},
             {"label": "Taux paiement", "value": _safe_pct(encaisse, facturation)},
         ],
-        "top_formation_revenus": [
-            {"label": item["nom"], "value": _to_decimal(item["revenue"])} for item in top_formation_revenus
-        ],
+        "top_formation_revenus": top_formation_chart,
     }
 
     stats = {
