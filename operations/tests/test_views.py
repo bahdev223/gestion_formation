@@ -61,6 +61,8 @@ class VuesOperationTest(TestCase):
         self.assertContains(reponse, "Aucune opération enregistrée")
         self.assertContains(reponse, "Entrées")
         self.assertContains(reponse, "Sorties")
+        self.assertContains(reponse, "Nouvelle dépense")
+        self.assertContains(reponse, "type=CHARGE_DIVERSE&amp;depense=1")
 
     def test_le_formulaire_saffiche_sans_type_choisi(self):
         reponse = self.client.get(f"{self.base}nouvelle/")
@@ -92,6 +94,9 @@ class VuesOperationTest(TestCase):
             f"{self.base}nouvelle/?type=CHARGE_TRANSPORT"
         ).content.decode()
         self.assertIn('name="compte_tresorerie"', transport)
+        self.assertIn('name="categorie_depense"', transport)
+        self.assertIn('name="compte_charge"', transport)
+        self.assertIn("Transports", transport)
         self.assertIn('name="motif"', transport)
         self.assertIn('name="beneficiaire"', transport)
         self.assertNotIn('name="date_echeance"', transport)
@@ -178,6 +183,8 @@ class VuesOperationTest(TestCase):
                 "compte_tresorerie": self.caisse.pk,
                 "beneficiaire": "Chauffeur",
                 "motif": "Mission Ségou",
+                "categorie_depense": "61",
+                "compte_charge": "618",
                 "centre_cout": "Logistique",
                 "valider": "1",
             },
@@ -188,7 +195,13 @@ class VuesOperationTest(TestCase):
         self.assertTrue(operation.ecriture.est_equilibree)
         # Les champs propres au type sont conserves sans migration.
         self.assertEqual(operation.donnees.get("motif"), "Mission Ségou")
+        self.assertEqual(operation.donnees.get("categorie_depense"), "61")
+        self.assertEqual(operation.donnees.get("compte_charge"), "618")
+        self.assertTrue(operation.ecriture.lignes.filter(compte__code="618").exists())
         self.assertEqual(operation.centre_cout, "Logistique")
+        liste = self.client.get(self.base)
+        self.assertContains(liste, "TRANSPORTS")
+        self.assertContains(liste, "AUTRES FRAIS DE TRANSPORT")
         self.caisse.refresh_from_db()
         self.assertEqual(self.caisse.solde_actuel, Decimal("80000"))
         self.assertIsNotNone(operation.mouvement)

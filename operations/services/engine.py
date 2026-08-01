@@ -14,7 +14,7 @@ from comptabilite_ohada.services.ecriture_service import EcritureService
 from comptabilite_ohada.services.initialisation_service import InitialisationService
 from comptabilite_ohada.services.regle_service import RegleComptableService
 
-from ..catalogue import SensFlux, obtenir
+from ..catalogue import ClasseOperation, SensFlux, obtenir
 
 OPERATIONS_ENTRE_COMPTES = frozenset(
     {"TRANSFERT", "DEPOT_BANQUE", "RETRAIT_BANQUE"}
@@ -245,6 +245,14 @@ class OperationEngine:
 
         debit_code = regle["compte_debit"]
         credit_code = regle["compte_credit"]
+        if definition.classe == ClasseOperation.CHARGES:
+            compte_charge = (operation.donnees or {}).get("compte_charge")
+            if compte_charge:
+                if not str(compte_charge).startswith("6"):
+                    raise ValidationError(
+                        "Le compte de depense doit etre un compte de charge."
+                    )
+                debit_code = str(compte_charge)
         tresorerie_code = (
             cls._code_tresorerie(operation.compte_tresorerie, organisation)
             if operation.compte_tresorerie

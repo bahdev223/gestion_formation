@@ -1,6 +1,6 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block page_title %}{% if object %}Modifier l’opération{% else %}Nouvelle opération{% endif %}{% endblock %}
+{% block page_title %}{% if object %}Modifier l’opération{% elif request.GET.depense %}Nouvelle dépense{% else %}Nouvelle opération{% endif %}{% endblock %}
 {% block page_subtitle %}{% if 'comptabilite' in modules_actifs %}Décrivez ce qui s’est passé — la comptabilité est générée automatiquement.{% else %}Enregistrez simplement une entrée, une sortie ou un transfert.{% endif %}{% endblock %}
 {% block breadcrumb %}Opérations / {% if object %}{{ object.numero }}{% else %}Nouvelle{% endif %}{% endblock %}
 
@@ -112,5 +112,34 @@
     url.searchParams.set("type", type);
     window.location.assign(url.toString());
   }
+
+  function filtrerSousCategories() {
+    const categorie = document.getElementById('id_categorie_depense');
+    const sousCategorie = document.getElementById('id_compte_charge');
+    if (!categorie || !sousCategorie) return;
+    const prefixe = categorie.value;
+    let selectionValide = false;
+    Array.from(sousCategorie.options).forEach(function(option) {
+      if (!option.value) return;
+      const visible = Boolean(prefixe) && option.value.startsWith(prefixe);
+      option.hidden = !visible;
+      option.disabled = !visible;
+      if (visible && option.selected) selectionValide = true;
+    });
+    Array.from(sousCategorie.querySelectorAll('optgroup')).forEach(function(groupe) {
+      groupe.hidden = !Array.from(groupe.querySelectorAll('option')).some(function(option) {
+        return !option.disabled;
+      });
+    });
+    if (!selectionValide) sousCategorie.value = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const categorie = document.getElementById('id_categorie_depense');
+    if (categorie) {
+      categorie.addEventListener('change', filtrerSousCategories);
+      filtrerSousCategories();
+    }
+  });
 </script>
 {% endblock %}

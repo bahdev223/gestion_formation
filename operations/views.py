@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
+from comptabilite_ohada.models import CompteComptable
 from core.features import module_est_actif
 from core.mixins import OrganisationScopedMixin
 from organisations.access import effective_permissions, require_member_permission
@@ -65,6 +66,7 @@ class OperationIndexView(
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
         organisation = self.get_current_organisation()
+        _enrichir_classification_depenses(contexte["operations"], organisation)
         toutes = Operation.objects.filter(organisation=organisation)
         validees = toutes.filter(statut=Operation.Statut.VALIDEE)
         codes_entree = [d.code for d in _toutes_les_definitions() if d.sens == "ENTREE"]
@@ -108,6 +110,33 @@ def _toutes_les_definitions():
     from .catalogue import CATALOGUE
 
     return CATALOGUE.values()
+
+
+def _enrichir_classification_depenses(operations, organisation):
+    """Ajoute les libelles metier sans requete par ligne dans les templates."""
+    operations = list(operations)
+    codes = {
+        str(code)
+        for operation in operations
+        for code in (
+            (operation.donnees or {}).get("categorie_depense"),
+            (operation.donnees or {}).get("compte_charge"),
+        )
+        if code
+    }
+    libelles = dict(
+        CompteComptable.objects.filter(
+            organisation=organisation, code__in=codes
+        ).values_list("code", "libelle")
+    )
+    for operation in operations:
+        donnees = operation.donnees or {}
+        operation.categorie_depense_libelle = libelles.get(
+            donnees.get("categorie_depense"), ""
+        )
+        operation.sous_categorie_depense_libelle = libelles.get(
+            donnees.get("compte_charge"), ""
+        )
 
 
 def _comptabilite_visible(organisation):
@@ -250,6 +279,9 @@ class OperationDetailView(
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
         operation = self.object
+        _enrichir_classification_depenses(
+            [operation], self.get_current_organisation()
+        )
         contexte["lignes_ecriture"] = (
             operation.ecriture.lignes.select_related("compte")
             if operation.ecriture_id

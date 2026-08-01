@@ -69,11 +69,19 @@
           <dd class="mt-1 text-[15px]">{{ operation.projet }}</dd>
         </div>
         {% endif %}
+        {% if operation.sous_categorie_depense_libelle %}
+        <div class="sm:col-span-2">
+          <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">Classification de la dépense</dt>
+          <dd class="mt-1 text-[15px]">{{ operation.categorie_depense_libelle }} · {{ operation.sous_categorie_depense_libelle }}</dd>
+        </div>
+        {% endif %}
         {% for cle, valeur in operation.donnees.items %}
+        {% if cle != 'categorie_depense' and cle != 'compte_charge' %}
         <div>
           <dt class="text-xs font-semibold uppercase tracking-[.06em] text-[var(--fx-muted)]">{{ cle|capfirst }}</dt>
           <dd class="mt-1 text-[15px]">{{ valeur }}</dd>
         </div>
+        {% endif %}
         {% endfor %}
       </dl>
     </section>

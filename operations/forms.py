@@ -10,10 +10,11 @@ import copy
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from comptabilite_ohada.models import CompteComptable
 from comptes.models import Compte
 from core.features import module_est_actif
 
-from .catalogue import choix_types, choix_types_simples, obtenir
+from .catalogue import ClasseOperation, choix_types, choix_types_simples, obtenir
 from .models import Operation
 
 CLASSES_CHAMP = (
@@ -144,6 +145,52 @@ class OperationForm(forms.ModelForm):
             champ = copy.deepcopy(gabarit)
             champ.initial = valeurs.get(nom)
             self.fields[nom] = champ
+        if self.definition.classe == ClasseOperation.CHARGES:
+            self._ajouter_champs_depense(valeurs)
+
+    def _ajouter_champs_depense(self, valeurs):
+        """Expose le plan de charges du tenant en categorie/sous-categorie."""
+        comptes = CompteComptable.objects.none()
+        if self.organisation is not None:
+            if not CompteComptable.objects.filter(
+                organisation=self.organisation
+            ).exists():
+                from comptabilite_ohada.services.initialisation_service import (
+                    InitialisationService,
+                )
+
+                InitialisationService.initialiser_organisation(self.organisation)
+            comptes = CompteComptable.objects.filter(
+                organisation=self.organisation,
+                actif=True,
+                code__startswith="6",
+            ).order_by("code")
+
+        categories = list(comptes.filter(niveau=2))
+        mouvements = list(comptes.filter(est_mouvement=True).exclude(niveau__lte=2))
+        self.fields["categorie_depense"] = forms.ChoiceField(
+            label=_("Grande catégorie"),
+            choices=[("", _("— Choisir une catégorie —"))]
+            + [(compte.code, compte.libelle) for compte in categories],
+            initial=valeurs.get("categorie_depense"),
+            required=True,
+        )
+        choix_groupes = []
+        for categorie in categories:
+            choix = [
+                (compte.code, f"{compte.code} · {compte.libelle}")
+                for compte in mouvements
+                if compte.code.startswith(categorie.code)
+            ]
+            if choix:
+                choix_groupes.append((categorie.libelle, choix))
+        self.fields["compte_charge"] = forms.ChoiceField(
+            label=_("Sous-catégorie"),
+            choices=[("", _("— Choisir une sous-catégorie —"))] + choix_groupes,
+            initial=valeurs.get("compte_charge"),
+            required=True,
+            help_text=_("Ce choix détermine automatiquement le compte de charge."),
+        )
 
     def _masquer_champs_inutiles(self):
         """Retire les champs modele que ce type n'utilise pas."""
@@ -195,6 +242,14 @@ class OperationForm(forms.ModelForm):
                     "compte_destination",
                     _("Le compte de destination doit différer de la source."),
                 )
+        if definition.classe == ClasseOperation.CHARGES:
+            categorie = donnees.get("categorie_depense") or ""
+            compte_charge = donnees.get("compte_charge") or ""
+            if categorie and compte_charge and not compte_charge.startswith(categorie):
+                self.add_error(
+                    "compte_charge",
+                    _("Cette sous-catégorie n'appartient pas à la catégorie choisie."),
+                )
         return donnees
 
     def save(self, commit=True):
@@ -206,7 +261,10 @@ class OperationForm(forms.ModelForm):
         # un type ne demande donc aucune migration.
         supplementaires = {}
         if self.definition is not None:
-            for nom in self.definition.champs:
+            noms_donnees = list(self.definition.champs)
+            if self.definition.classe == ClasseOperation.CHARGES:
+                noms_donnees.extend(("categorie_depense", "compte_charge"))
+            for nom in noms_donnees:
                 if nom in CHAMPS_MODELE or nom not in self.cleaned_data:
                     continue
                 valeur = self.cleaned_data.get(nom)
