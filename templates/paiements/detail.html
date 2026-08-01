@@ -35,7 +35,7 @@
       <div><dt class="text-slate-500">Inscription</dt><dd class="mt-1 font-mono text-xs">{{ paiement.inscription.numero }}</dd></div>
     </dl>
     <dl class="space-y-4 text-sm">
-      <div><dt class="text-slate-500">Montant encaissé</dt><dd class="mt-1 text-2xl font-bold text-[var(--baly-blue)]">{{ paiement.montant|floatformat:0 }} FCFA</dd></div>
+      <div><dt class="text-slate-500">Montant encaissé</dt><dd class="mt-1 text-2xl font-bold text-[var(--baly-blue)]">{{ paiement.montant|floatformat:0 }} {{ payment_currency }}</dd></div>
       <div><dt class="text-slate-500">Date</dt><dd class="mt-1 font-semibold">{{ paiement.date_paiement|date:"d/m/Y à H:i" }}</dd></div>
       <div><dt class="text-slate-500">Mode de paiement</dt><dd class="mt-1">{{ paiement.get_mode_paiement_display }}</dd></div>
       <div><dt class="text-slate-500">Compte d'encaissement</dt><dd class="mt-1 font-semibold text-slate-900">{{ paiement.compte.nom|default:"Compte non renseigné" }}</dd></div>

@@ -17,6 +17,10 @@ class MoneyDecimalField(forms.DecimalField):
                 .replace(" ", "")
                 .replace("FCFA", "")
                 .replace("XOF", "")
+                .replace("EUR", "")
+                .replace("USD", "")
+                .replace("€", "")
+                .replace("$", "")
             )
             if "," in normalized and "." in normalized:
                 normalized = normalized.replace(".", "").replace(",", ".")
@@ -30,7 +34,7 @@ class MoneyDecimalField(forms.DecimalField):
 
 class PaiementForm(forms.ModelForm):
     montant = MoneyDecimalField(
-        label="Montant encaissé (FCFA)",
+        label="Montant encaissé",
         min_value=Decimal("1"),
         max_digits=12,
         decimal_places=2,
@@ -58,7 +62,6 @@ class PaiementForm(forms.ModelForm):
         ]
         labels = {
             "inscription": "Inscription concernée",
-            "montant": "Montant encaissé (FCFA)",
             "date_paiement": "Date et heure du paiement",
             "mode_paiement": "Mode de paiement",
             "compte": "Compte d'encaissement",
@@ -77,7 +80,10 @@ class PaiementForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         organisation = kwargs.pop("organisation", None)
         super().__init__(*args, **kwargs)
+        self.organisation = organisation
+        self.devise = getattr(organisation, "devise", None) or "Devise"
         self.fields["date_paiement"].input_formats = ["%Y-%m-%dT%H:%M"]
+        self.fields["montant"].label = f"Montant encaissé ({self.devise})"
 
         inscriptions = (
             Inscription.objects.exclude(statut=Inscription.Statut.ANNULE)
@@ -111,6 +117,6 @@ class PaiementForm(forms.ModelForm):
             self.add_error(
                 "montant",
                 f"Le montant dépasse le reste à payer "
-                f"({inscription.reste_a_payer:,.0f} FCFA).",
+                f"({inscription.reste_a_payer:,.0f} {self.devise}).",
             )
         return cleaned_data

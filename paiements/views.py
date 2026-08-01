@@ -33,6 +33,7 @@ class PaiementIndexView(OrganisationScopedMixin, LoginRequiredMixin, PermissionR
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["payment_currency"] = self.get_current_organisation().devise
         valid_payments = self.get_queryset().filter(statut=Paiement.Statut.VALIDE)
         context["total_encaisse"] = (
             valid_payments.aggregate(total=Sum("montant"))["total"] or 0
@@ -69,6 +70,7 @@ class PaiementCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequi
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["payment_currency"] = self.get_current_organisation().devise
         form = context["form"]
         inscriptions = form.fields["inscription"].queryset.annotate(
             total_paye_calc=Coalesce(
@@ -130,3 +132,8 @@ class PaiementDetailView(OrganisationScopedMixin, LoginRequiredMixin, Permission
             "enregistre_par",
             "compte",
         )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["payment_currency"] = self.get_current_organisation().devise
+        return context

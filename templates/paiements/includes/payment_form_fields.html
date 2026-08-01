@@ -19,7 +19,7 @@
       {% if field.name == "montant" %}
         <div class="relative">
           {{ field }}
-          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-bold text-slate-400">FCFA</span>
+          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-bold text-slate-400">{{ payment_currency }}</span>
         </div>
         <p class="mt-1.5 text-xs text-slate-500">Saisissez librement : 1000, 1 000 ou 1500.</p>
       {% else %}
@@ -40,15 +40,15 @@
           <div class="grid gap-2 text-xs sm:grid-cols-3">
             <div class="rounded-md bg-white px-3 py-2">
               <p class="font-semibold text-slate-500">Montant dû</p>
-              <p class="mt-1 font-bold text-slate-950" x-text="Number(summaries[selectedInscription]?.montant || 0).toLocaleString('fr-FR') + ' FCFA'"></p>
+              <p class="mt-1 font-bold text-slate-950" x-text="Number(summaries[selectedInscription]?.montant || 0).toLocaleString('fr-FR') + ' {{ payment_currency|escapejs }}'"></p>
             </div>
             <div class="rounded-md bg-white px-3 py-2">
               <p class="font-semibold text-slate-500">Déjà payé</p>
-              <p class="mt-1 font-bold text-emerald-700" x-text="Number(summaries[selectedInscription]?.paye || 0).toLocaleString('fr-FR') + ' FCFA'"></p>
+              <p class="mt-1 font-bold text-emerald-700" x-text="Number(summaries[selectedInscription]?.paye || 0).toLocaleString('fr-FR') + ' {{ payment_currency|escapejs }}'"></p>
             </div>
             <div class="rounded-md bg-white px-3 py-2">
               <p class="font-semibold text-slate-500">Reste à payer</p>
-              <p class="mt-1 font-bold text-orange-700" x-text="Number(summaries[selectedInscription]?.reste || 0).toLocaleString('fr-FR') + ' FCFA'"></p>
+              <p class="mt-1 font-bold text-orange-700" x-text="Number(summaries[selectedInscription]?.reste || 0).toLocaleString('fr-FR') + ' {{ payment_currency|escapejs }}'"></p>
             </div>
           </div>
         </div>

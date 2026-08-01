@@ -16,8 +16,8 @@
 {% endif %}
 
 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-  <div class="stat-card"><p class="stat-label">Total encaissé</p><p class="stat-value">{{ total_encaisse|floatformat:0 }}</p><p class="stat-hint">FCFA</p></div>
-  <div class="stat-card"><p class="stat-label">Aujourd'hui</p><p class="stat-value">{{ encaisse_jour|floatformat:0 }}</p><p class="stat-hint">FCFA encaissés</p></div>
+  <div class="stat-card"><p class="stat-label">Total encaissé</p><p class="stat-value">{{ total_encaisse|floatformat:0 }}</p><p class="stat-hint">{{ payment_currency }}</p></div>
+  <div class="stat-card"><p class="stat-label">Aujourd'hui</p><p class="stat-value">{{ encaisse_jour|floatformat:0 }}</p><p class="stat-hint">{{ payment_currency }} encaissés</p></div>
   <div class="stat-card"><p class="stat-label">Paiements validés</p><p class="stat-value">{{ paiements_valides }}</p><p class="stat-hint">Transactions</p></div>
   <div class="stat-card"><p class="stat-label">Annulations</p><p class="stat-value">{{ paiements_annules }}</p><p class="stat-hint">Transactions annulées</p></div>
 </div>
@@ -48,7 +48,7 @@
             <td class="px-6 py-4 text-slate-700">{{ paiement.inscription.session.formation.nom }}</td>
             <td class="whitespace-nowrap px-6 py-4 text-slate-600">{{ paiement.date_paiement|date:"d/m/Y H:i" }}</td>
             <td class="px-6 py-4"><p class="font-semibold text-slate-900">{{ paiement.get_mode_paiement_display }}</p><p class="mt-1 text-xs text-slate-500">{{ paiement.compte.nom|default:"Compte non renseigné" }}</p></td>
-            <td class="whitespace-nowrap px-6 py-4 font-bold">{{ paiement.montant|floatformat:0 }} FCFA</td>
+            <td class="whitespace-nowrap px-6 py-4 font-bold">{{ paiement.montant|floatformat:0 }} {{ payment_currency }}</td>
             <td class="px-6 py-4"><span class="baly-badge">{{ paiement.get_statut_display }}</span></td>
           </tr>
         {% empty %}

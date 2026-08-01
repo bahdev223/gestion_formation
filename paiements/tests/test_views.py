@@ -9,8 +9,8 @@ from core.testing import souscrire_plan_complet
 from formations.models import CategorieFormation, Formation, SessionFormation
 from inscriptions.models import Inscription
 from organisations.models import Organisation
-from participants.models import Participant
 from paiements.models import Paiement
+from participants.models import Participant
 
 
 class PaiementCreateViewTest(TestCase):
@@ -26,6 +26,7 @@ class PaiementCreateViewTest(TestCase):
             slug="centre-paiements",
             email="contact@paiements.test",
             telephone="+22370000010",
+            devise="EUR",
         )
         souscrire_plan_complet(cls.organisation)
         cls.compte = Compte.objects.create(
@@ -90,7 +91,9 @@ class PaiementCreateViewTest(TestCase):
         self.assertContains(response, "Reste à payer")
         self.assertContains(response, "100000")
         self.assertContains(response, "Ex : 1 500")
-        self.assertContains(response, "FCFA")
+        self.assertContains(response, "Montant encaissé (EUR)")
+        self.assertContains(response, "EUR")
+        self.assertNotContains(response, "Montant encaissé (FCFA)")
         self.assertNotContains(response, "Orange Money")
         self.assertNotContains(response, "Moov Money")
         self.assertNotContains(response, 'step="500"')
