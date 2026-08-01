@@ -11,8 +11,9 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from comptes.models import Compte
+from core.features import module_est_actif
 
-from .catalogue import choix_types, obtenir
+from .catalogue import choix_types, choix_types_simples, obtenir
 from .models import Operation
 
 CLASSES_CHAMP = (
@@ -95,9 +96,11 @@ class OperationForm(forms.ModelForm):
         self.fields["montant"].widget.attrs.update(
             {"inputmode": "decimal", "min": "0.01", "step": "0.01"}
         )
-        self.fields["type_operation"].choices = [("", "— Choisir —")] + list(
-            choix_types()
+        afficher_comptabilite = organisation is not None and module_est_actif(
+            organisation, "comptabilite"
         )
+        groupes = choix_types() if afficher_comptabilite else choix_types_simples()
+        self.fields["type_operation"].choices = [("", "— Choisir —")] + list(groupes)
         # Le widget Django rend deja les groupes : on lui attache seulement le
         # rechargement, plutot que de reconstruire le <select> en template.
         self.fields["type_operation"].widget.attrs["onchange"] = (
@@ -180,7 +183,7 @@ class OperationForm(forms.ModelForm):
                 "compte_tresorerie",
                 _("Cette opération nécessite un compte de trésorerie."),
             )
-        if definition.code == "TRANSFERT":
+        if definition.code in {"TRANSFERT", "DEPOT_BANQUE", "RETRAIT_BANQUE"}:
             source = donnees.get("compte_tresorerie")
             destination = donnees.get("compte_destination")
             if not destination:

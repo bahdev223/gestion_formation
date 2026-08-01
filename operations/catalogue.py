@@ -121,7 +121,8 @@ CATALOGUE = _definir(
         classe=ClasseOperation.TRESORERIE,
         regle=TypeOperationComptable.DEPOT_BANQUE,
         sens=SensFlux.NEUTRE,
-        champs=("compte_tresorerie",),
+        champs=("compte_tresorerie", "compte_destination"),
+        aide="Transfert de la caisse vers le compte bancaire.",
     ),
     DefinitionOperation(
         code="RETRAIT_BANQUE",
@@ -129,7 +130,8 @@ CATALOGUE = _definir(
         classe=ClasseOperation.TRESORERIE,
         regle=TypeOperationComptable.RETRAIT_BANQUE,
         sens=SensFlux.NEUTRE,
-        champs=("compte_tresorerie",),
+        champs=("compte_tresorerie", "compte_destination"),
+        aide="Transfert du compte bancaire vers la caisse.",
     ),
     # ─── Classe 6 : Charges ───────────────────────────────────
     DefinitionOperation(
@@ -262,4 +264,37 @@ def choix_types():
             [(d.code, d.libelle) for d in groupe["types"]],
         )
         for groupe in definitions_par_classe()
+    ]
+
+
+def choix_types_simples():
+    """Types regroupes avec le vocabulaire d'une petite entreprise."""
+    groupes = (
+        (
+            "Argent reçu",
+            ("ENCAISSEMENT", "VENTE", "RECETTE_FORMATION", "PAIEMENT_CLIENT"),
+        ),
+        (
+            "Argent dépensé",
+            (
+                "DECAISSEMENT",
+                "CHARGE_LOYER",
+                "CHARGE_TRANSPORT",
+                "CHARGE_UTILITES",
+                "CHARGE_DIVERSE",
+                "PAIEMENT_FOURNISSEUR",
+            ),
+        ),
+        (
+            "Transferts entre comptes",
+            ("TRANSFERT", "DEPOT_BANQUE", "RETRAIT_BANQUE"),
+        ),
+        (
+            "Factures à suivre",
+            ("FACTURE_CLIENT", "FACTURE_FOURNISSEUR"),
+        ),
+    )
+    return [
+        (libelle, [(code, CATALOGUE[code].libelle) for code in codes])
+        for libelle, codes in groupes
     ]

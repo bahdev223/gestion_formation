@@ -1,7 +1,7 @@
 {% extends "layouts/dashboard.html" %}
 
 {% block page_title %}{{ operation.numero }}{% endblock %}
-{% block page_subtitle %}{{ operation.libelle_type }} · {{ operation.classe_libelle }}{% endblock %}
+{% block page_subtitle %}{{ operation.libelle_type }}{% if 'comptabilite' in modules_actifs %} · {{ operation.classe_libelle }}{% endif %}{% endblock %}
 {% block breadcrumb %}Opérations / {{ operation.numero }}{% endblock %}
 
 {% block page_actions %}
@@ -10,7 +10,7 @@
     <a href="{% tenant_url 'operations:update' pk=operation.pk %}" class="fx-btn fx-btn-ghost">Modifier</a>
     <form method="post" action="{% tenant_url 'operations:valider' pk=operation.pk %}">
       {% csrf_token %}
-      <button type="submit" class="fx-btn fx-btn-primary">Valider et comptabiliser</button>
+      <button type="submit" class="fx-btn fx-btn-primary">{% if 'comptabilite' in modules_actifs %}Valider et comptabiliser{% else %}Enregistrer l’opération{% endif %}</button>
     </form>
   {% endif %}
   <a href="{% tenant_url 'operations:index' %}" class="fx-btn fx-btn-ghost">Retour</a>
@@ -77,7 +77,17 @@
         {% endfor %}
       </dl>
     </section>
+    {% if 'comptabilite' not in modules_actifs and operation.mouvement %}
+    <section class="fx-card p-5">
+      <h2 class="text-sm font-semibold text-[var(--fx-text)]">Impact financier</h2>
+      <p class="mt-2 text-sm text-[var(--fx-muted)]">
+        {{ operation.compte_tresorerie.nom }} · {{ operation.mouvement.get_sens_display }}
+        de {{ operation.mouvement.montant|floatformat:0 }} {{ operation.devise }}
+      </p>
+    </section>
+    {% endif %}
 
+    {% if 'comptabilite' in modules_actifs %}
     <section class="fx-card overflow-hidden">
       <div class="flex items-center justify-between border-b border-[var(--fx-border)] px-6 py-4">
         <div>
@@ -120,6 +130,7 @@
       </div>
       {% endif %}
     </section>
+    {% endif %}
   </div>
 
   <aside class="space-y-4">

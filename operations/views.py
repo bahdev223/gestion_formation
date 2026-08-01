@@ -1,10 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
+from core.features import module_est_actif
 from core.mixins import OrganisationScopedMixin
 from organisations.access import require_member_permission
 from organisations.utils import require_request_organisation, tenant_reverse
@@ -50,17 +52,33 @@ class OperationIndexView(
                 if definition.classe == classe
             ]
             queryset = queryset.filter(type_operation__in=codes)
+        flux = self.request.GET.get("flux")
+        if flux in {"ENTREE", "SORTIE", "NEUTRE"}:
+            codes = [
+                definition.code
+                for definition in _toutes_les_definitions()
+                if definition.sens == flux
+            ]
+            queryset = queryset.filter(type_operation__in=codes)
         return queryset
 
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
         organisation = self.get_current_organisation()
         toutes = Operation.objects.filter(organisation=organisation)
+        validees = toutes.filter(statut=Operation.Statut.VALIDEE)
+        codes_entree = [d.code for d in _toutes_les_definitions() if d.sens == "ENTREE"]
+        codes_sortie = [d.code for d in _toutes_les_definitions() if d.sens == "SORTIE"]
+        codes_neutre = [d.code for d in _toutes_les_definitions() if d.sens == "NEUTRE"]
+        entrees = validees.filter(type_operation__in=codes_entree)
+        sorties = validees.filter(type_operation__in=codes_sortie)
+        transferts = validees.filter(type_operation__in=codes_neutre)
         contexte.update(
             {
                 "groupes": definitions_par_classe(),
                 "statut_actif": self.request.GET.get("statut", ""),
                 "classe_active": self.request.GET.get("classe", ""),
+                "flux_actif": self.request.GET.get("flux", ""),
                 "compteurs": {
                     "total": toutes.count(),
                     "brouillon": toutes.filter(
@@ -68,6 +86,11 @@ class OperationIndexView(
                     ).count(),
                     "validee": toutes.filter(statut=Operation.Statut.VALIDEE).count(),
                     "annulee": toutes.filter(statut=Operation.Statut.ANNULEE).count(),
+                    "entrees": entrees.count(),
+                    "sorties": sorties.count(),
+                    "transferts": transferts.count(),
+                    "montant_entrees": entrees.aggregate(total=Sum("montant"))["total"] or 0,
+                    "montant_sorties": sorties.aggregate(total=Sum("montant"))["total"] or 0,
                 },
             }
         )
@@ -78,6 +101,10 @@ def _toutes_les_definitions():
     from .catalogue import CATALOGUE
 
     return CATALOGUE.values()
+
+
+def _comptabilite_visible(organisation):
+    return module_est_actif(organisation, "comptabilite")
 
 
 class OperationCreateView(
@@ -122,13 +149,21 @@ class OperationCreateView(
             except ValidationError as erreur:
                 messages.warning(
                     self.request,
-                    "Opération enregistrée en brouillon : "
+                    (
+                        "Opération enregistrée en brouillon : "
+                        if _comptabilite_visible(organisation)
+                        else "Opération non finalisée : "
+                    )
                     + " ".join(erreur.messages),
                 )
             else:
                 messages.success(
                     self.request,
-                    f"Opération {operation.numero} validée et comptabilisée.",
+                    (
+                        f"Opération {operation.numero} validée et comptabilisée."
+                        if _comptabilite_visible(organisation)
+                        else f"Opération {operation.numero} enregistrée et solde mis à jour."
+                    ),
                 )
         else:
             messages.success(

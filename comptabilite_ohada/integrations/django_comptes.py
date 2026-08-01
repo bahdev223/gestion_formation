@@ -15,15 +15,15 @@ logger = logging.getLogger(__name__)
 
 
 def connect():
+    from comptabilite_ohada.models import TypeOperationComptable
+    from comptabilite_ohada.services.ecriture_service import EcritureService
+    from comptabilite_ohada.services.regle_service import RegleComptableService
     from comptes.models import NatureMouvement
     from comptes.signals.mouvement import (
         mouvement_annule,
         mouvement_valide,
         transfert_effectue,
     )
-    from comptabilite_ohada.models import TypeOperationComptable
-    from comptabilite_ohada.services.ecriture_service import EcritureService
-    from comptabilite_ohada.services.regle_service import RegleComptableService
 
     def _compte_tresorerie(compte):
         """Compte comptable du compte de trésorerie mouvementé."""
@@ -34,6 +34,7 @@ def connect():
     @receiver(
         mouvement_valide,
         dispatch_uid="comptabilite.mouvement_valide",
+        weak=False,
     )
     def on_mouvement_valide(
         sender, instance, nature, montant, user, **kwargs
@@ -83,6 +84,7 @@ def connect():
     @receiver(
         transfert_effectue,
         dispatch_uid="comptabilite.transfert_effectue",
+        weak=False,
     )
     def on_transfert_effectue(
         sender, instance, source, destination, montant, user, **kwargs
@@ -114,6 +116,7 @@ def connect():
     @receiver(
         mouvement_annule,
         dispatch_uid="comptabilite.mouvement_annule",
+        weak=False,
     )
     def on_mouvement_annule(
         sender, instance, annulation, user, **kwargs

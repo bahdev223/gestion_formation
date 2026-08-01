@@ -1,7 +1,7 @@
 {% extends "layouts/dashboard.html" %}
 
 {% block page_title %}{% if object %}Modifier l’opération{% else %}Nouvelle opération{% endif %}{% endblock %}
-{% block page_subtitle %}Décrivez ce qui s’est passé — la comptabilité est générée automatiquement.{% endblock %}
+{% block page_subtitle %}{% if 'comptabilite' in modules_actifs %}Décrivez ce qui s’est passé — la comptabilité est générée automatiquement.{% else %}Enregistrez simplement une entrée, une sortie ou un transfert.{% endif %}{% endblock %}
 {% block breadcrumb %}Opérations / {% if object %}{{ object.numero }}{% else %}Nouvelle{% endif %}{% endblock %}
 
 {% block dashboard_content %}
@@ -13,8 +13,12 @@
       <h2 class="font-semibold text-[var(--fx-text)]">Opération</h2>
       {% if definition %}
         <p class="mt-1 text-sm text-[var(--fx-muted)]">
+          {% if 'comptabilite' in modules_actifs %}
           Classe {{ definition.classe }} · {{ definition.classe_libelle }}
           {% if definition.aide %} — {{ definition.aide }}{% endif %}
+          {% else %}
+          {{ definition.aide|default:"Renseignez les informations de l’opération." }}
+          {% endif %}
         </p>
       {% else %}
         <p class="mt-1 text-sm text-[var(--fx-muted)]">
@@ -52,19 +56,26 @@
     <div class="fx-card p-4">
       <h3 class="text-sm font-semibold text-[var(--fx-text)]">Enregistrement</h3>
       <p class="mt-2 text-xs leading-5 text-[var(--fx-muted)]">
+        {% if 'comptabilite' in modules_actifs %}
         Un brouillon n’est pas comptabilisé : vous pouvez le compléter plus tard.
         La validation génère l’écriture comptable selon les règles de votre
         entreprise.
+        {% else %}
+        Le solde du compte sélectionné sera mis à jour immédiatement. Les
+        traitements techniques sont réalisés automatiquement en arrière-plan.
+        {% endif %}
       </p>
       <div class="mt-4 grid gap-2">
         <button type="submit" name="valider" value="1" class="fx-btn fx-btn-primary w-full gap-2">
           <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
-          <span>Valider et comptabiliser</span>
+          <span>{% if 'comptabilite' in modules_actifs %}Valider et comptabiliser{% else %}Enregistrer l’opération{% endif %}</span>
         </button>
+        {% if 'comptabilite' in modules_actifs %}
         <button type="submit" name="brouillon" value="1" class="fx-btn fx-btn-ghost w-full gap-2">
           <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h8V5"/></svg>
           <span>Enregistrer en brouillon</span>
         </button>
+        {% endif %}
         <a href="{% tenant_url 'operations:index' %}" class="fx-btn fx-btn-ghost w-full">Annuler</a>
       </div>
     </div>
@@ -74,13 +85,20 @@
       <h3 class="text-sm font-semibold text-[var(--fx-text)]">Ce que Formix va faire</h3>
       <ul class="mt-3 space-y-2 text-xs text-[var(--fx-muted)]">
         <li>Numéroter l’opération</li>
+        {% if 'comptabilite' in modules_actifs %}
         <li>Déterminer les comptes selon vos règles</li>
         <li>Générer l’écriture équilibrée</li>
+        {% else %}
+        <li>Mettre à jour le solde du compte</li>
+        <li>Conserver l’auteur et la date de saisie</li>
+        {% endif %}
         <li>Rattacher le justificatif</li>
       </ul>
+      {% if 'comptabilite' in modules_actifs %}
       <p class="mt-3 text-xs text-[var(--fx-muted)]">
         Vous n’avez aucun débit ni crédit à saisir.
       </p>
+      {% endif %}
     </div>
     {% endif %}
   </aside>

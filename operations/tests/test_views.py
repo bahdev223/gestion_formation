@@ -40,7 +40,7 @@ class VuesOperationTest(TestCase):
             code="CAISSE-V",
             nom="Caisse vues",
             type="ESPECES",
-            solde_actuel=Decimal("0"),
+            solde_actuel=Decimal("100000"),
             compte_comptable_code="571",
             organisation=self.organisation,
         )
@@ -59,6 +59,8 @@ class VuesOperationTest(TestCase):
         reponse = self.client.get(self.base)
         self.assertEqual(reponse.status_code, 200)
         self.assertContains(reponse, "Aucune opération enregistrée")
+        self.assertContains(reponse, "Entrées")
+        self.assertContains(reponse, "Sorties")
 
     def test_le_formulaire_saffiche_sans_type_choisi(self):
         reponse = self.client.get(f"{self.base}nouvelle/")
@@ -69,6 +71,10 @@ class VuesOperationTest(TestCase):
         self.assertNotIn('name="compte_tresorerie"', corps)
         self.assertNotIn("{# Le champ", corps)
         self.assertIn(f"Montant ({self.organisation.devise})", corps)
+        self.assertIn("Enregistrer l’opération", corps)
+        self.assertNotIn("Enregistrer en brouillon", corps)
+        self.assertIn("Argent reçu", corps)
+        self.assertIn("Argent dépensé", corps)
 
     def test_les_permissions_suivent_le_role_dans_lentreprise(self):
         self.member.role = MembreOrganisation.Role.LECTURE
@@ -99,6 +105,12 @@ class VuesOperationTest(TestCase):
         # Une facture n'est pas un paiement : aucun compte de trésorerie.
         self.assertNotIn('name="compte_tresorerie"', facture)
         self.assertNotIn('name="motif"', facture)
+
+        depot = self.client.get(
+            f"{self.base}nouvelle/?type=DEPOT_BANQUE"
+        ).content.decode()
+        self.assertIn('name="compte_tresorerie"', depot)
+        self.assertIn('name="compte_destination"', depot)
 
     def test_aucun_debit_ni_credit_nest_demande(self):
         for type_operation in ("ENCAISSEMENT", "CHARGE_TRANSPORT", "FACTURE_CLIENT"):
@@ -151,6 +163,9 @@ class VuesOperationTest(TestCase):
         # Les champs propres au type sont conserves sans migration.
         self.assertEqual(operation.donnees.get("motif"), "Mission Ségou")
         self.assertEqual(operation.centre_cout, "Logistique")
+        self.caisse.refresh_from_db()
+        self.assertEqual(self.caisse.solde_actuel, Decimal("80000"))
+        self.assertIsNotNone(operation.mouvement)
 
     def test_le_detail_affiche_lecriture_generee(self):
         self.client.post(
@@ -167,8 +182,9 @@ class VuesOperationTest(TestCase):
         operation = Operation.objects.get(description="Vente comptoir")
         reponse = self.client.get(f"{self.base}{operation.pk}/")
         self.assertEqual(reponse.status_code, 200)
-        self.assertContains(reponse, "Écriture générée")
-        self.assertContains(reponse, operation.ecriture.reference)
+        self.assertContains(reponse, "Impact financier")
+        self.assertNotContains(reponse, "Débit")
+        self.assertNotContains(reponse, "Crédit")
 
     def test_un_montant_negatif_est_refuse(self):
         reponse = self.client.post(

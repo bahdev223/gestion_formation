@@ -13,12 +13,13 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from comptabilite_ohada.models import (
+    EcritureComptable,
     ExerciceComptable,
     RegleComptable,
     TypeOperationComptable,
 )
 from comptabilite_ohada.services.initialisation_service import InitialisationService
-from comptes.models import Compte
+from comptes.models import Compte, MouvementCompte, SensMouvement
 from operations.models import Operation
 from operations.services import OperationEngine
 from organisations.models import Organisation
@@ -61,7 +62,7 @@ class MoteurOperationTest(TestCase):
             code="CAISSE-OP",
             nom="Caisse principale",
             type="ESPECES",
-            solde_actuel=Decimal("0"),
+            solde_actuel=Decimal("100000"),
             compte_comptable_code="571",
             organisation=self.organisation,
         )
@@ -119,6 +120,12 @@ class MoteurOperationTest(TestCase):
         # Le compte de tresorerie vient de l'operation, la contrepartie de la regle.
         self.assertIn("571", codes)
         self.assertIn("706", codes)
+        self.caisse.refresh_from_db()
+        self.assertEqual(self.caisse.solde_actuel, Decimal("125000"))
+        self.assertIsNotNone(operation.mouvement)
+        self.assertEqual(operation.mouvement.sens, SensMouvement.ENTREE)
+        self.assertEqual(operation.mouvement.source, operation)
+        self.assertEqual(EcritureComptable.objects.count(), 1)
 
     def test_un_decaissement_inverse_le_sens(self):
         operation = self._operation("DECAISSEMENT")
@@ -130,6 +137,9 @@ class MoteurOperationTest(TestCase):
         # La charge est debitee, la tresorerie creditee.
         self.assertGreater(lignes["658"].debit, 0)
         self.assertGreater(lignes["571"].credit, 0)
+        self.caisse.refresh_from_db()
+        self.assertEqual(self.caisse.solde_actuel, Decimal("75000"))
+        self.assertEqual(operation.mouvement.sens, SensMouvement.SORTIE)
 
     def test_une_charge_de_transport_utilise_la_regle_de_decaissement(self):
         operation = self._operation(
@@ -146,6 +156,12 @@ class MoteurOperationTest(TestCase):
         OperationEngine.executer(operation, user=self.user)
         codes = set(operation.ecriture.lignes.values_list("compte__code", flat=True))
         self.assertEqual(codes, {"571", "521"})
+        self.caisse.refresh_from_db()
+        self.banque.refresh_from_db()
+        self.assertEqual(self.caisse.solde_actuel, Decimal("75000"))
+        self.assertEqual(self.banque.solde_actuel, Decimal("25000"))
+        self.assertEqual(MouvementCompte.objects.count(), 2)
+        self.assertEqual(EcritureComptable.objects.count(), 1)
 
     def test_une_facture_fournisseur_nexige_pas_de_tresorerie(self):
         operation = self._operation(
@@ -157,6 +173,8 @@ class MoteurOperationTest(TestCase):
         codes = set(operation.ecriture.lignes.values_list("compte__code", flat=True))
         # Les deux cotes viennent de la regle : charge et dette fournisseur.
         self.assertIn("401", codes)
+        self.assertIsNone(operation.mouvement)
+        self.assertEqual(MouvementCompte.objects.count(), 0)
 
     # ─── Regles configurables ────────────────────────────────
 
@@ -212,6 +230,27 @@ class MoteurOperationTest(TestCase):
         OperationEngine.executer(operation, user=self.user)
         with self.assertRaises(ValidationError):
             OperationEngine.executer(operation, user=self.user)
+        self.caisse.refresh_from_db()
+        self.assertEqual(self.caisse.solde_actuel, Decimal("125000"))
+        self.assertEqual(MouvementCompte.objects.count(), 1)
+
+    def test_un_echec_comptable_annule_aussi_le_mouvement_financier(self):
+        RegleComptable.objects.create(
+            organisation=self.organisation,
+            type_operation=TypeOperationComptable.ENCAISSEMENT,
+            compte_credit="999999",
+            journal_code="VN",
+        )
+        operation = self._operation("ENCAISSEMENT")
+
+        with self.assertRaises(ValidationError):
+            OperationEngine.executer(operation, user=self.user)
+
+        self.caisse.refresh_from_db()
+        operation.refresh_from_db()
+        self.assertEqual(self.caisse.solde_actuel, Decimal("100000"))
+        self.assertEqual(operation.statut, Operation.Statut.BROUILLON)
+        self.assertEqual(MouvementCompte.objects.count(), 0)
 
     def test_une_operation_sans_tresorerie_quand_elle_en_exige_est_refusee(self):
         operation = self._operation("ENCAISSEMENT", compte_tresorerie=None)

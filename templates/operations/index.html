@@ -1,7 +1,7 @@
 {% extends "layouts/dashboard.html" %}
 
 {% block page_title %}Opérations{% endblock %}
-{% block page_subtitle %}Tout ce qui se passe dans l’entreprise. La comptabilité en découle.{% endblock %}
+{% block page_subtitle %}{% if 'comptabilite' in modules_actifs %}Tout ce qui se passe dans l’entreprise. La comptabilité en découle.{% else %}Entrées, sorties et transferts de l’entreprise.{% endif %}{% endblock %}
 {% block breadcrumb %}Opérations{% endblock %}
 
 {% block page_actions %}
@@ -9,6 +9,7 @@
 {% endblock %}
 
 {% block dashboard_content %}
+{% if 'comptabilite' in modules_actifs %}
 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
   <article class="fx-card fx-stat fx-tone-primary">
     <span class="fx-icon-tile">
@@ -48,8 +49,29 @@
     </div>
   </article>
 </div>
+{% else %}
+<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="fx-card fx-stat fx-tone-primary">
+    <span class="fx-icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    <div><p class="fx-stat-label">Opérations</p><p class="fx-stat-value">{{ compteurs.total }}</p></div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-success">
+    <span class="fx-icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7 12 5-5 5 5M12 7v10"/></svg></span>
+    <div><p class="fx-stat-label">Entrées</p><p class="fx-stat-value text-base">{{ compteurs.montant_entrees|floatformat:0 }}</p><p class="fx-stat-hint">{{ current_organisation.devise }} · {{ compteurs.entrees }} opération{{ compteurs.entrees|pluralize }}</p></div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-danger">
+    <span class="fx-icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7 12 5 5 5-5M12 7v10"/></svg></span>
+    <div><p class="fx-stat-label">Sorties</p><p class="fx-stat-value text-base">{{ compteurs.montant_sorties|floatformat:0 }}</p><p class="fx-stat-hint">{{ current_organisation.devise }} · {{ compteurs.sorties }} opération{{ compteurs.sorties|pluralize }}</p></div>
+  </article>
+  <article class="fx-card fx-stat fx-tone-warning">
+    <span class="fx-icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7 7-4 4 4 4M3 11h13M17 17l4-4-4-4M21 13H8"/></svg></span>
+    <div><p class="fx-stat-label">Transferts</p><p class="fx-stat-value">{{ compteurs.transferts }}</p></div>
+  </article>
+</div>
+{% endif %}
 
 <div class="mt-4 flex flex-wrap gap-2">
+  {% if 'comptabilite' in modules_actifs %}
   <a href="?" class="fx-btn {% if not statut_actif and not classe_active %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Toutes</a>
   <a href="?statut=BROUILLON" class="fx-btn {% if statut_actif == 'BROUILLON' %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Brouillons</a>
   <a href="?statut=VALIDEE" class="fx-btn {% if statut_actif == 'VALIDEE' %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Validées</a>
@@ -57,6 +79,12 @@
   {% for groupe in groupes %}
     <a href="?classe={{ groupe.classe }}" class="fx-btn {% if classe_active == groupe.classe %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">{{ groupe.libelle }}</a>
   {% endfor %}
+  {% else %}
+  <a href="?" class="fx-btn {% if not flux_actif %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Toutes</a>
+  <a href="?flux=ENTREE" class="fx-btn {% if flux_actif == 'ENTREE' %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Entrées</a>
+  <a href="?flux=SORTIE" class="fx-btn {% if flux_actif == 'SORTIE' %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Sorties</a>
+  <a href="?flux=NEUTRE" class="fx-btn {% if flux_actif == 'NEUTRE' %}fx-btn-primary{% else %}fx-btn-ghost{% endif %} px-3 py-2 text-sm">Transferts</a>
+  {% endif %}
 </div>
 
 <section class="fx-card mt-4 overflow-hidden">
@@ -69,8 +97,12 @@
           <th>Type</th>
           <th>Description</th>
           <th class="text-right">Montant</th>
-          <th>Statut</th>
+          <th>{% if 'comptabilite' in modules_actifs %}Statut{% else %}État{% endif %}</th>
+          {% if 'comptabilite' in modules_actifs %}
           <th>Comptabilisée</th>
+          {% else %}
+          <th>Compte</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
@@ -81,25 +113,31 @@
           </td>
           <td>{{ operation.date_operation|date:"d/m/Y" }}</td>
           <td>
+            {% if 'comptabilite' in modules_actifs %}
             <span class="fx-badge fx-badge-neutral">{{ operation.classe_libelle }}</span>
+            {% endif %}
             <span class="ml-1">{{ operation.libelle_type }}</span>
           </td>
           <td class="max-w-[22rem] truncate">{{ operation.description }}</td>
           <td class="text-right font-semibold">{{ operation.montant|floatformat:0 }} {{ operation.devise }}</td>
           <td>
             {% if operation.statut == 'VALIDEE' %}
-              <span class="fx-badge fx-badge-success">Validée</span>
+              <span class="fx-badge fx-badge-success">{% if 'comptabilite' in modules_actifs %}Validée{% else %}Enregistrée{% endif %}</span>
             {% elif operation.statut == 'ANNULEE' %}
               <span class="fx-badge fx-badge-danger">Annulée</span>
             {% else %}
-              <span class="fx-badge fx-badge-warning">Brouillon</span>
+              <span class="fx-badge fx-badge-warning">{% if 'comptabilite' in modules_actifs %}Brouillon{% else %}À terminer{% endif %}</span>
             {% endif %}
           </td>
           <td>
+            {% if 'comptabilite' in modules_actifs %}
             {% if operation.ecriture_id %}
               <span class="font-mono text-xs">{{ operation.ecriture.reference }}</span>
             {% else %}
               <span class="text-[var(--fx-muted)]">—</span>
+            {% endif %}
+            {% else %}
+              {{ operation.compte_tresorerie.nom|default:"—" }}
             {% endif %}
           </td>
         </tr>

@@ -15,6 +15,10 @@ from comptabilite_ohada.services.regle_service import RegleComptableService
 
 from ..catalogue import SensFlux, obtenir
 
+OPERATIONS_ENTRE_COMPTES = frozenset(
+    {"TRANSFERT", "DEPOT_BANQUE", "RETRAIT_BANQUE"}
+)
+
 
 class OperationEngine:
     @staticmethod
@@ -70,9 +74,11 @@ class OperationEngine:
             raise ValidationError(
                 "Cette opération nécessite un compte de trésorerie."
             )
-        if definition.code == "TRANSFERT":
+        if definition.code in OPERATIONS_ENTRE_COMPTES:
             if operation.compte_destination is None:
-                raise ValidationError("Un transfert exige un compte de destination.")
+                raise ValidationError(
+                    "Cette opération exige un compte de destination."
+                )
             if operation.compte_destination_id == operation.compte_tresorerie_id:
                 raise ValidationError(
                     "Le compte source et le compte de destination sont identiques."
@@ -82,8 +88,22 @@ class OperationEngine:
     @classmethod
     @transaction.atomic
     def executer(cls, operation, user=None):
-        """Valide l'operation et genere ses consequences comptables."""
+        """Valide l'operation, actualise la tresorerie et la comptabilite.
+
+        Tout est atomique : si le mouvement financier ou l'ecriture echoue,
+        aucun solde partiel n'est conserve. Le verrou sur l'operation empeche
+        aussi un double clic de mouvementer deux fois le meme montant.
+        """
+        from comptes.models import Compte
+
         from ..models import Operation
+
+        operation_initiale = operation
+        operation = (
+            Operation.objects.select_for_update()
+            .select_related("organisation", "compte_tresorerie", "compte_destination")
+            .get(pk=operation.pk)
+        )
 
         if operation.statut == Operation.Statut.VALIDEE:
             raise ValidationError("Cette opération est déjà validée.")
@@ -92,10 +112,36 @@ class OperationEngine:
 
         definition = cls.valider_coherence(operation)
         organisation = operation.organisation
+
+        compte_ids = {
+            compte_id
+            for compte_id in (
+                operation.compte_tresorerie_id,
+                operation.compte_destination_id,
+            )
+            if compte_id
+        }
+        comptes_verrouilles = {
+            compte.pk: compte
+            for compte in Compte.objects.select_for_update()
+            .filter(pk__in=compte_ids)
+            .order_by("pk")
+        }
+        if operation.compte_tresorerie_id:
+            operation.compte_tresorerie = comptes_verrouilles[
+                operation.compte_tresorerie_id
+            ]
+        if operation.compte_destination_id:
+            operation.compte_destination = comptes_verrouilles[
+                operation.compte_destination_id
+            ]
+
         regle = RegleComptableService.resoudre(organisation, definition.regle)
 
+        mouvement = cls._mouvementer(operation, definition, user)
         ecriture = cls._comptabiliser(operation, definition, regle, user)
 
+        operation.mouvement = mouvement
         operation.ecriture = ecriture
         operation.statut = Operation.Statut.VALIDEE
         operation.validee_par = user if user and user.is_authenticated else None
@@ -103,13 +149,73 @@ class OperationEngine:
         operation.save(
             update_fields=[
                 "ecriture",
+                "mouvement",
                 "statut",
                 "validee_par",
                 "validee_le",
                 "updated_at",
             ]
         )
+        # Les appelants historiques reutilisent l'instance transmise sans la
+        # recharger. On leur restitue donc l'etat obtenu sous verrou.
+        operation_initiale.mouvement = mouvement
+        operation_initiale.ecriture = ecriture
+        operation_initiale.statut = operation.statut
+        operation_initiale.validee_par = operation.validee_par
+        operation_initiale.validee_le = operation.validee_le
         return operation
+
+    @staticmethod
+    def _mouvementer(operation, definition, user):
+        """Produit l'impact financier sans declencher une seconde ecriture.
+
+        Le moteur d'operations genere lui-meme l'ecriture adaptee au type
+        choisi. Les signaux comptables generiques des comptes sont donc
+        desactives ici pour garantir une seule ecriture par operation.
+        """
+        from comptes.models import SensMouvement
+        from comptes.services import MouvementCompteService
+
+        if not operation.compte_tresorerie_id:
+            return None
+
+        commun = {
+            "montant": operation.montant,
+            "user": user,
+            "reference": operation.numero,
+            "source": operation,
+            "emettre_signal": False,
+        }
+        try:
+            if definition.sens == SensFlux.ENTREE:
+                return MouvementCompteService.encaisser(
+                    compte=operation.compte_tresorerie,
+                    libelle=operation.description,
+                    **commun,
+                )
+            if definition.sens == SensFlux.SORTIE:
+                return MouvementCompteService.decaisser(
+                    compte=operation.compte_tresorerie,
+                    libelle=operation.description,
+                    **commun,
+                )
+            if definition.code in OPERATIONS_ENTRE_COMPTES:
+                sortie = MouvementCompteService.transfert(
+                    compte=operation.compte_tresorerie,
+                    libelle=f"{operation.description} vers {operation.compte_destination.nom}",
+                    sens=SensMouvement.SORTIE,
+                    **commun,
+                )
+                MouvementCompteService.transfert(
+                    compte=operation.compte_destination,
+                    libelle=f"{operation.description} depuis {operation.compte_tresorerie.nom}",
+                    sens=SensMouvement.ENTREE,
+                    **commun,
+                )
+                return sortie
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        return None
 
     @classmethod
     def _comptabiliser(cls, operation, definition, regle, user):
@@ -123,7 +229,7 @@ class OperationEngine:
             regle["journal_code"], regle["libelle"], "OD"
         )
 
-        if definition.code == "TRANSFERT":
+        if definition.code in OPERATIONS_ENTRE_COMPTES:
             return EcritureService.creer_ecriture_transfert(
                 compte_source_code=cls._code_tresorerie(operation.compte_tresorerie, organisation),
                 compte_dest_code=cls._code_tresorerie(operation.compte_destination, organisation),

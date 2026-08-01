@@ -4,21 +4,22 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import (
-    Compte,
     MouvementCompte,
     NatureMouvement,
     SensMouvement,
     StatutMouvement,
 )
-from ..signals.mouvement import mouvement_valide, mouvement_annule
-from .compte_service import CompteService
+from ..signals.mouvement import mouvement_annule, mouvement_valide
 
 
 class MouvementCompteService:
     """Service metier des mouvements de compte."""
 
     @staticmethod
-    def encaisser(compte, montant, libelle, user, reference=None, source=None):
+    def encaisser(
+        compte, montant, libelle, user, reference=None, source=None, *,
+        emettre_signal=True,
+    ):
         return MouvementCompteService._creer(
             compte=compte,
             nature=NatureMouvement.ENCAISSEMENT,
@@ -28,10 +29,14 @@ class MouvementCompteService:
             user=user,
             reference=reference,
             source=source,
+            emettre_signal=emettre_signal,
         )
 
     @staticmethod
-    def decaisser(compte, montant, libelle, user, reference=None, source=None):
+    def decaisser(
+        compte, montant, libelle, user, reference=None, source=None, *,
+        emettre_signal=True,
+    ):
         montant = Decimal(str(montant))
         if compte.solde_disponible < montant:
             raise ValueError(
@@ -47,6 +52,7 @@ class MouvementCompteService:
             user=user,
             reference=reference,
             source=source,
+            emettre_signal=emettre_signal,
         )
 
     @staticmethod
@@ -58,6 +64,7 @@ class MouvementCompteService:
         reference=None,
         source=None,
         sens=SensMouvement.ENTREE,
+        emettre_signal=True,
     ):
         if sens not in SensMouvement.values:
             raise ValueError("Sens de transfert invalide")
@@ -70,6 +77,7 @@ class MouvementCompteService:
             user=user,
             reference=reference,
             source=source,
+            emettre_signal=emettre_signal,
         )
 
     @staticmethod
@@ -96,6 +104,7 @@ class MouvementCompteService:
         user,
         reference=None,
         source=None,
+        emettre_signal=True,
     ):
         montant = Decimal(str(montant))
         if montant <= 0:
@@ -122,13 +131,14 @@ class MouvementCompteService:
 
         MouvementCompteService._mettre_a_jour_solde(compte, sens, montant)
 
-        mouvement_valide.send(
-            sender=MouvementCompteService,
-            instance=mouvement,
-            nature=nature,
-            montant=montant,
-            user=user,
-        )
+        if emettre_signal:
+            mouvement_valide.send(
+                sender=MouvementCompteService,
+                instance=mouvement,
+                nature=nature,
+                montant=montant,
+                user=user,
+            )
 
         return mouvement
 
@@ -143,7 +153,6 @@ class MouvementCompteService:
                 "Effectuez un transfert inverse."
             )
 
-        ancien_statut = mouvement.statut
         mouvement.statut = StatutMouvement.ANNULE
         mouvement.annule = True
         mouvement.annule_le = timezone.now()
