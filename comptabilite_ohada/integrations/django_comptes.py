@@ -1,8 +1,8 @@
-"""Intégration atomique entre les comptes financiers et la comptabilité.
+"""Intégration entre les comptes financiers et la comptabilité OHADA.
 
 Un mouvement de trésorerie est un événement métier : ce module l'écoute et
-laisse le moteur en déduire l'écriture. Aucun code de compte n'apparaît ici —
-ils viennent de RegleComptable, modifiable par entreprise.
+laisse le moteur en déduire l'écriture. La trésorerie ne doit jamais être
+bloquée parce que la comptabilité n'est pas encore totalement configurée.
 """
 
 import logging
@@ -38,9 +38,6 @@ def connect():
     def on_mouvement_valide(
         sender, instance, nature, montant, user, **kwargs
     ):
-        # Le tenant vient du compte mouvementé : c'est la seule source fiable
-        # ici. Sans lui, l'écriture était rattachée au premier exercice ouvert
-        # trouvé, donc potentiellement à une autre entreprise.
         organisation = instance.compte.organisation
         compte_code = _compte_tresorerie(instance.compte)
 
@@ -82,8 +79,6 @@ def connect():
                     instance.pk,
                     exc,
                 )
-        # Un transfert est comptabilisé une seule fois par
-        # on_transfert_effectue, après les deux mouvements financiers.
 
     @receiver(
         transfert_effectue,
@@ -97,17 +92,24 @@ def connect():
                 "Transfert refusé : les deux comptes appartiennent à des "
                 "organisations différentes."
             )
-        EcritureService.creer_ecriture_transfert(
-            compte_source_code=_compte_tresorerie(source),
-            compte_dest_code=_compte_tresorerie(destination),
-            montant=montant,
-            libelle=(
-                instance.notes
-                or f"Virement {source.nom} → {destination.nom}"
-            ),
-            organisation=source.organisation,
-            user=user,
-        )
+        try:
+            EcritureService.creer_ecriture_transfert(
+                compte_source_code=_compte_tresorerie(source),
+                compte_dest_code=_compte_tresorerie(destination),
+                montant=montant,
+                libelle=(
+                    instance.notes
+                    or f"Virement {source.nom} → {destination.nom}"
+                ),
+                organisation=source.organisation,
+                user=user,
+            )
+        except ValidationError as exc:
+            logger.warning(
+                "Ecriture comptable de transfert ignoree pour le transfert %s: %s",
+                instance.pk,
+                exc,
+            )
 
     @receiver(
         mouvement_annule,
@@ -117,9 +119,6 @@ def connect():
         sender, instance, annulation, user, **kwargs
     ):
         organisation = instance.compte.organisation
-        tresorerie = EcritureService.get_compte(
-            _compte_tresorerie(instance.compte)
-        )
 
         if instance.nature == NatureMouvement.ENCAISSEMENT:
             type_operation = TypeOperationComptable.ANNULATION_ENCAISSEMENT
@@ -128,32 +127,40 @@ def connect():
         else:
             return
 
-        regle = RegleComptableService.resoudre(organisation, type_operation)
-        # Un seul côté de la règle est renseigné : l'autre est la trésorerie.
-        contrepartie_code = regle["compte_debit"] or regle["compte_credit"]
-        contrepartie = EcritureService.get_compte(contrepartie_code)
-        libelle = f"Annulation {instance.libelle}"
+        try:
+            tresorerie = EcritureService.get_compte(
+                _compte_tresorerie(instance.compte)
+            )
+            regle = RegleComptableService.resoudre(organisation, type_operation)
+            contrepartie_code = regle["compte_debit"] or regle["compte_credit"]
+            contrepartie = EcritureService.get_compte(contrepartie_code)
+            libelle = f"Annulation {instance.libelle}"
 
-        if regle["compte_debit"]:
-            # La contrepartie est débitée, la trésorerie créditée.
-            lignes = [
-                {"compte": contrepartie, "debit": instance.montant, "libelle": libelle},
-                {"compte": tresorerie, "credit": instance.montant, "libelle": libelle},
-            ]
-        else:
-            lignes = [
-                {"compte": tresorerie, "debit": instance.montant, "libelle": libelle},
-                {"compte": contrepartie, "credit": instance.montant, "libelle": libelle},
-            ]
+            if regle["compte_debit"]:
+                lignes = [
+                    {"compte": contrepartie, "debit": instance.montant, "libelle": libelle},
+                    {"compte": tresorerie, "credit": instance.montant, "libelle": libelle},
+                ]
+            else:
+                lignes = [
+                    {"compte": tresorerie, "debit": instance.montant, "libelle": libelle},
+                    {"compte": contrepartie, "credit": instance.montant, "libelle": libelle},
+                ]
 
-        EcritureService.creer_ecriture(
-            reference=EcritureService.generer_reference("ANN"),
-            date_ecriture=date.today(),
-            libelle=f"Annulation {instance.reference or instance.libelle}",
-            journal=EcritureService.get_or_create_journal(
-                regle["journal_code"], "Opérations diverses", "OD"
-            ),
-            lignes=lignes,
-            organisation=organisation,
-            user=user,
-        )
+            EcritureService.creer_ecriture(
+                reference=EcritureService.generer_reference("ANN"),
+                date_ecriture=date.today(),
+                libelle=f"Annulation {instance.reference or instance.libelle}",
+                journal=EcritureService.get_or_create_journal(
+                    regle["journal_code"], "Opérations diverses", "OD"
+                ),
+                lignes=lignes,
+                organisation=organisation,
+                user=user,
+            )
+        except ValidationError as exc:
+            logger.warning(
+                "Ecriture comptable d'annulation ignoree pour le mouvement %s: %s",
+                instance.pk,
+                exc,
+            )

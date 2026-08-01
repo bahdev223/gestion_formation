@@ -6,12 +6,12 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView
 
-from comptes.services import MouvementCompteService
 from core.mixins import HtmxModalFormMixin, OrganisationScopedMixin
 from inscriptions.services.inscription_service import recalculate_payment_status
 
 from .forms import PaiementForm
 from .models import Paiement
+from .services.mouvement_sync_service import ensure_payment_movement
 
 
 class PaiementIndexView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -108,15 +108,7 @@ class PaiementCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequi
     def form_valid(self, form):
         form.instance.enregistre_par = self.request.user
         response = super().form_valid(form)
-        if self.object.compte_id:
-            MouvementCompteService.encaisser(
-                compte=self.object.compte,
-                montant=self.object.montant,
-                libelle=f"Paiement formation {self.object.numero_recu}",
-                user=self.request.user,
-                reference=self.object.reference_transaction or self.object.numero_recu,
-                source=self.object,
-            )
+        ensure_payment_movement(self.object, user=self.request.user)
         recalculate_payment_status(self.object.inscription)
         return response
 

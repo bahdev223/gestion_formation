@@ -8,33 +8,45 @@
   <a href="{% tenant_url 'comptes:ajouter_compte' %}" class="baly-btn-accent px-4 py-2 text-xs font-semibold">Nouveau compte</a>
 </div>
 {% endblock %}
+
 {% block compte_content %}
 <div class="mt-3 space-y-3" x-data="{ moneyModal: null, alertDialog: false }" @open-money-modal.window="moneyModal = $event.detail.type">
   {% if alertes %}
   <div class="flex justify-end">
     <button type="button" @click="alertDialog = true" class="inline-flex items-center gap-2 border border-[var(--fx-warning)] bg-[var(--fx-warning-soft)] px-3 py-2 text-xs font-bold text-[var(--fx-warning)] hover:bg-[var(--fx-warning-soft)]">
       <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-      <span>{{ alertes|length }} alerte{{ alertes|length|pluralize }} de tresorerie</span>
+      <span>{{ alertes|length }} alerte{{ alertes|length|pluralize }} de trésorerie</span>
     </button>
   </div>
   {% endif %}
 
   <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-    <article class="stat-card"><p class="stat-label">Solde consolidé</p><p class="stat-value">{{ synthese.solde_total|floatformat:0 }}</p><p class="stat-hint">FCFA tous comptes confondus</p></article>
-    <article class="stat-card"><p class="stat-label">Entrées sur 24 h</p><p class="stat-value text-[var(--fx-success)]">{{ entrees_24h|floatformat:0 }}</p><p class="stat-hint">FCFA encaissés</p></article>
-    <article class="stat-card"><p class="stat-label">Sorties sur 24 h</p><p class="stat-value text-red-700">{{ sorties_24h|floatformat:0 }}</p><p class="stat-hint">FCFA décaissés</p></article>
+    <article class="stat-card"><p class="stat-label">Solde consolidé</p><p class="stat-value">{{ synthese.solde_total|floatformat:0 }}</p><p class="stat-hint">Tous comptes confondus</p></article>
+    <article class="stat-card"><p class="stat-label">Entrées sur 24 h</p><p class="stat-value text-[var(--fx-success)]">{{ entrees_24h|floatformat:0 }}</p><p class="stat-hint">Encaissements validés</p></article>
+    <article class="stat-card"><p class="stat-label">Sorties sur 24 h</p><p class="stat-value text-red-700">{{ sorties_24h|floatformat:0 }}</p><p class="stat-hint">Décaissements et annulations</p></article>
     <article class="stat-card"><p class="stat-label">Comptes actifs</p><p class="stat-value">{{ synthese.nb_comptes_actifs }}</p><p class="stat-hint">{{ synthese.alertes_decouvert }} alerte{{ synthese.alertes_decouvert|pluralize }} de découvert</p></article>
   </div>
 
   <div class="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,.7fr)]">
     <section class="baly-surface overflow-hidden">
-      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3"><div><h2 class="text-sm font-bold text-slate-950">Comptes de trésorerie</h2><p class="mt-0.5 text-xs text-slate-500">Soldes disponibles par canal financier.</p></div><a href="{% tenant_url 'comptes:liste_comptes' %}" class="text-xs font-semibold text-[var(--fx-primary)]">Gérer →</a></div>
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div>
+          <h2 class="text-sm font-bold text-slate-950">Comptes de trésorerie</h2>
+          <p class="mt-0.5 text-xs text-slate-500">Soldes disponibles par canal financier.</p>
+        </div>
+        <a href="{% tenant_url 'comptes:liste_comptes' %}" class="text-xs font-semibold text-[var(--fx-primary)]">Gérer →</a>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead class="bg-slate-50 uppercase tracking-wider text-slate-500"><tr><th class="px-4 py-2">Compte</th><th class="px-4 py-2">Type</th><th class="px-4 py-2 text-right">Solde</th><th class="px-4 py-2">Statut</th></tr></thead>
           <tbody class="divide-y divide-slate-100">
             {% for compte in comptes %}
-            <tr class="hover:bg-[var(--fx-accent-soft)]/30"><td class="px-4 py-3"><a href="{% tenant_url 'comptes:detail_compte' compte.pk %}" class="font-semibold text-slate-900">{{ compte.nom }}</a><p class="mt-0.5 font-mono text-[10px] text-slate-400">{{ compte.code }}</p></td><td class="px-4 py-3 text-slate-600">{{ compte.get_type_display }}</td><td class="px-4 py-3 text-right font-bold {% if compte.solde_actuel < 0 %}text-red-700{% else %}text-slate-950{% endif %}">{{ compte.solde_actuel|floatformat:0 }} {{ compte.devise }}</td><td class="px-4 py-3"><span class="baly-badge {% if compte.actif %}baly-badge-blue{% else %}baly-badge-red{% endif %}">{% if compte.actif %}Actif{% else %}Fermé{% endif %}</span></td></tr>
+            <tr class="hover:bg-[var(--fx-accent-soft)]/30">
+              <td class="px-4 py-3"><a href="{% tenant_url 'comptes:detail_compte' compte.pk %}" class="font-semibold text-slate-900">{{ compte.nom }}</a><p class="mt-0.5 font-mono text-[10px] text-slate-400">{{ compte.code }}</p></td>
+              <td class="px-4 py-3 text-slate-600">{{ compte.get_type_display }}</td>
+              <td class="px-4 py-3 text-right font-bold {% if compte.solde_actuel < 0 %}text-red-700{% else %}text-slate-950{% endif %}">{{ compte.solde_actuel|floatformat:0 }} {{ compte.devise }}</td>
+              <td class="px-4 py-3"><span class="baly-badge {% if compte.actif %}baly-badge-blue{% else %}baly-badge-red{% endif %}">{% if compte.actif %}Actif{% else %}Fermé{% endif %}</span></td>
+            </tr>
             {% empty %}
             <tr><td colspan="4" class="px-4 py-12 text-center"><p class="font-semibold text-slate-900">Aucun compte financier</p><p class="mt-1 text-xs text-slate-500">Ajoutez une caisse, une banque ou un compte Mobile Money.</p><a href="{% tenant_url 'comptes:ajouter_compte' %}" class="baly-btn-primary mt-3 inline-flex px-4 py-2 text-xs font-semibold">Créer le premier compte</a></td></tr>
             {% endfor %}
@@ -42,11 +54,24 @@
         </table>
       </div>
     </section>
+
     <aside class="baly-surface overflow-hidden">
-      <div class="border-b border-slate-200 px-4 py-3"><h2 class="text-sm font-bold text-slate-950">Mouvements récents</h2><p class="mt-0.5 text-xs text-slate-500">Dernières opérations validées.</p></div>
+      <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+        <div>
+          <h2 class="text-sm font-bold text-slate-950">Mouvements récents</h2>
+          <p class="mt-0.5 text-xs text-slate-500">Paiements, encaissements et sorties validés.</p>
+        </div>
+        <a href="{% tenant_url 'comptes:liste_mouvements' %}" class="shrink-0 text-xs font-semibold text-[var(--fx-primary)]">Journal →</a>
+      </div>
       <div class="divide-y divide-slate-100">
         {% for mouvement in mouvements|slice:":8" %}
-        <div class="flex items-center justify-between gap-3 px-4 py-3"><div class="min-w-0"><p class="truncate text-xs font-semibold text-slate-800">{{ mouvement.libelle }}</p><p class="mt-0.5 text-[10px] text-slate-400">{{ mouvement.compte.code }} · {{ mouvement.date|date:"d/m/Y H:i" }}</p></div><p class="shrink-0 text-xs font-bold {% if mouvement.nature == 'ENTREE' %}text-[var(--fx-success)]{% else %}text-red-700{% endif %}">{{ mouvement.montant|floatformat:0 }}</p></div>
+        <div class="flex items-center justify-between gap-3 px-4 py-3">
+          <div class="min-w-0">
+            <p class="truncate text-xs font-semibold text-slate-800">{{ mouvement.libelle }}</p>
+            <p class="mt-0.5 truncate text-[10px] text-slate-400">{{ mouvement.compte.code }} · {{ mouvement.get_nature_display }}{% if mouvement.reference %} · {{ mouvement.reference }}{% endif %} · {{ mouvement.date|date:"d/m/Y H:i" }}</p>
+          </div>
+          <p class="shrink-0 text-xs font-bold {% if mouvement.est_entree %}text-[var(--fx-success)]{% else %}text-red-700{% endif %}">{% if mouvement.est_entree %}+{% else %}−{% endif %}{{ mouvement.montant|floatformat:0 }}</p>
+        </div>
         {% empty %}<div class="px-4 py-10 text-center text-xs text-slate-500">Aucun mouvement enregistré.</div>{% endfor %}
       </div>
     </aside>
@@ -66,7 +91,7 @@
         {% csrf_token %}
         <div><label class="mb-1 block text-xs font-bold text-slate-700">Compte financier *</label><select name="compte_id" required class="w-full border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[var(--fx-primary)]">{% for compte in comptes %}<option value="{{ compte.id }}">{{ compte.code }} — {{ compte.nom }} ({{ compte.solde_actuel|floatformat:0 }} {{ compte.devise }})</option>{% endfor %}</select></div>
         <div class="grid gap-3 sm:grid-cols-2">
-          <div><label class="mb-1 block text-xs font-bold text-slate-700">Montant (FCFA) *</label><input name="montant" type="number" min="1" step="1" required class="w-full border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[var(--fx-primary)]"></div>
+          <div><label class="mb-1 block text-xs font-bold text-slate-700">Montant *</label><input name="montant" type="number" min="1" step="1" required class="w-full border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[var(--fx-primary)]"></div>
           <div><label class="mb-1 block text-xs font-bold text-slate-700">Référence</label><input name="reference" type="text" placeholder="FAC-2026-001" class="w-full border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[var(--fx-primary)]"></div>
         </div>
         <div><label class="mb-1 block text-xs font-bold text-slate-700">Libellé *</label><input name="libelle" type="text" required :placeholder="moneyModal === 'encaisser' ? 'Ex. Paiement formation' : 'Ex. Achat de fournitures'" class="w-full border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[var(--fx-primary)]"></div>
@@ -84,9 +109,9 @@
     <section class="relative w-full max-w-2xl border border-slate-200 bg-white shadow-2xl" @click.stop role="dialog" aria-modal="true" aria-labelledby="treasury-alert-title">
       <header class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
         <div>
-          <p class="text-[10px] font-bold uppercase tracking-[.16em] text-[var(--fx-warning)]">Surveillance de tresorerie</p>
+          <p class="text-[10px] font-bold uppercase tracking-[.16em] text-[var(--fx-warning)]">Surveillance de trésorerie</p>
           <h2 id="treasury-alert-title" class="mt-1 text-base font-bold text-slate-950">Alertes de solde</h2>
-          <p class="mt-1 text-xs text-slate-500">{{ alertes|length }} compte{{ alertes|length|pluralize }} necessite{{ alertes|length|pluralize }} une verification.</p>
+          <p class="mt-1 text-xs text-slate-500">{{ alertes|length }} compte{{ alertes|length|pluralize }} nécessite{{ alertes|length|pluralize }} une vérification.</p>
         </div>
         <button type="button" @click="alertDialog = false" class="grid h-8 w-8 place-items-center border border-slate-200 text-lg text-slate-500 hover:bg-slate-50" aria-label="Fermer">×</button>
       </header>

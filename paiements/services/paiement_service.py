@@ -2,9 +2,10 @@
 from django.db import transaction
 from django.utils import timezone
 
-from comptes.services import MouvementCompteService
 from inscriptions.services.inscription_service import recalculate_payment_status
 from paiements.models import Paiement
+
+from .mouvement_sync_service import ensure_payment_movement, reverse_payment_movement
 
 
 @transaction.atomic
@@ -18,15 +19,7 @@ def register_payment(inscription, amount, mode, user, compte=None, **kwargs):
         enregistre_par=user,
         **kwargs,
     )
-    if compte is not None:
-        MouvementCompteService.encaisser(
-            compte=compte,
-            montant=amount,
-            libelle=f"Paiement formation {payment.numero_recu}",
-            user=user,
-            reference=payment.reference_transaction or payment.numero_recu,
-            source=payment,
-        )
+    ensure_payment_movement(payment, user=user)
     recalculate_payment_status(inscription)
     return payment
 
@@ -38,5 +31,6 @@ def cancel_payment(payment, reason, user):
     payment.annule_par = user
     payment.date_annulation = timezone.now()
     payment.save(update_fields=["statut", "motif_annulation", "annule_par", "date_annulation", "updated_at"])
+    reverse_payment_movement(payment, reason=reason, user=user)
     recalculate_payment_status(payment.inscription)
     return payment

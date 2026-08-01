@@ -11,6 +11,8 @@ from formations.models import CategorieFormation, Formation, SessionFormation
 from inscriptions.models import Inscription
 from organisations.models import Organisation
 from paiements.models import Paiement
+from paiements.services.mouvement_sync_service import ensure_payment_movement
+from paiements.services.paiement_service import cancel_payment
 from participants.models import Participant
 
 
@@ -143,6 +145,58 @@ class PaiementCreateViewTest(TestCase):
         self.assertEqual(
             self.inscription.statut_paiement,
             Inscription.StatutPaiement.PARTIEL,
+        )
+
+    def test_payment_movement_sync_is_idempotent(self):
+        paiement = Paiement.objects.create(
+            organisation=self.organisation,
+            inscription=self.inscription,
+            montant=Decimal("2500.00"),
+            mode_paiement=Paiement.ModePaiement.MOBILE_MONEY,
+            compte=self.compte,
+            reference_transaction="TX-IDEMPOTENT",
+            enregistre_par=self.user,
+        )
+
+        first = ensure_payment_movement(paiement, user=self.user)
+        second = ensure_payment_movement(paiement, user=self.user)
+
+        self.assertTrue(first.created)
+        self.assertFalse(second.created)
+        self.assertEqual(first.mouvement.pk, second.mouvement.pk)
+        self.assertEqual(
+            MouvementCompte.objects.filter(object_id=paiement.pk).count(),
+            1,
+        )
+        self.compte.refresh_from_db()
+        self.assertEqual(self.compte.solde_actuel, Decimal("3100.00"))
+
+    def test_cancel_payment_reverses_financial_movement(self):
+        paiement = Paiement.objects.create(
+            organisation=self.organisation,
+            inscription=self.inscription,
+            montant=Decimal("2000.00"),
+            mode_paiement=Paiement.ModePaiement.MOBILE_MONEY,
+            compte=self.compte,
+            reference_transaction="TX-CANCEL",
+            enregistre_par=self.user,
+        )
+        ensure_payment_movement(paiement, user=self.user)
+
+        cancel_payment(paiement, "Erreur de saisie", self.user)
+
+        self.compte.refresh_from_db()
+        self.assertEqual(self.compte.solde_actuel, Decimal("600.00"))
+        self.assertEqual(
+            MouvementCompte.objects.filter(object_id=paiement.pk).count(),
+            1,
+        )
+        self.assertEqual(paiement.motif_annulation, "Erreur de saisie")
+        self.assertTrue(
+            MouvementCompte.objects.filter(
+                mouvement_parent__object_id=paiement.pk,
+                montant=Decimal("2000.00"),
+            ).exists()
         )
 
     def test_payment_mode_must_match_financial_account_type(self):

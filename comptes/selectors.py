@@ -16,7 +16,7 @@ from .models import (
     Compte,
     JournalCompte,
     MouvementCompte,
-    NatureMouvement,
+    SensMouvement,
     StatutMouvement,
     TransfertCompte,
     TypeCompte,
@@ -80,11 +80,11 @@ class DashboardSelector:
         )
 
         entrees = mouvements.filter(
-            nature__in=[NatureMouvement.ENCAISSEMENT, NatureMouvement.TRANSFERT]
+            sens=SensMouvement.ENTREE,
         ).aggregate(total=Sum("montant"))["total"] or Decimal("0.00")
 
         sorties = mouvements.filter(
-            nature__in=[NatureMouvement.DECAISSEMENT]
+            sens=SensMouvement.SORTIE,
         ).aggregate(total=Sum("montant"))["total"] or Decimal("0.00")
 
         return {
