@@ -11,6 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from comptabilite_ohada.services.ecriture_service import EcritureService
+from comptabilite_ohada.services.initialisation_service import InitialisationService
 from comptabilite_ohada.services.regle_service import RegleComptableService
 
 from ..catalogue import SensFlux, obtenir
@@ -136,6 +137,9 @@ class OperationEngine:
                 operation.compte_destination_id
             ]
 
+        InitialisationService.initialiser_organisation(
+            organisation, date_reference=operation.date_operation
+        )
         regle = RegleComptableService.resoudre(organisation, definition.regle)
 
         mouvement = cls._mouvementer(operation, definition, user)
@@ -258,8 +262,12 @@ class OperationEngine:
                 "aucun compte ne peut être déterminé."
             )
 
-        compte_debit = EcritureService.get_compte(debit_code)
-        compte_credit = EcritureService.get_compte(credit_code)
+        compte_debit = EcritureService.get_compte(
+            debit_code, organisation=organisation
+        )
+        compte_credit = EcritureService.get_compte(
+            credit_code, organisation=organisation
+        )
         if compte_debit is None or compte_credit is None:
             raise ValidationError(
                 "Les comptes de la règle comptable sont introuvables dans le "

@@ -14,6 +14,7 @@ from ..models import (
     Immobilisation, PlanAmortissement,
 )
 from ..services.ecriture_service import EcritureService
+from ..services.initialisation_service import InitialisationService
 from ..services.journal_service import BalanceService, GrandLivreService
 from ..services.bilan_service import BilanService
 from ..services.exercice_service import ExerciceService
@@ -26,25 +27,24 @@ from .serializers import (
 )
 
 
-class CompteComptableViewSet(viewsets.ReadOnlyModelViewSet):
-    """Plan comptable SYSCOHADA : referentiel partage entre organisations.
-
-    En lecture seule cote client : le plan est charge depuis le fichier
-    standard par la commande charger_plan_comptable. Sans cette restriction,
-    un client pouvait modifier ou supprimer des comptes utilises par tous
-    les autres.
-    """
+class CompteComptableViewSet(
+    OrganisationScopedViewSetMixin, viewsets.ModelViewSet
+):
+    """Plan SYSCOHADA personnalisable et strictement isole par entreprise."""
 
     queryset = CompteComptable.objects.all()
     serializer_class = CompteComptableSerializer
     filterset_fields = ["code", "nature", "type_compte", "categorie", "actif"]
     search_fields = ["code", "libelle"]
 
+    def get_queryset(self):
+        organisation = self.get_organisation()
+        InitialisationService.initialiser_organisation(organisation)
+        return super().get_queryset()
+
     @action(detail=True, methods=["get"])
     def solde(self, request, pk=None, **kwargs):
         compte = self.get_object()
-        # Le compte est partage, mais son solde est propre a l'organisation :
-        # sans ce filtre, le solde cumulait les ecritures de tous les clients.
         organisation = require_request_organisation(request)
         qs = LigneEcritureComptable.objects.filter(
             compte=compte,

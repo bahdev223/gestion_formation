@@ -75,4 +75,11 @@ def create_organisation_account(cleaned_data):
         montant=0,
     )
 
+    # Chaque entreprise recoit sa propre copie modifiable du plan SYSCOHADA.
+    from comptabilite_ohada.services.initialisation_service import (
+        InitialisationService,
+    )
+
+    InitialisationService.initialiser_organisation(organisation)
+
     return organisation, user

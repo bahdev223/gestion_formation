@@ -11,6 +11,15 @@ class CompteComptableSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompteComptable
         fields = "__all__"
+        read_only_fields = ["organisation"]
+
+    def validate_parent(self, parent):
+        request = self.context.get("request")
+        if parent and request and parent.organisation_id != request.organisation.pk:
+            raise serializers.ValidationError(
+                "Le compte parent doit appartenir a la meme entreprise."
+            )
+        return parent
 
 
 class LigneEcritureComptableSerializer(serializers.ModelSerializer):

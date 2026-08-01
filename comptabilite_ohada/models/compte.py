@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 
@@ -33,7 +34,15 @@ class CategorieCompte(models.TextChoices):
 class CompteComptable(models.Model):
     """Plan comptable SYSCOHADA — hiérarchique."""
 
-    code = models.CharField(_("Code"), max_length=20, unique=True)
+    organisation = models.ForeignKey(
+        "organisations.Organisation",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="plan_comptable",
+        verbose_name=_("Organisation"),
+    )
+    code = models.CharField(_("Code"), max_length=20)
     libelle = models.CharField(_("Libellé"), max_length=200)
     nature = models.CharField(_("Nature"), max_length=10, choices=NatureCompte.choices)
     sens = models.CharField(_("Sens"), max_length=10, choices=SensCompte.choices)
@@ -60,6 +69,22 @@ class CompteComptable(models.Model):
         indexes = [
             models.Index(fields=["code"]),
             models.Index(fields=["parent"]),
+            models.Index(
+                fields=["organisation", "code"],
+                name="comptabili_organis_0cfa02_idx",
+            ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organisation", "code"],
+                condition=Q(organisation__isnull=False),
+                name="unique_compte_par_organisation",
+            ),
+            models.UniqueConstraint(
+                fields=["code"],
+                condition=Q(organisation__isnull=True),
+                name="unique_compte_modele",
+            ),
         ]
 
     def __str__(self):

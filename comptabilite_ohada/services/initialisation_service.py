@@ -20,7 +20,7 @@ class InitialisationService:
 
     @staticmethod
     @transaction.atomic
-    def charger_plan_comptable(force=False):
+    def charger_plan_comptable(force=False, *, organisation=None):
         try:
             content = pkg_files("comptabilite_ohada.data").joinpath("plan_comptable.json").read_text(encoding="utf-8")
         except (ImportError, FileNotFoundError):
@@ -31,45 +31,120 @@ class InitialisationService:
         if not comptes_data:
             return {"success": False, "error": "Aucun compte dans le fichier"}
 
-        comptes_crees = 0
+        scope = CompteComptable.objects.filter(organisation=organisation)
+        existants = {compte.code: compte for compte in scope}
+        nouveaux = []
+        a_mettre_a_jour = []
+        champs = [
+            "libelle", "nature", "sens", "niveau", "type_compte",
+            "est_mouvement", "categorie", "actif",
+        ]
         for item in comptes_data:
-            code = item["code"]
-            defaults = {
+            code = str(item["code"])
+            valeurs = {
                 "libelle": item["libelle"],
                 "nature": item.get("nature", "NEUTRE"),
                 "sens": item.get("sens", "MIXTE"),
                 "niveau": item.get("niveau", 1),
-                "type_compte": item.get("type_compte", "compte"),
+                "type_compte": item.get("type", item.get("type_compte", "compte")),
                 "est_mouvement": item.get("est_mouvement", True),
                 "categorie": item.get("categorie", "bilan"),
                 "actif": item.get("actif", True),
             }
-            if force:
-                _, created = CompteComptable.objects.update_or_create(
-                    code=code, defaults=defaults
+            compte = existants.get(code)
+            if compte is None:
+                nouveaux.append(
+                    CompteComptable(
+                        organisation=organisation,
+                        code=code,
+                        **valeurs,
+                    )
                 )
-            else:
-                _, created = CompteComptable.objects.get_or_create(
-                    code=code, defaults=defaults
-                )
-            if created:
-                comptes_crees += 1
+            elif force:
+                for champ, valeur in valeurs.items():
+                    setattr(compte, champ, valeur)
+                a_mettre_a_jour.append(compte)
+
+        if nouveaux:
+            CompteComptable.objects.bulk_create(nouveaux, batch_size=250)
+        if a_mettre_a_jour:
+            CompteComptable.objects.bulk_update(
+                a_mettre_a_jour, champs, batch_size=250
+            )
 
         comptes = {
             compte.code: compte
             for compte in CompteComptable.objects.filter(
-                code__in=[item["code"] for item in comptes_data]
+                organisation=organisation,
+                code__in=[str(item["code"]) for item in comptes_data],
             )
         }
+        parents_modifies = []
         for item in comptes_data:
-            parent_code = item.get("parent_code")
-            compte = comptes[item["code"]]
-            parent = comptes.get(parent_code)
+            parent_code = item.get("parent", item.get("parent_code"))
+            compte = comptes[str(item["code"])]
+            parent = comptes.get(str(parent_code)) if parent_code else None
             if compte.parent_id != getattr(parent, "pk", None):
                 compte.parent = parent
-                compte.save(update_fields=["parent"])
+                parents_modifies.append(compte)
+        if parents_modifies:
+            CompteComptable.objects.bulk_update(
+                parents_modifies, ["parent"], batch_size=250
+            )
 
-        return {"success": True, "comptes_crees": comptes_crees, "total": len(comptes_data)}
+        return {
+            "success": True,
+            "comptes_crees": len(nouveaux),
+            "total": len(comptes_data),
+            "organisation_id": getattr(organisation, "pk", None),
+        }
+
+    @classmethod
+    @transaction.atomic
+    def initialiser_organisation(cls, organisation, date_reference=None):
+        """Garantit un plan, des regles et un exercice ouverts pour le tenant."""
+        if organisation is None:
+            raise ValueError("L'organisation est obligatoire.")
+        date_reference = date_reference or date.today()
+        if CompteComptable.objects.filter(organisation=organisation).exists():
+            plan = {
+                "success": True,
+                "comptes_crees": 0,
+                "total": CompteComptable.objects.filter(
+                    organisation=organisation
+                ).count(),
+                "organisation_id": organisation.pk,
+            }
+        else:
+            plan = cls.charger_plan_comptable(organisation=organisation)
+        cls.initialiser_journaux()
+
+        from .regle_service import RegleComptableService
+
+        RegleComptableService.initialiser(organisation)
+        exercice, _ = ExerciceComptable.objects.get_or_create(
+            organisation=organisation,
+            date_debut=date(date_reference.year, 1, 1),
+            date_fin=date(date_reference.year, 12, 31),
+            defaults={"code": f"{organisation.pk}-{date_reference.year}"},
+        )
+        configuration = ConfigurationComptable.get_config(
+            organisation=organisation
+        )
+        champs_configuration = []
+        if configuration.exercice_id != exercice.pk:
+            configuration.exercice = exercice
+            champs_configuration.append("exercice")
+        if not configuration.est_initialise:
+            configuration.est_initialise = True
+            configuration.date_initialisation = date_reference
+            champs_configuration.extend(["est_initialise", "date_initialisation"])
+        if configuration.devise != organisation.devise:
+            configuration.devise = organisation.devise
+            champs_configuration.append("devise")
+        if champs_configuration:
+            configuration.save(update_fields=champs_configuration + ["updated_at"])
+        return {"plan": plan, "exercice": exercice, "configuration": configuration}
 
     @staticmethod
     @transaction.atomic

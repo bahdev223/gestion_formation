@@ -6,7 +6,12 @@ from .views.views_ecritures import (
     EcritureListView, EcritureDetailView, EcritureCreateView,
     EcritureUpdateView, EcritureDeleteView, EcritureValiderView,
 )
-from .views.views_comptes import CompteComptableListView, CompteComptableDetailView
+from .views.views_comptes import (
+    CompteComptableCreateView,
+    CompteComptableDetailView,
+    CompteComptableListView,
+    CompteComptableUpdateView,
+)
 from .views.views_journaux import (
     JournalListView, JournalDetailView, BalanceView, GrandLivreView,
 )
@@ -30,7 +35,9 @@ urlpatterns = [
     path("ecritures/<int:pk>/supprimer/", EcritureDeleteView.as_view(), name="ecriture_delete"),
     path("ecritures/<int:pk>/valider/", EcritureValiderView.as_view(), name="ecriture_valider"),
     path("comptes/", CompteComptableListView.as_view(), name="compte_list"),
+    path("comptes/creer/", CompteComptableCreateView.as_view(), name="compte_create"),
     path("comptes/<int:pk>/", CompteComptableDetailView.as_view(), name="compte_detail"),
+    path("comptes/<int:pk>/modifier/", CompteComptableUpdateView.as_view(), name="compte_update"),
     path("journaux/", JournalListView.as_view(), name="journal_list"),
     path("journaux/<int:pk>/", JournalDetailView.as_view(), name="journal_detail"),
     path("balance/", BalanceView.as_view(), name="balance"),

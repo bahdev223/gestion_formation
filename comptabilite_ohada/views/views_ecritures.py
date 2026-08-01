@@ -7,8 +7,9 @@ from django.views.generic import DeleteView, DetailView, ListView, View
 from organisations.utils import require_request_organisation, tenant_reverse
 
 from ..forms import EcritureForm, LigneEcritureFormSet
-from ..models import EcritureComptable
+from ..models import CompteComptable, EcritureComptable
 from ..services.ecriture_service import EcritureService
+from ..services.initialisation_service import InitialisationService
 
 
 class EcritureListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -61,17 +62,33 @@ class EcritureFormView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def get_object(self):
         return None
 
+    def get_organisation(self):
+        organisation = require_request_organisation(self.request)
+        InitialisationService.initialiser_organisation(organisation)
+        return organisation
+
+    def build_formset(self, *args, **kwargs):
+        formset = LigneEcritureFormSet(*args, **kwargs)
+        comptes = CompteComptable.objects.filter(
+            organisation=self.get_organisation(), actif=True
+        ).order_by("code")
+        for ligne_form in formset.forms:
+            ligne_form.fields["compte"].queryset = comptes
+        return formset
+
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         return self.render_forms(
-            EcritureForm(instance=self.object),
-            LigneEcritureFormSet(instance=self.object),
+            EcritureForm(instance=self.object, organisation=self.get_organisation()),
+            self.build_formset(instance=self.object),
         )
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        form = EcritureForm(request.POST, instance=self.object)
-        formset = LigneEcritureFormSet(
+        form = EcritureForm(
+            request.POST, instance=self.object, organisation=self.get_organisation()
+        )
+        formset = self.build_formset(
             request.POST, instance=self.object
         )
         if form.is_valid() and formset.is_valid():

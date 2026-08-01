@@ -52,17 +52,40 @@ class EcritureService:
         return journal
 
     @classmethod
-    def get_compte(cls, code_or_id):
+    def get_compte(cls, code_or_id, organisation=None):
         if code_or_id is None:
             return None
+        qs = CompteComptable.objects.filter(actif=True)
+        if organisation is not None:
+            qs = qs.filter(organisation=organisation)
+        else:
+            qs = qs.filter(organisation__isnull=True)
         if isinstance(code_or_id, int):
-            return CompteComptable.objects.filter(id=code_or_id, actif=True).first()
-        compte = CompteComptable.objects.filter(code=str(code_or_id), actif=True).first()
+            return qs.filter(id=code_or_id).first()
+        compte = qs.filter(code=str(code_or_id)).first()
         if compte:
             return compte
         if isinstance(code_or_id, str) and code_or_id.isdigit():
-            return CompteComptable.objects.filter(id=int(code_or_id), actif=True).first()
+            return qs.filter(id=int(code_or_id)).first()
         return None
+
+    @classmethod
+    def _comptes_du_tenant(cls, lignes, organisation):
+        """Remplace les comptes du modele par les copies de l'entreprise."""
+        lignes_scopees = []
+        for ligne in lignes:
+            compte = ligne.get("compte")
+            if compte is None:
+                lignes_scopees.append(dict(ligne))
+                continue
+            if compte.organisation_id == organisation.pk:
+                lignes_scopees.append(dict(ligne))
+                continue
+            compte_tenant = cls.get_compte(compte.code, organisation=organisation)
+            ligne_scopee = dict(ligne)
+            ligne_scopee["compte"] = compte_tenant
+            lignes_scopees.append(ligne_scopee)
+        return lignes_scopees
 
     @classmethod
     def get_compte_par_type_caisse(cls, type_caisse):
@@ -138,6 +161,13 @@ class EcritureService:
                     "Une organisation est obligatoire pour creer une ecriture."
                 )
             exercice = cls.get_exercice(organisation, date_ecriture)
+            if exercice is None:
+                from .initialisation_service import InitialisationService
+
+                InitialisationService.initialiser_organisation(
+                    organisation, date_reference=date_ecriture
+                )
+                exercice = cls.get_exercice(organisation, date_ecriture)
         elif organisation is None:
             organisation = exercice.organisation
         elif exercice.organisation_id != getattr(organisation, "pk", organisation):
@@ -145,6 +175,15 @@ class EcritureService:
                 "L'exercice comptable appartient a une autre organisation."
             )
 
+        # Un exercice historique peut deja exister alors que le plan propre
+        # au tenant vient seulement d'etre introduit par cette migration.
+        if not CompteComptable.objects.filter(organisation=organisation).exists():
+            from .initialisation_service import InitialisationService
+
+            InitialisationService.initialiser_organisation(
+                organisation, date_reference=date_ecriture
+            )
+        lignes = cls._comptes_du_tenant(lignes, exercice.organisation)
         cls._validate_payload(
             date_ecriture, journal, exercice, lignes
         )
@@ -309,9 +348,9 @@ class EcritureService:
         journal = cls.get_or_create_journal("TR", "Transferts", "CAISSE")
         ref = cls.generer_reference("TRF")
         return cls.creer_ecriture(ref, date.today(), libelle, journal, [
-            {"compte": cls.get_compte(compte_dest_code), "debit": montant,
+            {"compte": cls.get_compte(compte_dest_code, organisation), "debit": montant,
              "libelle": "Transfert reçu"},
-            {"compte": cls.get_compte(compte_source_code), "credit": montant,
+            {"compte": cls.get_compte(compte_source_code, organisation), "credit": montant,
              "libelle": "Transfert émis"},
         ], user=user, organisation=organisation)
 

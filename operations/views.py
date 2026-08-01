@@ -143,7 +143,9 @@ class OperationCreateView(
 
         # Le brouillon est enregistre meme si la comptabilisation echoue :
         # l'utilisateur ne doit pas perdre sa saisie.
-        if self.request.POST.get("valider") == "1":
+        # Une operation saisie est finalisee par defaut. Le brouillon doit etre
+        # un choix explicite afin d'eviter une liste d'operations inachevees.
+        if self.request.POST.get("brouillon") != "1":
             try:
                 OperationEngine.executer(operation, user=self.request.user)
             except ValidationError as erreur:
@@ -198,7 +200,7 @@ class OperationUpdateView(
     def form_valid(self, form):
         operation = form.save()
         self.object = operation
-        if self.request.POST.get("valider") == "1":
+        if self.request.POST.get("brouillon") != "1":
             try:
                 OperationEngine.executer(operation, user=self.request.user)
             except ValidationError as erreur:

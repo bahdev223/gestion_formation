@@ -371,6 +371,11 @@ def create_platform_organisation(cleaned_data, *, actor):
             period_start=now,
             period_end=period_end,
         )
+    from comptabilite_ohada.services.initialisation_service import (
+        InitialisationService,
+    )
+
+    InitialisationService.initialiser_organisation(organisation)
     return organisation, owner, temporary_password, abonnement, payment
 
 

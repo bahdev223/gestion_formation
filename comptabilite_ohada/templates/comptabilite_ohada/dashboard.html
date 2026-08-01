@@ -35,18 +35,35 @@
   <article class="stat-card">
     <p class="stat-label">Trésorerie</p>
     <p class="stat-value">{{ synthese.solde_tresorerie|floatformat:0 }}</p>
-    <p class="stat-hint">FCFA</p>
+    <p class="stat-hint">{{ devise }}</p>
   </article>
   <article class="stat-card">
     <p class="stat-label">Produits</p>
     <p class="stat-value">{{ synthese.total_produits|floatformat:0 }}</p>
-    <p class="stat-hint">FCFA</p>
+    <p class="stat-hint">{{ devise }}</p>
   </article>
   <article class="stat-card">
     <p class="stat-label">Résultat</p>
     <p class="stat-value {% if synthese.resultat < 0 %}text-red-600{% else %}text-emerald-700{% endif %}">{{ synthese.resultat|floatformat:0 }}</p>
-    <p class="stat-hint">FCFA</p>
+    <p class="stat-hint">{{ devise }}</p>
   </article>
+</div>
+
+<div class="grid gap-3 xl:grid-cols-3">
+  <section class="baly-surface p-5 xl:col-span-2">
+    <div class="mb-4">
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Flux de tresorerie</p>
+      <h3 class="mt-1 font-bold text-slate-950">Entrees et sorties sur 30 jours</h3>
+    </div>
+    <div class="h-64"><canvas id="compta-tresorerie-chart"></canvas></div>
+  </section>
+  <section class="baly-surface p-5">
+    <div class="mb-4">
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Activite</p>
+      <h3 class="mt-1 font-bold text-slate-950">Volume par journal</h3>
+    </div>
+    <div class="h-64"><canvas id="compta-journaux-chart"></canvas></div>
+  </section>
 </div>
 
 <div class="grid gap-3 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,.75fr)]">
@@ -97,4 +114,28 @@
     </section>
   </aside>
 </div>
+{{ graphique_tresorerie|json_script:"compta-tresorerie-data" }}
+{{ graphique_journaux|json_script:"compta-journaux-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const money = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+  const cash = JSON.parse(document.getElementById('compta-tresorerie-data').textContent);
+  const journals = JSON.parse(document.getElementById('compta-journaux-data').textContent);
+  const common = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
+  new Chart(document.getElementById('compta-tresorerie-chart'), {
+    type: 'line',
+    data: { labels: cash.labels, datasets: [
+      { label: 'Entrees', data: cash.entrees, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,.12)', fill: true, tension: .35 },
+      { label: 'Sorties', data: cash.sorties, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,.08)', fill: true, tension: .35 }
+    ]},
+    options: { ...common, scales: { y: { beginAtZero: true, ticks: { callback: value => money.format(value) } } } }
+  });
+  new Chart(document.getElementById('compta-journaux-chart'), {
+    type: 'doughnut',
+    data: { labels: journals.labels, datasets: [{ data: journals.valeurs, backgroundColor: ['#2563eb','#059669','#f59e0b','#7c3aed','#0f766e','#e11d48'] }] },
+    options: common
+  });
+});
+</script>
 {% endblock %}
