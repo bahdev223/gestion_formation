@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError, models
+from django.db.models.deletion import ProtectedError
 from django.forms import HiddenInput
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -198,6 +199,68 @@ class SessionCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequir
     modal_eyebrow = "Planification"
     submit_label = "Enregistrer la session"
     full_width_fields = "notes paiement_requis_attestation"
+
+
+class SessionUpdateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
+    permission_required = "formations.change_sessionformation"
+    model = SessionFormation
+    form_class = SessionFormationForm
+    template_name = "formations/session_form.html"
+    tenant_success_view_name = "formations:session-list"
+    success_message = "La session a été modifiée avec succès."
+    modal_title = "Modifier la session"
+    modal_eyebrow = "Planification"
+    submit_label = "Enregistrer les modifications"
+    full_width_fields = "notes paiement_requis_attestation"
+
+
+class SessionDeleteView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = "formations.delete_sessionformation"
+    model = SessionFormation
+    template_name = "formations/delete_confirm.html"
+    tenant_success_view_name = "formations:session-list"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.pop("organisation", None)
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "delete_title": "Supprimer la session",
+                "delete_label": self.object.titre,
+                "delete_description": (
+                    "La suppression enlève la session et son planning. "
+                    "Elle est refusée si des apprenants sont déjà inscrits."
+                ),
+                "delete_details": (
+                    f"{self.object.formation.nom} · "
+                    f"{self.object.date_debut:%d/%m/%Y} au {self.object.date_fin:%d/%m/%Y} · "
+                    f"{self.object.lieu}"
+                ),
+                "cancel_url": tenant_reverse(self.request, "formations:session-list"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        if self.object.inscriptions.exists():
+            messages.error(
+                self.request,
+                "Impossible de supprimer cette session : des apprenants y sont déjà inscrits.",
+            )
+            return redirect(_session_detail_url(self.request, self.object))
+        try:
+            return DeleteView.form_valid(self, form)
+        except ProtectedError:
+            messages.error(
+                self.request,
+                "Impossible de supprimer cette session : elle est utilisée par d'autres données.",
+            )
+            return redirect(_session_detail_url(self.request, self.object))
 
 
 class SessionDetailView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, DetailView):
@@ -435,3 +498,99 @@ class SeanceCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequire
                 kwargs={"pk": session.pk},
             )
         return super().get_success_url()
+
+
+class SeanceListView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = "formations.view_seance"
+    model = Seance
+    template_name = "formations/seance_list.html"
+    context_object_name = "seances"
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related("session", "session__formation")
+            .order_by("date", "heure_debut")
+        )
+
+
+class SeanceUpdateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
+    permission_required = "formations.change_seance"
+    model = Seance
+    form_class = SeanceForm
+    template_name = "formations/seance_form.html"
+    tenant_success_view_name = "formations:session-list"
+    success_message = "La séance a été modifiée avec succès."
+    modal_title = "Modifier la séance"
+    modal_eyebrow = "Planification"
+    submit_label = "Enregistrer les modifications"
+    full_width_fields = "contenu observations"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["cancel_url"] = tenant_reverse(
+            self.request,
+            "formations:session-detail",
+            kwargs={"pk": self.object.session_id},
+        )
+        return context
+
+    def get_success_url(self):
+        return tenant_reverse(
+            self.request,
+            "formations:session-detail",
+            kwargs={"pk": self.object.session_id},
+        )
+
+
+class SeanceDeleteView(OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = "formations.delete_seance"
+    model = Seance
+    template_name = "formations/delete_confirm.html"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.pop("organisation", None)
+        return kwargs
+
+    def get_success_url(self):
+        return tenant_reverse(
+            self.request,
+            "formations:session-detail",
+            kwargs={"pk": self.object.session_id},
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "delete_title": "Supprimer la séance",
+                "delete_label": self.object.titre,
+                "delete_description": (
+                    "La suppression enlève cette séance du planning. "
+                    "Elle est refusée si des présences existent déjà."
+                ),
+                "delete_details": (
+                    f"{self.object.session.titre} · "
+                    f"{self.object.date:%d/%m/%Y} · "
+                    f"{self.object.heure_debut:%H:%M} - {self.object.heure_fin:%H:%M}"
+                ),
+                "cancel_url": tenant_reverse(
+                    self.request,
+                    "formations:session-detail",
+                    kwargs={"pk": self.object.session_id},
+                ),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        if self.object.presences.exists():
+            messages.error(
+                self.request,
+                "Impossible de supprimer cette séance : des présences sont déjà enregistrées.",
+            )
+            return redirect(self.get_success_url())
+        return DeleteView.form_valid(self, form)
