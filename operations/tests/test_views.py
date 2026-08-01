@@ -4,7 +4,6 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.test import TestCase
 
 from comptabilite_ohada.models import ExerciceComptable
@@ -48,8 +47,7 @@ class VuesOperationTest(TestCase):
         self.user = get_user_model().objects.create_user(
             username="vue-admin", password="test1234"
         )
-        self.user.user_permissions.set(Permission.objects.all())
-        MembreOrganisation.objects.create(
+        self.member = MembreOrganisation.objects.create(
             organisation=self.organisation,
             user=self.user,
             role=MembreOrganisation.Role.ADMIN,
@@ -69,6 +67,18 @@ class VuesOperationTest(TestCase):
         # Sans type, on ne demande que le socle : pas de compte de trésorerie.
         self.assertIn("Choisissez un type", corps)
         self.assertNotIn('name="compte_tresorerie"', corps)
+        self.assertNotIn("{# Le champ", corps)
+        self.assertIn(f"Montant ({self.organisation.devise})", corps)
+
+    def test_les_permissions_suivent_le_role_dans_lentreprise(self):
+        self.member.role = MembreOrganisation.Role.LECTURE
+        self.member.save(update_fields=["role"])
+        self.assertEqual(self.client.get(self.base).status_code, 200)
+        self.assertEqual(self.client.get(f"{self.base}nouvelle/").status_code, 403)
+
+        self.member.role = MembreOrganisation.Role.RESPONSABLE
+        self.member.save(update_fields=["role"])
+        self.assertEqual(self.client.get(f"{self.base}nouvelle/").status_code, 200)
 
     def test_le_formulaire_sadapte_au_type_choisi(self):
         """Le coeur de l'idee : le formulaire change selon l'operation."""
@@ -117,6 +127,7 @@ class VuesOperationTest(TestCase):
         self.assertIsNone(operation.ecriture)
         self.assertEqual(operation.organisation_id, self.organisation.pk)
         self.assertTrue(operation.numero)
+        self.assertEqual(operation.devise, self.organisation.devise)
 
     def test_creer_et_valider_genere_lecriture(self):
         self.client.post(
@@ -212,7 +223,6 @@ class IsolationOperationTest(TestCase):
         cls.user_a = get_user_model().objects.create_user(
             username="iso-a", password="test1234"
         )
-        cls.user_a.user_permissions.set(Permission.objects.all())
         MembreOrganisation.objects.create(
             organisation=cls.org_a,
             user=cls.user_a,

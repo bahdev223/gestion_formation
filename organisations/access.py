@@ -8,6 +8,7 @@ PERMISSION_CHOICES = (
     ("finance.view", "Consulter les paiements et mouvements"),
     ("finance.collect", "Enregistrer des encaissements"),
     ("finance.disburse", "Enregistrer des decaissements et transferts"),
+    ("operations.manage", "Creer et valider les operations metier"),
     ("accounting.manage", "Gerer la comptabilite"),
     ("rh.manage", "Gerer les ressources humaines"),
     ("payroll.manage", "Gerer la paie salariale"),
@@ -23,6 +24,7 @@ ROLE_PERMISSIONS = {
     MembreOrganisation.Role.ADMIN: ALL_PERMISSIONS,
     MembreOrganisation.Role.RESPONSABLE: {
         "formations.manage", "participants.manage", "finance.view",
+        "operations.manage",
     },
     MembreOrganisation.Role.SECRETAIRE: {
         "formations.manage", "participants.manage", "finance.view",
@@ -31,7 +33,7 @@ ROLE_PERMISSIONS = {
     MembreOrganisation.Role.FORMATEUR: set(),
     MembreOrganisation.Role.COMPTABLE: {
         "finance.view", "finance.collect", "finance.disburse",
-        "accounting.manage",
+        "operations.manage", "accounting.manage",
     },
     MembreOrganisation.Role.RH: {"rh.manage", "payroll.manage"},
     MembreOrganisation.Role.CAISSIER: {"finance.view", "finance.collect"},

@@ -5,11 +5,11 @@
 {% block breadcrumb %}Opérations / {% if object %}{{ object.numero }}{% else %}Nouvelle{% endif %}{% endblock %}
 
 {% block dashboard_content %}
-<form method="post" enctype="multipart/form-data" class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+<form method="post" enctype="multipart/form-data" class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_280px]">
   {% csrf_token %}
 
   <div class="fx-card overflow-hidden">
-    <div class="border-b border-[var(--fx-border)] px-6 py-4">
+    <div class="border-b border-[var(--fx-border)] px-4 py-3">
       <h2 class="font-semibold text-[var(--fx-text)]">Opération</h2>
       {% if definition %}
         <p class="mt-1 text-sm text-[var(--fx-muted)]">
@@ -24,19 +24,18 @@
     </div>
 
     {% if form.non_field_errors %}
-      <div class="mx-6 mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+      <div class="mx-4 mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
         {{ form.non_field_errors }}
       </div>
     {% endif %}
 
-    <div class="grid gap-5 p-6 sm:grid-cols-2">
+    <div class="grid gap-4 p-4 sm:grid-cols-2">
       {% for field in form %}
         <div class="{% if field.name == 'description' or field.name == 'justificatif' %}sm:col-span-2{% endif %}">
           <label for="{{ field.id_for_label }}" class="mb-1.5 block text-[13px] font-semibold text-[var(--fx-text)]">
             {{ field.label }}{% if field.field.required %} <span class="text-[var(--fx-danger)]">*</span>{% endif %}
           </label>
-          {# Le champ « type d'opération » recharge la page : le formulaire est
-             reconstruit côté serveur à partir du catalogue. #}
+          {% comment %}Le type recharge le formulaire depuis le catalogue serveur.{% endcomment %}
           {{ field }}
           {% if field.help_text %}
             <p class="mt-1 text-xs text-[var(--fx-muted)]">{{ field.help_text }}</p>
@@ -50,7 +49,7 @@
   </div>
 
   <aside class="space-y-4">
-    <div class="fx-card p-5">
+    <div class="fx-card p-4">
       <h3 class="text-sm font-semibold text-[var(--fx-text)]">Enregistrement</h3>
       <p class="mt-2 text-xs leading-5 text-[var(--fx-muted)]">
         Un brouillon n’est pas comptabilisé : vous pouvez le compléter plus tard.
@@ -58,18 +57,20 @@
         entreprise.
       </p>
       <div class="mt-4 grid gap-2">
-        <button type="submit" name="valider" value="1" class="fx-btn fx-btn-primary w-full">
-          Valider et comptabiliser
+        <button type="submit" name="valider" value="1" class="fx-btn fx-btn-primary w-full gap-2">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          <span>Valider et comptabiliser</span>
         </button>
-        <button type="submit" name="brouillon" value="1" class="fx-btn fx-btn-ghost w-full">
-          Enregistrer en brouillon
+        <button type="submit" name="brouillon" value="1" class="fx-btn fx-btn-ghost w-full gap-2">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h8V5"/></svg>
+          <span>Enregistrer en brouillon</span>
         </button>
         <a href="{% tenant_url 'operations:index' %}" class="fx-btn fx-btn-ghost w-full">Annuler</a>
       </div>
     </div>
 
     {% if definition %}
-    <div class="fx-card p-5">
+    <div class="fx-card p-4">
       <h3 class="text-sm font-semibold text-[var(--fx-text)]">Ce que Formix va faire</h3>
       <ul class="mt-3 space-y-2 text-xs text-[var(--fx-muted)]">
         <li>Numéroter l’opération</li>

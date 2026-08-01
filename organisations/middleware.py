@@ -72,7 +72,7 @@ class TenantRoleAccessMiddleware:
         if relative.startswith("paiements"):
             return "finance.view" if safe else "finance.collect"
         if relative.startswith("operations"):
-            return "finance.view" if safe else "accounting.manage"
+            return "finance.view" if safe else "operations.manage"
         if not safe and relative.startswith(("formations", "presences", "documents")):
             return "formations.manage"
         if not safe and relative.startswith(("participants", "inscriptions")):

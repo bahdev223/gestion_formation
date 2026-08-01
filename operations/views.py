@@ -1,10 +1,12 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from core.mixins import OrganisationScopedMixin
+from organisations.access import require_member_permission
 from organisations.utils import require_request_organisation, tenant_reverse
 
 from .catalogue import definitions_par_classe, obtenir
@@ -13,13 +15,22 @@ from .models import Operation
 from .services import OperationEngine
 
 
+class TenantOperationPermissionMixin:
+    """Autorise selon le role du membre dans l'entreprise courante."""
+
+    tenant_permission_required = "finance.view"
+
+    def dispatch(self, request, *args, **kwargs):
+        require_member_permission(request, self.tenant_permission_required)
+        return super().dispatch(request, *args, **kwargs)
+
+
 class OperationIndexView(
-    OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView
+    OrganisationScopedMixin, LoginRequiredMixin, TenantOperationPermissionMixin, ListView
 ):
     model = Operation
     template_name = "operations/index.html"
     context_object_name = "operations"
-    permission_required = "operations.view_operation"
     paginate_by = 25
 
     def get_queryset(self):
@@ -70,12 +81,12 @@ def _toutes_les_definitions():
 
 
 class OperationCreateView(
-    OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, CreateView
+    OrganisationScopedMixin, LoginRequiredMixin, TenantOperationPermissionMixin, CreateView
 ):
     model = Operation
     form_class = OperationForm
     template_name = "operations/form.html"
-    permission_required = "operations.add_operation"
+    tenant_permission_required = "operations.manage"
 
     def get_initial(self):
         initial = super().get_initial()
@@ -95,6 +106,7 @@ class OperationCreateView(
         operation = form.save(commit=False)
         operation.organisation = organisation
         operation.cree_par = self.request.user
+        operation.devise = organisation.devise
         operation.numero = OperationEngine.numeroter(
             organisation, operation.date_operation
         )
@@ -131,12 +143,12 @@ class OperationCreateView(
 
 
 class OperationUpdateView(
-    OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, UpdateView
+    OrganisationScopedMixin, LoginRequiredMixin, TenantOperationPermissionMixin, UpdateView
 ):
     model = Operation
     form_class = OperationForm
     template_name = "operations/form.html"
-    permission_required = "operations.change_operation"
+    tenant_permission_required = "operations.manage"
 
     def get_queryset(self):
         # Une operation validee est comptabilisee : elle n'est plus modifiable.
@@ -171,12 +183,11 @@ class OperationUpdateView(
 
 
 class OperationDetailView(
-    OrganisationScopedMixin, LoginRequiredMixin, PermissionRequiredMixin, DetailView
+    OrganisationScopedMixin, LoginRequiredMixin, TenantOperationPermissionMixin, DetailView
 ):
     model = Operation
     template_name = "operations/detail.html"
     context_object_name = "operation"
-    permission_required = "operations.view_operation"
 
     def get_queryset(self):
         return (
@@ -203,12 +214,11 @@ class OperationDetailView(
         return contexte
 
 
+@require_POST
 def valider_operation(request, organisation_slug, pk):
     """Comptabilise un brouillon."""
     organisation = require_request_organisation(request)
-    if not request.user.has_perm("operations.change_operation"):
-        messages.error(request, "Vous n'avez pas le droit de valider une opération.")
-        return redirect(tenant_reverse(request, "operations:index"))
+    require_member_permission(request, "operations.manage")
 
     operation = get_object_or_404(Operation, pk=pk, organisation=organisation)
     try:
@@ -224,12 +234,11 @@ def valider_operation(request, organisation_slug, pk):
     )
 
 
+@require_POST
 def annuler_operation(request, organisation_slug, pk):
     """Annule une operation. L'ecriture generee n'est pas supprimee."""
     organisation = require_request_organisation(request)
-    if not request.user.has_perm("operations.change_operation"):
-        messages.error(request, "Vous n'avez pas le droit d'annuler une opération.")
-        return redirect(tenant_reverse(request, "operations:index"))
+    require_member_permission(request, "operations.manage")
 
     operation = get_object_or_404(Operation, pk=pk, organisation=organisation)
     if operation.statut == Operation.Statut.VALIDEE:

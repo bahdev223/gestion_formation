@@ -88,6 +88,13 @@ class OperationForm(forms.ModelForm):
     def __init__(self, *args, organisation=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.organisation = organisation
+        if organisation is not None:
+            self.fields["montant"].label = _("Montant (%(devise)s)") % {
+                "devise": organisation.devise
+            }
+        self.fields["montant"].widget.attrs.update(
+            {"inputmode": "decimal", "min": "0.01", "step": "0.01"}
+        )
         self.fields["type_operation"].choices = [("", "— Choisir —")] + list(
             choix_types()
         )
