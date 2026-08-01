@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('nom', models.CharField(default="BALY'S GROUP", max_length=255)),
+                ('nom', models.CharField(default='', max_length=255)),
                 ('logo', models.ImageField(blank=True, null=True, upload_to='settings/')),
                 ('adresse', models.TextField(blank=True)),
                 ('telephone', models.CharField(blank=True, max_length=50)),

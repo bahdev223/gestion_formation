@@ -4,7 +4,7 @@ from accounts.roles import sync_role_groups
 
 
 class Command(BaseCommand):
-    help = "Crée et synchronise les groupes et permissions BALY'S."
+    help = "Crée et synchronise les groupes et permissions de la plateforme."
 
     def handle(self, *args, **options):
         groups = sync_role_groups()

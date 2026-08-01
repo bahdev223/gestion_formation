@@ -1,24 +1,26 @@
 {% extends "documents/pdf/base.html" %}
 
-{% block pdf_page %}@page { size: A5 portrait; margin: 10mm; }{% endblock %}
+{% block pdf_page %}@page { size: 148mm 210mm; margin: 6mm; }{% endblock %}
 
 {% block pdf_styles %}
-  body { font-size: 10px; }
-  .header { margin-bottom: 12px; padding-bottom: 8px; border-bottom-width: 2px; }
-  .brand-logo { width: 48px; }
-  .brand-logo img { max-width: 42px; max-height: 42px; }
-  .brand { font-size: 16px; }
-  .title { margin: 10px 0 12px; font-size: 15px; }
-  .meta td, .meta th { padding: 5px 6px; }
-  .receipt-top { display: table; width: 100%; margin-bottom: 8px; }
+  html, body { margin: 0; padding: 0; }
+  body { font-size: 9px; line-height: 1.25; }
+  .header { margin-bottom: 7px; padding-bottom: 5px; border-bottom-width: 2px; }
+  .brand-logo { width: 42px; }
+  .brand-logo img { max-width: 36px; max-height: 36px; }
+  .brand { font-size: 14px; line-height: 1.1; }
+  .title { margin: 6px 0 7px; font-size: 13px; }
+  .meta td, .meta th { padding: 4px 5px; }
+  .meta th { width: 28%; }
+  .receipt-top { display: table; width: 100%; margin-bottom: 6px; }
   .receipt-ref, .receipt-date { display: table-cell; width: 50%; }
   .receipt-date { text-align: right; }
-  .amount-box { margin: 12px 0; padding: 10px 12px; border: 1px solid #17457a; background: #f8fafc; text-align: center; }
+  .amount-box { margin: 7px 0; padding: 7px 10px; border: 1px solid #17457a; background: #f8fafc; text-align: center; }
   .amount-label { margin: 0 0 4px; color: #64748b; text-transform: uppercase; letter-spacing: .08em; font-size: 8px; }
-  .amount { margin: 0; font-size: 23px; }
-  .signature { margin-top: 18px; width: 185px; }
-  .line { margin-top: 32px; }
-  .footer { font-size: 8px; }
+  .amount { margin: 0; font-size: 19px; }
+  .signature { margin-top: 10px; width: 165px; }
+  .line { margin-top: 22px; }
+  .footer { bottom: 0; padding-top: 4px; font-size: 7px; }
 {% endblock %}
 
 {% block pdf_content %}

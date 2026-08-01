@@ -49,6 +49,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='configurationorganisation',
             name='palette',
-            field=models.CharField(choices=[('BALYS', "BALY'S Group"), ('OCEAN', 'Ocean corporate'), ('EMERALD', 'Emerald finance'), ('BORDEAUX', 'Bordeaux premium'), ('CUSTOM', 'Personnalise')], default='BALYS', max_length=20),
+            field=models.CharField(choices=[('FORMIX', 'Formix'), ('OCEAN', 'Ocean corporate'), ('EMERALD', 'Emerald finance'), ('BORDEAUX', 'Bordeaux premium'), ('CUSTOM', 'Personnalise')], default='FORMIX', max_length=20),
         ),
     ]

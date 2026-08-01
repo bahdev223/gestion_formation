@@ -47,6 +47,7 @@ MIDDLEWARE = [
     "core.middleware.AdminPathSecurityMiddleware",
     "accounts.middleware.MandatoryPasswordChangeMiddleware",
     "organisations.middleware.CurrentOrganisationMiddleware",
+    "organisations.middleware.TenantRoleAccessMiddleware",
     "core.middleware.ModuleAccessMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 
 from django.conf import settings
@@ -69,10 +70,14 @@ class Organisation(TimeStampedModel):
 class MembreOrganisation(TimeStampedModel):
     class Role(models.TextChoices):
         PROPRIETAIRE = "PROPRIETAIRE", "Proprietaire"
+        DIRECTEUR = "DIRECTEUR", "Directeur"
         ADMIN = "ADMIN", "Administrateur"
         RESPONSABLE = "RESPONSABLE", "Responsable formation"
+        SECRETAIRE = "SECRETAIRE", "Secretaire"
         FORMATEUR = "FORMATEUR", "Formateur"
         COMPTABLE = "COMPTABLE", "Comptable"
+        RH = "RH", "Responsable RH"
+        CAISSIER = "CAISSIER", "Caissier"
         LECTURE = "LECTURE", "Lecture seule"
 
     organisation = models.ForeignKey(
@@ -87,6 +92,11 @@ class MembreOrganisation(TimeStampedModel):
     )
     role = models.CharField(max_length=30, choices=Role.choices)
     is_active = models.BooleanField(default=True, db_index=True)
+    permissions_personnalisees = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Surcharges de permissions propres a cette entreprise.",
+    )
     invited_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -112,3 +122,56 @@ class MembreOrganisation(TimeStampedModel):
     @property
     def is_owner(self):
         return self.role == self.Role.PROPRIETAIRE
+
+
+class InvitationOrganisation(TimeStampedModel):
+    class Statut(models.TextChoices):
+        EN_ATTENTE = "EN_ATTENTE", "En attente"
+        ACCEPTEE = "ACCEPTEE", "Acceptee"
+        ANNULEE = "ANNULEE", "Annulee"
+        EXPIREE = "EXPIREE", "Expiree"
+
+    organisation = models.ForeignKey(
+        Organisation,
+        on_delete=models.CASCADE,
+        related_name="invitations",
+    )
+    email = models.EmailField()
+    role = models.CharField(max_length=30, choices=MembreOrganisation.Role.choices)
+    permissions_personnalisees = models.JSONField(default=dict, blank=True)
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    statut = models.CharField(
+        max_length=20,
+        choices=Statut.choices,
+        default=Statut.EN_ATTENTE,
+        db_index=True,
+    )
+    expire_le = models.DateTimeField()
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="invitations_envoyees",
+    )
+    accepted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invitations_acceptees",
+    )
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["organisation", "statut"]),
+            models.Index(fields=["email", "statut"]),
+        ]
+
+    def __str__(self):
+        return f"{self.email} - {self.organisation}"
+
+    @property
+    def is_usable(self):
+        return self.statut == self.Statut.EN_ATTENTE and self.expire_le >= timezone.now()

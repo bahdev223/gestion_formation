@@ -4,27 +4,27 @@
 <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
     <h1 class="text-2xl font-bold text-gray-900">Journal des Mouvements</h1>
 
-    <!-- Filtres -->
-    <div class="flex gap-3">
-        <select x-model="filtreCompte" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+    <form method="get" class="grid gap-2 border border-slate-200 bg-white p-3 sm:grid-cols-2 xl:grid-cols-6">
+        <select name="compte" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
             <option value="">Tous les comptes</option>
             {% for c in comptes %}
-            <option value="{{ c.id }}">{{ c.nom }}</option>
+            <option value="{{ c.id }}" {% if filters.compte == c.id|stringformat:'s' %}selected{% endif %}>{{ c.nom }}</option>
             {% endfor %}
         </select>
-        <select x-model="filtreNature" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <select name="nature" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
             <option value="">Toutes les natures</option>
-            {% for key, label in statuts %}
-            <option value="{{ key }}">{{ label }}</option>
+            {% for key, label in natures %}
+            <option value="{{ key }}" {% if filters.nature == key %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-        <select x-model="filtreStatut" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <select name="statut" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
             <option value="">Tous les statuts</option>
-            <option value="VALIDE">Validé</option>
-            <option value="ANNULE">Annulé</option>
-            <option value="RAPPROCHE">Rapproché</option>
+            {% for key, label in statuts %}<option value="{{ key }}" {% if filters.statut == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
         </select>
-    </div>
+        <select name="utilisateur" class="px-3 py-2 border border-gray-300 rounded-md text-sm"><option value="">Tous les opérateurs</option>{% for membre in utilisateurs %}<option value="{{ membre.user_id }}" {% if filters.utilisateur == membre.user_id|stringformat:'s' %}selected{% endif %}>{{ membre.user.get_full_name|default:membre.user.username }}</option>{% endfor %}</select>
+        <div class="flex gap-2"><input type="date" name="date_debut" value="{{ filters.date_debut }}" class="min-w-0 w-full border border-slate-300 px-2 py-2 text-sm"><input type="date" name="date_fin" value="{{ filters.date_fin }}" class="min-w-0 w-full border border-slate-300 px-2 py-2 text-sm"></div>
+        <div class="flex gap-2"><button class="baly-btn-primary flex-1 px-3 py-2 text-sm font-semibold text-white">Filtrer</button><a href="." class="border border-slate-300 px-3 py-2 text-sm text-slate-600">Effacer</a></div>
+    </form>
 
     <!-- Table -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -42,14 +42,13 @@
             </thead>
             <tbody class="divide-y divide-gray-200">
                 {% for m in mouvements %}
-                <tr class="hover:bg-gray-50 transition-colors"
-                    x-show="(!filtreCompte || '{{ m.compte.id }}' === filtreCompte) && (!filtreNature || '{{ m.nature }}' === filtreNature) && (!filtreStatut || '{{ m.statut }}' === filtreStatut)">
+                <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-5 py-3 text-xs text-gray-500">{{ m.date|date:'d/m/Y H:i' }}</td>
                     <td class="px-5 py-3">{{ m.compte.nom }}</td>
                     <td class="px-5 py-3">{{ m.get_nature_display }}</td>
                     <td class="px-5 py-3">{{ m.libelle|truncatechars:40 }}</td>
                     <td class="px-5 py-3 text-right font-bold {% if m.est_entree %}text-green-600{% else %}text-red-600{% endif %}">
-                        {{ m.montant|floatformat:0 }}
+                        {{ m.montant|floatformat:0 }} {{ payment_currency }}
                     </td>
                     <td class="px-5 py-3 text-center">
                         <span class="px-2 py-0.5 rounded-full text-xs
@@ -60,7 +59,7 @@
                             {{ m.get_statut_display }}
                         </span>
                     </td>
-                    <td class="px-5 py-3 text-xs text-gray-400">{{ m.created_by|default:'—' }}</td>
+                    <td class="px-5 py-3 text-xs text-gray-500"><span class="font-semibold text-slate-700">{{ m.created_by.get_full_name|default:m.created_by.username|default:'—' }}</span>{% if m.annule_par %}<span class="mt-1 block text-red-600">Annulé par {{ m.annule_par.get_full_name|default:m.annule_par.username }}</span>{% endif %}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="7" class="px-5 py-8 text-center text-gray-500">Aucun mouvement</td></tr>
@@ -70,13 +69,4 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('mouvementsApp', () => ({
-        filtreCompte: '',
-        filtreNature: '',
-        filtreStatut: '',
-    }));
-});
-</script>
 {% endblock %}

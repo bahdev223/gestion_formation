@@ -30,19 +30,12 @@ def tenant_url(context, view_name, *args, **kwargs):
             tenant_view_name = view_name
         else:
             namespace, separator, route_name = view_name.partition(":")
-            namespace_map = {
-                "formations": "formations",
-                "participants": "participants",
-                "inscriptions": "inscriptions",
-                "paiements": "paiements",
-                "presences": "presences",
-                "documents": "documents",
-                "django_paie": "paie",
-                "dashboard": "dashboard",
-                "comptabilite": "comptabilite",
-                "comptes": "comptes",
-            }
-            tenant_namespace = namespace_map.get(namespace)
+            # Source unique : cette table etait dupliquee ici, si bien qu'un
+            # nouveau module enregistre dans organisations/utils.py restait
+            # introuvable depuis les templates.
+            from organisations.utils import TENANT_NAMESPACES
+
+            tenant_namespace = TENANT_NAMESPACES.get(namespace)
             tenant_view_name = (
                 f"organisations:{tenant_namespace}:{route_name}"
                 if separator and tenant_namespace

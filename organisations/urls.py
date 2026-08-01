@@ -3,7 +3,7 @@ from django.views.generic import RedirectView
 
 from dashboard.views import dashboard_home
 
-from . import views
+from . import member_views, views
 
 app_name = "organisations"
 
@@ -12,6 +12,10 @@ urlpatterns = [
     path("comptabilit/", RedirectView.as_view(url="comptabilite/")),
     path("dashboard/", dashboard_home),
     path("abonnement/", views.owner_dashboard, name="owner-dashboard"),
+    path("parametres-utilisateurs/", member_views.members_settings, name="members"),
+    path("parametres-utilisateurs/inviter/", member_views.invite_member, name="member-invite"),
+    path("parametres-utilisateurs/<int:member_id>/modifier/", member_views.edit_member, name="member-edit"),
+    path("parametres-utilisateurs/invitations/<int:invitation_id>/annuler/", member_views.cancel_invitation, name="invitation-cancel"),
     path("formations/", include(("formations.urls", "formations"), namespace="formations")),
     path("participants/", include(("participants.urls", "participants"), namespace="participants")),
     path("inscriptions/", include(("inscriptions.urls", "inscriptions"), namespace="inscriptions")),

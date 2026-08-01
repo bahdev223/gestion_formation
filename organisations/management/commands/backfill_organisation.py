@@ -44,7 +44,7 @@ class Command(BaseCommand):
     help = "Attribue les anciennes donnees metier a une organisation."
 
     def add_arguments(self, parser):
-        parser.add_argument("--slug", default="balys-group")
+        parser.add_argument("--slug", required=True)
 
     def handle(self, *args, **options):
         organisation = Organisation.objects.get(slug=options["slug"])

@@ -22,13 +22,13 @@ def _strip_or_empty(value):
 
 
 def _resolve_company_name(configuration, active_organisation):
-    config_name = _strip_or_empty(getattr(configuration, "nom", ""))
-    if config_name and config_name.upper() not in {"BALY'S GROUP", "BALY’S GROUP"}:
-        return config_name
-
     active_name = _strip_or_empty(getattr(active_organisation, "nom", ""))
     if active_name:
         return active_name
+
+    config_name = _strip_or_empty(getattr(configuration, "nom", ""))
+    if config_name:
+        return config_name
 
     return "Votre entreprise"
 

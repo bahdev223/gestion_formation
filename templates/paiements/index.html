@@ -22,6 +22,14 @@
   <div class="stat-card"><p class="stat-label">Annulations</p><p class="stat-value">{{ paiements_annules }}</p><p class="stat-hint">Transactions annulées</p></div>
 </div>
 
+<form method="get" class="grid gap-2 border border-slate-200 bg-white p-3 sm:grid-cols-2 xl:grid-cols-5">
+  <select name="utilisateur" class="border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Tous les encaisseurs</option>{% for membre in payment_users %}<option value="{{ membre.user_id }}" {% if filters.utilisateur == membre.user_id|stringformat:'s' %}selected{% endif %}>{{ membre.user.get_full_name|default:membre.user.username }}</option>{% endfor %}</select>
+  <select name="compte" class="border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Tous les comptes</option>{% for compte in payment_accounts %}<option value="{{ compte.pk }}" {% if filters.compte == compte.pk|stringformat:'s' %}selected{% endif %}>{{ compte.nom }}</option>{% endfor %}</select>
+  <select name="statut" class="border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Tous les statuts</option>{% for value, label in payment_statuses %}<option value="{{ value }}" {% if filters.statut == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  <div class="flex gap-2"><input type="date" name="date_debut" value="{{ filters.date_debut }}" class="min-w-0 w-full border border-slate-300 px-2 py-2 text-sm"><input type="date" name="date_fin" value="{{ filters.date_fin }}" class="min-w-0 w-full border border-slate-300 px-2 py-2 text-sm"></div>
+  <div class="flex gap-2"><button class="baly-btn-primary flex-1 px-3 py-2 text-sm font-semibold text-white">Filtrer</button><a href="." class="border border-slate-300 px-3 py-2 text-sm text-slate-600">Effacer</a></div>
+</form>
+
 <div class="baly-surface overflow-hidden rounded-lg">
   <div class="border-b border-slate-200 px-6 py-5">
     <h2 class="font-bold text-slate-950">Journal des encaissements</h2>
@@ -36,6 +44,7 @@
           <th class="px-6 py-4">Formation</th>
           <th class="px-6 py-4">Date</th>
           <th class="px-6 py-4">Encaissement</th>
+          <th class="px-6 py-4">Encaissé par</th>
           <th class="px-6 py-4">Montant</th>
           <th class="px-6 py-4">Statut</th>
           <th class="px-6 py-4 text-right">Actions</th>
@@ -49,6 +58,7 @@
             <td class="px-6 py-4 text-slate-700">{{ paiement.inscription.session.formation.nom }}</td>
             <td class="whitespace-nowrap px-6 py-4 text-slate-600">{{ paiement.date_paiement|date:"d/m/Y H:i" }}</td>
             <td class="px-6 py-4"><p class="font-semibold text-slate-900">{{ paiement.get_mode_paiement_display }}</p><p class="mt-1 text-xs text-slate-500">{{ paiement.compte.nom|default:"Compte non renseigné" }}</p></td>
+            <td class="px-6 py-4"><p class="text-sm font-semibold text-slate-800">{{ paiement.enregistre_par.get_full_name|default:paiement.enregistre_par.username }}</p><p class="mt-1 text-xs text-slate-500">{{ paiement.enregistre_par.username }}</p></td>
             <td class="whitespace-nowrap px-6 py-4 font-bold">{{ paiement.montant|floatformat:0 }} {{ payment_currency }}</td>
             <td class="px-6 py-4"><span class="baly-badge">{{ paiement.get_statut_display }}</span></td>
             <td class="px-6 py-4">
@@ -69,7 +79,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="8" class="px-6 py-14 text-center text-slate-500">Aucun paiement de formation enregistré.</td></tr>
+          <tr><td colspan="9" class="px-6 py-14 text-center text-slate-500">Aucun paiement de formation enregistré.</td></tr>
         {% endfor %}
       </tbody>
     </table>

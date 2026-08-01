@@ -7,7 +7,7 @@ from comptes.models import Compte
 
 
 class Command(BaseCommand):
-    help = "Crée les comptes financiers de base de BALY'S GROUP."
+    help = "Crée les comptes financiers de base de l'organisation sélectionnée."
 
     accounts = [
         {

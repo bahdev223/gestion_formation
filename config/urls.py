@@ -7,6 +7,7 @@ from django.urls import include, path
 
 from core.views import health_check, health_live, health_ready
 from organisations.platform_views import create_organisation, landing_page
+from organisations.member_views import accept_invitation
 
 urlpatterns = [
     path("health/", health_check, name="health-check"),
@@ -20,6 +21,7 @@ urlpatterns = [
         include(("platform_admin.urls", "platform_admin"), namespace="platform_admin"),
     ),
     path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
+    path("invitation/<uuid:token>/", accept_invitation, name="organisation-invitation-accept"),
     path("o/<slug:organisation_slug>/", include(("organisations.urls", "organisations"), namespace="organisations")),
 ]
 

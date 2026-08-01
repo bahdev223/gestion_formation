@@ -50,7 +50,10 @@ class ModeSimpleServiceTest(TestCase):
     def test_enregistrer_paiement_total(self):
         echeance = self.service.creer_echeance(self.employe, "07/2026", 50000)
         paiement = self.service.enregistrer_paiement(
-            echeance_id=echeance.id, montant=50000
+            # Date explicite dans la periode : sans elle le paiement prend la
+            # date du jour et bascule en ARRIERE des que 07/2026 est passe.
+            echeance_id=echeance.id, montant=50000,
+            date_paiement=date(2026, 7, 15),
         )
         echeance.refresh_from_db()
         self.assertEqual(echeance.montant_paye, 50000)
@@ -143,9 +146,16 @@ class ModeSimpleServiceTest(TestCase):
 
     def test_avance_conserve_salaire_complet(self):
         source = self.service.creer_echeance(self.employe, "07/2026", montant_brut=50000, montant_net=48000)
-        paiement = self.service.enregistrer_paiement(
-            echeance_id=source.id, montant=20000, type_paiement="AVANCE",
-        )
+        # Une avance versee en juillet cible aout. mettre_a_jour_statut() lit
+        # date.today() : sans figer la date, l'echeance cible bascule en
+        # paiement partiel des que aout 2026 est atteint, et ce n'est plus une
+        # avance. On se place donc explicitement en juillet.
+        with patch("django_paie.models.echeance.date") as date_mock:
+            date_mock.today.return_value = date(2026, 7, 10)
+            paiement = self.service.enregistrer_paiement(
+                echeance_id=source.id, montant=20000, type_paiement="AVANCE",
+                date_paiement=date(2026, 7, 10),
+            )
         echeance_cible = paiement.echeance
         self.assertEqual(echeance_cible.mois, 8)
         self.assertEqual(echeance_cible.annee, 2026)
@@ -158,12 +168,16 @@ class ModeSimpleServiceTest(TestCase):
         source = self.service.creer_echeance(
             self.employe, "07/2026", montant_brut=50000, montant_net=50000
         )
-        paiement = self.service.enregistrer_paiement(
-            echeance_id=source.id,
-            montant=50000,
-            type_paiement="AVANCE",
-            date_paiement=date(2026, 7, 10),
-        )
+        # Versement en juillet : la date du jour est figee, sinon l'avance
+        # serait deja echue au moment ou le test s'execute.
+        with patch("django_paie.models.echeance.date") as date_mock:
+            date_mock.today.return_value = date(2026, 7, 10)
+            paiement = self.service.enregistrer_paiement(
+                echeance_id=source.id,
+                montant=50000,
+                type_paiement="AVANCE",
+                date_paiement=date(2026, 7, 10),
+            )
         echeance_cible = paiement.echeance
         self.assertEqual(echeance_cible.statut, "PAYE_EN_AVANCE")
         with patch("django_paie.models.echeance.date") as date_mock:

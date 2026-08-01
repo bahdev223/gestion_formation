@@ -163,7 +163,7 @@ FORMATIONS = [
 
 
 class Command(BaseCommand):
-    help = "Crée le catalogue initial de catégories et formations BALY'S GROUP."
+    help = "Crée un catalogue de démonstration de catégories et formations."
 
     def handle(self, *args, **options):
         categories = {}

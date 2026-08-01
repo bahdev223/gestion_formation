@@ -24,8 +24,8 @@ def render_pdf(template_name, context):
     profile = configuration or active_organisation
     payload["organisation"] = profile
     payload["company_name"] = (
-        getattr(profile, "nom", "")
-        or getattr(active_organisation, "nom", "")
+        getattr(active_organisation, "nom", "")
+        or getattr(profile, "nom", "")
         or "Entreprise"
     )
     payload["payment_currency"] = (

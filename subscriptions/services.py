@@ -33,6 +33,52 @@ def expiring_subscription_alerts(days=7, overdue_days=7):
 
 class FeatureService:
     @staticmethod
+    def _normalize_feature_key(feature_code):
+        if not feature_code:
+            return ()
+
+        variants = {
+            feature_code,
+            feature_code.lower(),
+            feature_code.upper(),
+        }
+        if "_" in feature_code:
+            variants.add(feature_code.replace("_", ""))
+            variants.add(feature_code.replace("_", "").lower())
+            variants.add(feature_code.replace("_", "").upper())
+            variants.add(feature_code.replace("_", "-").lower())
+            variants.add(feature_code.replace("_", "-").upper())
+        # Compatibilité spécifique avec certains anciens contenus
+        if feature_code.lower() == "hr":
+            variants.update({"rh", "RH", "ressources_humaines", "ressources-humaines"})
+        if feature_code.lower() == "payroll":
+            variants.update(
+                {
+                    "paye",
+                    "PAIEMENT",
+                    "paie",
+                    "PAIE",
+                    "paye",
+                    "payroll_module",
+                    "payrollmodule",
+                    "rh_payroll",
+                }
+            )
+        if feature_code.lower() == "accounting":
+            variants.update({"comptabilite", "comptabilite_ohada", "accounting_module"})
+        if feature_code.lower() == "treasury":
+            variants.update({"tresorerie", "finance", "finance_module"})
+        return tuple(variants)
+
+    @staticmethod
+    def _feature_enabled(plan, feature_code):
+        fonctionnalites = plan.fonctionnalites if plan is not None else {}
+        for key in FeatureService._normalize_feature_key(feature_code):
+            if bool(fonctionnalites.get(key)):
+                return True
+        return False
+
+    @staticmethod
     def has_feature(organisation, feature_code):
         from platform_admin.models import FeatureFlag
 
@@ -42,7 +88,7 @@ class FeatureService:
         abonnement = getattr(organisation, "abonnement", None)
         if abonnement is None or not abonnement.is_active:
             return False
-        return bool(abonnement.plan.fonctionnalites.get(feature_code, False))
+        return FeatureService._feature_enabled(abonnement.plan, feature_code)
 
     @staticmethod
     def require_feature(organisation, feature_code):

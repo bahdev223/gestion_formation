@@ -22,18 +22,44 @@ class PaiementIndexView(OrganisationScopedMixin, LoginRequiredMixin, PermissionR
     paginate_by = 25
 
     def get_queryset(self):
-        return super().get_queryset().select_related(
+        queryset = super().get_queryset().select_related(
             "inscription",
             "inscription__participant",
             "inscription__session",
             "inscription__session__formation",
             "enregistre_par",
             "compte",
-        ).order_by("-date_paiement", "-created_at")
+        )
+        utilisateur_id = self.request.GET.get("utilisateur")
+        compte_id = self.request.GET.get("compte")
+        statut = self.request.GET.get("statut")
+        date_debut = self.request.GET.get("date_debut")
+        date_fin = self.request.GET.get("date_fin")
+        if utilisateur_id:
+            queryset = queryset.filter(enregistre_par_id=utilisateur_id)
+        if compte_id:
+            queryset = queryset.filter(compte_id=compte_id)
+        if statut:
+            queryset = queryset.filter(statut=statut)
+        if date_debut:
+            queryset = queryset.filter(date_paiement__date__gte=date_debut)
+        if date_fin:
+            queryset = queryset.filter(date_paiement__date__lte=date_fin)
+        return queryset.order_by("-date_paiement", "-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["payment_currency"] = self.get_current_organisation().devise
+        organisation = self.get_current_organisation()
+        context["payment_users"] = organisation.membres.filter(
+            is_active=True
+        ).select_related("user")
+        from comptes.models import Compte
+        context["payment_accounts"] = Compte.objects.filter(
+            organisation=organisation, actif=True
+        ).order_by("nom")
+        context["payment_statuses"] = Paiement.Statut.choices
+        context["filters"] = self.request.GET
         valid_payments = self.get_queryset().filter(statut=Paiement.Statut.VALIDE)
         context["total_encaisse"] = (
             valid_payments.aggregate(total=Sum("montant"))["total"] or 0

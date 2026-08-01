@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
 
-from .models import MembreOrganisation, Organisation
+from .models import InvitationOrganisation, MembreOrganisation, Organisation
 
 
 class MembreOrganisationInline(TabularInline):
@@ -35,3 +35,12 @@ class MembreOrganisationAdmin(ModelAdmin):
     list_filter = ("role", "is_active")
     search_fields = ("organisation__nom", "user__username", "user__email")
     autocomplete_fields = ["organisation", "user", "invited_by"]
+
+
+@admin.register(InvitationOrganisation)
+class InvitationOrganisationAdmin(ModelAdmin):
+    list_display = ("email", "organisation", "role", "statut", "expire_le", "invited_by")
+    list_filter = ("statut", "role")
+    search_fields = ("email", "organisation__nom")
+    readonly_fields = ("token", "accepted_at", "created_at", "updated_at")
+    autocomplete_fields = ["organisation", "invited_by", "accepted_by"]

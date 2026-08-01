@@ -11,7 +11,7 @@ hex_color_validator = RegexValidator(
 
 class ConfigurationOrganisation(OrganisationOwnedModel, TimeStampedModel):
     class Palette(models.TextChoices):
-        BALYS = "BALYS", "BALY'S Group"
+        FORMIX = "FORMIX", "Formix"
         OCEAN = "OCEAN", "Ocean corporate"
         EMERALD = "EMERALD", "Emerald finance"
         BORDEAUX = "BORDEAUX", "Bordeaux premium"
@@ -34,7 +34,7 @@ class ConfigurationOrganisation(OrganisationOwnedModel, TimeStampedModel):
     palette = models.CharField(
         max_length=20,
         choices=Palette.choices,
-        default=Palette.BALYS,
+        default=Palette.FORMIX,
     )
     couleur_sidebar = models.CharField(
         max_length=7,

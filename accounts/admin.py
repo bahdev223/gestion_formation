@@ -5,12 +5,12 @@ from .models import User
 
 
 @admin.register(User)
-class BalyUserAdmin(UserAdmin):
+class FormixUserAdmin(UserAdmin):
     list_display = ("username", "email", "role", "is_active", "is_staff")
     list_filter = UserAdmin.list_filter + ("role",)
     fieldsets = UserAdmin.fieldsets + (
         (
-            "BALY'S GROUP",
+            "Informations métier",
             {
                 "fields": (
                     "role",
@@ -24,7 +24,7 @@ class BalyUserAdmin(UserAdmin):
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
         (
-            "BALY'S GROUP",
+            "Informations métier",
             {
                 "fields": (
                     "role",

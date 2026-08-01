@@ -49,6 +49,63 @@ class OrganisationSettingsThemeViewTest(TestCase):
         self.assertContains(response, "--baly-blue-deep: #123456")
         self.assertContains(response, "--baly-header: #fefefe")
 
+    def test_official_organisation_name_wins_over_stale_configuration(self):
+        ConfigurationOrganisation.objects.create(
+            organisation=self.organisation,
+            nom="Ancien nom de test",
+        )
+
+        response = self.client.get(
+            reverse(
+                "organisations:dashboard:organisation-settings",
+                kwargs={"organisation_slug": self.organisation.slug},
+            )
+        )
+
+        self.assertEqual(response.context["company_name"], "Client Demo")
+
+    def test_settings_update_synchronizes_official_organisation_identity(self):
+        configuration = ConfigurationOrganisation.objects.create(
+            organisation=self.organisation,
+            nom=self.organisation.nom,
+            email=self.organisation.email,
+            telephone=self.organisation.telephone,
+        )
+        data = {
+            "nom": "Nouvelle Identite SARL",
+            "adresse": "Bamako",
+            "telephone": "+22371111111",
+            "email": "contact@nouvelle-identite.test",
+            "site_web": "",
+            "numero_fiscal": "",
+            "devise": "XOF",
+            "prefixe_recu": "REC",
+            "prefixe_attestation": "ATT",
+            "signature_nom": "",
+            "signature_fonction": "",
+            "palette": ConfigurationOrganisation.Palette.FORMIX,
+            "couleur_sidebar": configuration.couleur_sidebar,
+            "couleur_header": configuration.couleur_header,
+            "couleur_primaire": configuration.couleur_primaire,
+            "couleur_secondaire": configuration.couleur_secondaire,
+            "couleur_accent": configuration.couleur_accent,
+            "couleur_fond": configuration.couleur_fond,
+            "couleur_surface": configuration.couleur_surface,
+        }
+
+        response = self.client.post(
+            reverse(
+                "organisations:dashboard:organisation-settings",
+                kwargs={"organisation_slug": self.organisation.slug},
+            ),
+            data,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.organisation.refresh_from_db()
+        self.assertEqual(self.organisation.nom, "Nouvelle Identite SARL")
+        self.assertEqual(self.organisation.devise, "XOF")
+
 
 class PayrollGenerateViewTest(TestCase):
     def setUp(self):

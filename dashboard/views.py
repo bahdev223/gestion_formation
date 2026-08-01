@@ -3,7 +3,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import redirect, render
-from django.utils import timezone
 from django.views.generic import UpdateView
 
 from organisations.utils import (
@@ -68,6 +67,26 @@ class ConfigurationOrganisationView(
 
     success_message = "Les paramètres de l'entreprise ont été enregistrés."
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        organisation = require_request_organisation(self.request)
+        configuration = self.object
+        fields = []
+        for target, source in (
+            ("nom", "nom"),
+            ("email", "email"),
+            ("telephone", "telephone"),
+            ("adresse", "adresse"),
+            ("devise", "devise"),
+        ):
+            value = getattr(configuration, source, "")
+            if value and getattr(organisation, target) != value:
+                setattr(organisation, target, value)
+                fields.append(target)
+        if fields:
+            organisation.save(update_fields=[*fields, "updated_at"])
+        return response
+
     def get_object(self, queryset=None):
         organisation = require_request_organisation(self.request)
         qs = ConfigurationOrganisation.objects.filter(
@@ -113,8 +132,8 @@ class ConfigurationOrganisationView(
         ]
         context["theme_palettes"] = [
             {
-                "code": "BALYS",
-                "label": "BALY'S",
+                "code": "FORMIX",
+                "label": "Formix",
                 "sidebar": "#0b2448",
                 "header": "#ffffff",
                 "primary": "#15519a",
