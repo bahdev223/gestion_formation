@@ -300,6 +300,15 @@ class SessionSeanceCrudViewTest(TestCase):
         )
         self.assertFalse(SessionFormation.objects.filter(pk=session.pk).exists())
 
+    def test_delete_session_confirmation_renders(self):
+        response = self.client.get(
+            f"/o/centre-sessions-crud/formations/sessions/{self.session.pk}/supprimer/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.session.titre)
+        self.assertContains(response, self.formation.nom)
+
     def test_delete_session_with_inscriptions_is_refused(self):
         participant = Participant.objects.create(
             organisation=self.organisation,

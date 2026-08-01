@@ -56,7 +56,9 @@ class BalanceView(
         return context
 
 
-class GrandLivreView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class GrandLivreView(
+    ScopedExerciceMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView
+):
     template_name = "comptabilite_ohada/grand_livre.html"
     permission_required = "comptabilite_ohada.view_ecriturecomptable"
 

@@ -23,6 +23,7 @@ class UserRoleTest(TestCase):
             user.groups.filter(name="Responsables formation").exists()
         )
         self.assertTrue(user.has_perm("formations.add_formation"))
+        self.assertTrue(user.has_perm("operations.view_operation"))
 
     def test_changement_role_remplace_groupe_gere(self):
         user = get_user_model().objects.create_user(

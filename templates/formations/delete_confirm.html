@@ -11,7 +11,7 @@
       <p class="mt-1">La suppression retire définitivement cet élément de l’espace de l’entreprise.</p>
     </div>
 
-    <h2 class="text-lg font-bold text-slate-900">Supprimer "{{ delete_label|default:object.nom|default:object.titre }}" ?</h2>
+    <h2 class="text-lg font-bold text-slate-900">Supprimer "{% if delete_label %}{{ delete_label }}{% elif object.nom %}{{ object.nom }}{% else %}{{ object.titre }}{% endif %}" ?</h2>
     {% if object.code %}
       <p class="mt-1 text-sm text-slate-600">Code : <span class="font-mono">{{ object.code }}</span></p>
     {% endif %}
