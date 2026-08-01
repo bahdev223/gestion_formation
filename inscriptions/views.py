@@ -62,7 +62,13 @@ class InscriptionCreateView(OrganisationScopedMixin, HtmxModalFormMixin, LoginRe
         )
 
 
-class NouvelApprenantInscriptionView(HtmxModalFormMixin, LoginRequiredMixin, PermissionRequiredMixin, FormView):
+class NouvelApprenantInscriptionView(
+    OrganisationScopedMixin,
+    HtmxModalFormMixin,
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    FormView,
+):
     permission_required = (
         "participants.add_participant",
         "inscriptions.add_inscription",
