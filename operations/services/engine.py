@@ -100,11 +100,11 @@ class OperationEngine:
         from ..models import Operation
 
         operation_initiale = operation
-        operation = (
-            Operation.objects.select_for_update()
-            .select_related("organisation", "compte_tresorerie", "compte_destination")
-            .get(pk=operation.pk)
-        )
+        # Verrouiller uniquement l'operation. Les deux comptes sont nullable :
+        # select_related() produisait des LEFT JOIN et PostgreSQL refuse
+        # FOR UPDATE sur le cote nullable d'une jointure externe. Les comptes
+        # de tresorerie sont verrouilles separement juste apres.
+        operation = Operation.objects.select_for_update().get(pk=operation.pk)
 
         if operation.statut == Operation.Statut.VALIDEE:
             raise ValidationError("Cette opération est déjà validée.")
