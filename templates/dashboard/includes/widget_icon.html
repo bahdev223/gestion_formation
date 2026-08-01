@@ -1,0 +1,37 @@
+{% with token=icon|default:"[DOT]" %}
+  {% if token == "[CA]" or token == "[MONEY]" or token == "[IN]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3z"></path><path d="M7 12h.01"></path><path d="M17 12h.01"></path><path d="M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"></path></svg>
+  {% elif token == "[SAFE]" or token == "[BANK]" or token == "[BAL]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16"></path><path d="M5 9l7-5 7 5"></path><path d="M6 9v10"></path><path d="M18 9v10"></path><path d="M3 19h18"></path><path d="M10 13h4"></path></svg>
+  {% elif token == "[BOOKS]" or token == "[CAT]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H6.5A2.5 2.5 0 0 1 4 17.5z"></path><path d="M8 4v16"></path></svg>
+  {% elif token == "[ALERT]" or token == "[UNPAID]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+  {% elif token == "[FILL]" or token == "[RATE]" or token == "[NPS]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 16v-5"></path><path d="M12 16V8"></path><path d="M16 16v-9"></path></svg>
+  {% elif token == "[DAY]" or token == "[WEEK]" or token == "[MONTH]" or token == "[YEAR]" or token == "[CAL]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v4"></path><path d="M17 3v4"></path><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M4 10h16"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path></svg>
+  {% elif token == "[OUT]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3z"></path><path d="M16 12H8"></path><path d="m11 9-3 3 3 3"></path></svg>
+  {% elif token == "[PENDING]" or token == "[TIME]" or token == "[LATE]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+  {% elif token == "[OPEN]" or token == "[NEW]" or token == "[TODO]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+  {% elif token == "[DONE]" or token == "[SUCCESS]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"></path><circle cx="12" cy="12" r="9"></circle></svg>
+  {% elif token == "[CANCEL]" or token == "[DROP]" or token == "[ABS]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path><circle cx="12" cy="12" r="9"></circle></svg>
+  {% elif token == "[ATTEND]" or token == "[EMP]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M17 11a3 3 0 0 1 3 3v6"></path></svg>
+  {% elif token == "[LEAVE]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19c4-8 10-8 16-3"></path><path d="M7 14c2-5 6-7 11-7"></path><path d="M13 7 9 3"></path></svg>
+  {% elif token == "[TOP]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3z"></path></svg>
+  {% elif token == "[CASH]" or token == "[OM]" or token == "[MM]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"></rect><path d="M10 18h4"></path><path d="M9 6h6"></path><path d="M9 10h6"></path></svg>
+  {% elif token == "[ACT]" or token == "[DIR]" %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 15 3-4 3 2 4-6"></path></svg>
+  {% else %}
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle></svg>
+  {% endif %}
+{% endwith %}

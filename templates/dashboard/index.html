@@ -6,30 +6,32 @@
 {% block breadcrumb %}Tableau de bord / {{ active_tab|capfirst }}{% endblock %}
 
 {% block page_actions %}
-<div class="flex flex-wrap gap-2">
+<div class="flex min-w-0 flex-nowrap gap-2 overflow-x-auto pb-1">
   <a
     href="{% tenant_url 'inscriptions:create' %}"
     @click.prevent="globalModalOpen = true"
     hx-get="{% tenant_url 'inscriptions:create' %}"
     hx-target="#global-modal-content"
-    class="fx-btn fx-btn-ghost">
-    Nouvelle inscription
+    class="fx-btn fx-btn-ghost flex-none">
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 12h.01"></path></svg>
+    <span>Inscription</span>
   </a>
   <a
     href="{% tenant_url 'paiements:create' %}"
     @click.prevent="globalModalOpen = true"
     hx-get="{% tenant_url 'paiements:create' %}"
     hx-target="#global-modal-content"
-    class="fx-btn fx-btn-primary">
-    Nouveau paiement
+    class="fx-btn fx-btn-primary flex-none">
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3z"></path><path d="M7 12h.01"></path><path d="M17 12h.01"></path></svg>
+    <span>Paiement</span>
   </a>
 </div>
 {% endblock %}
 
 {% block dashboard_content %}
-<div class="mb-4 flex flex-wrap gap-2">
+<div class="mb-4 flex gap-2 overflow-x-auto border-b border-[var(--fx-border)] pb-2">
   {% for tab in dashboard_tabs %}
-    <a href="?tab={{ tab.key }}" class="fx-btn px-3 py-2 text-sm {% if tab.key == active_tab %}fx-btn-primary{% else %}fx-btn-ghost{% endif %}">
+    <a href="?tab={{ tab.key }}" class="fx-btn flex-none px-3 py-2 text-sm {% if tab.key == active_tab %}fx-btn-primary{% else %}fx-btn-ghost{% endif %}">
       {{ tab.label }}
     </a>
   {% empty %}
@@ -39,14 +41,16 @@
 
 {% with dashboard_cards=widget_board.active %}
 {% if dashboard_cards %}
-  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
     {% for widget in dashboard_cards %}
       {% if widget.kind == "card" or widget.kind|default:"card" == "card" %}
-        <article class="fx-card fx-stat col-span-1{% if widget.tone == 'success' %} fx-tone-success{% elif widget.tone == 'danger' %} fx-tone-danger{% elif widget.tone == 'warning' %} fx-tone-warning{% elif widget.tone == 'info' %} fx-tone-info{% else %} fx-tone-primary{% endif %}">
-          <span class="fx-icon-tile">{{ widget.icon|default:"â€¢" }}</span>
-          <div>
+        <article class="fx-card fx-card-hover fx-stat col-span-1 min-w-0{% if widget.tone == 'success' %} fx-tone-success{% elif widget.tone == 'danger' %} fx-tone-danger{% elif widget.tone == 'warning' %} fx-tone-warning{% elif widget.tone == 'info' %} fx-tone-info{% else %} fx-tone-primary{% endif %}">
+          <span class="fx-icon-tile">
+            {% include "dashboard/includes/widget_icon.html" with icon=widget.icon %}
+          </span>
+          <div class="min-w-0">
             <p class="fx-stat-label">{{ widget.title }}</p>
-            <p class="fx-stat-value">{{ widget.value }}</p>
+            <p class="fx-stat-value truncate">{{ widget.value }}</p>
             {% if widget.hint %}
               <p class="fx-stat-hint">{{ widget.hint }}</p>
             {% endif %}
@@ -63,13 +67,19 @@
     {% endfor %}
   </div>
 
-  <section class="fx-card mt-4">
-    <div class="border-b border-[var(--fx-border)] px-6 py-4">
-      <h3 class="font-semibold text-[var(--fx-text)]">Actions rapides</h3>
+  <section class="mt-4">
+    <div class="mb-2 flex items-center justify-between">
+      <h3 class="text-sm font-bold text-[var(--fx-text)]">Actions rapides</h3>
     </div>
-    <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
-      <a class="fx-btn fx-btn-ghost" href="{% tenant_path 'dashboard:organisation-settings' %}">Paramètres entreprise</a>
-      <a class="fx-btn fx-btn-ghost" href="{% tenant_path 'dashboard:rh-dashboard' %}">Dashboard RH</a>
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <a class="fx-card fx-card-hover flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[var(--fx-text)]" href="{% tenant_path 'dashboard:organisation-settings' %}">
+        <span class="fx-icon-tile"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h16"></path><path d="M6 20V10l6-4 6 4v10"></path><path d="M9 14h6"></path></svg></span>
+        <span>Parametres entreprise</span>
+      </a>
+      <a class="fx-card fx-card-hover flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[var(--fx-text)]" href="{% tenant_path 'dashboard:rh-dashboard' %}">
+        <span class="fx-icon-tile"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M17 11a3 3 0 0 1 3 3v6"></path></svg></span>
+        <span>Dashboard RH</span>
+      </a>
     </div>
   </section>
 {% else %}
@@ -88,8 +98,11 @@
   </div>
   <div class="divide-y divide-[var(--fx-border)]">
     {% for alert in alert_items %}
-    <div class="px-6 py-3 text-sm">
-      <span class="font-semibold">{{ alert.icon }} {{ alert.text }}</span>
+    <div class="flex items-center gap-3 px-6 py-3 text-sm">
+      <span class="fx-icon-tile h-8 w-8">
+        {% include "dashboard/includes/widget_icon.html" with icon=alert.icon %}
+      </span>
+      <span class="font-semibold">{{ alert.text }}</span>
     </div>
     {% endfor %}
   </div>
