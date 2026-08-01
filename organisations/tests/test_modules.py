@@ -163,6 +163,10 @@ class PlanProTest(TestCase):
         for libelle in MODULES_GESTION.values():
             with self.subTest(libelle=libelle):
                 self.assertIn(libelle, body)
+        self.assertNotIn("dashboard:rh-dashboard", body)
+        self.assertNotIn("dashboard:organisation-settings", body)
+        self.assertIn('/o/mod-pro/ressources-humaines/dashboard/', body)
+        self.assertIn('/o/mod-pro/paie-salariale/dashboard/', body)
 
     def test_les_modules_de_gestion_sont_accessibles(self):
         for chemin in ("comptabilite/", "comptes-financiers/"):
