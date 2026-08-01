@@ -48,9 +48,9 @@
           <span class="fx-icon-tile">
             {% include "dashboard/includes/widget_icon.html" with icon=widget.icon %}
           </span>
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <p class="fx-stat-label">{{ widget.title }}</p>
-            <p class="fx-stat-value truncate">{{ widget.value }}</p>
+            <p class="fx-stat-value" title="{{ widget.value }}">{{ widget.value }}</p>
             {% if widget.hint %}
               <p class="fx-stat-hint">{{ widget.hint }}</p>
             {% endif %}

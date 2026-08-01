@@ -165,8 +165,9 @@
         display: flex;
         align-items: flex-start;
         gap: .9rem;
-        padding: 1.15rem 1.25rem;
+        padding: .95rem 1rem;
         overflow: hidden;
+        min-width: 0;
       }
       .fx-stat::before {
         content: "";
@@ -184,18 +185,23 @@
       }
       .fx-stat-value {
         margin-top: .3rem;
-        font-size: 1.6rem;
+        font-size: clamp(1.05rem, 1.55vw, 1.28rem);
         font-weight: 700;
-        line-height: 1.1;
+        line-height: 1.15;
         color: var(--fx-text);
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: normal;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -.02em;
       }
-      .fx-stat-hint { margin-top: .25rem; font-size: .75rem; color: var(--fx-muted); }
+      .fx-stat-hint { margin-top: .25rem; font-size: .7rem; color: var(--fx-muted); }
 
       .fx-icon-tile {
         display: grid;
         place-items: center;
-        width: 2.5rem;
-        height: 2.5rem;
+        width: 2.25rem;
+        height: 2.25rem;
         flex: 0 0 auto;
         border-radius: .625rem;
         background: var(--fx-tone-soft, var(--fx-accent-soft));
